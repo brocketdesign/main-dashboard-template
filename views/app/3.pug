@@ -1,0 +1,12 @@
+.masonry-container.row
+  each data in scrapedData.reverse()
+    .col-md-4.masonry-item
+      .card(class=`card-clickable-${mode}` data-id=data._id)
+        img.card-img-top-3(src=data.url, alt=data.title, )
+        .card-body
+          p.card-title= data.title
+          .d-flex.justify-content-between
+            button.btn.bg-dark.rounded.download-button(data-id=data.url)
+              span(data-feather="download", color="white", stroke-width="2") DL
+            a.btn.bg-dark.rounded(target="_blank" href=data.source)
+              span(data-feather="link", color="white", stroke-width="2") Link

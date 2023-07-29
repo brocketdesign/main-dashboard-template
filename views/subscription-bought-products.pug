@@ -1,0 +1,28 @@
+extends default
+
+block content
+  .container-fluid.h-100
+    .row.h-100
+      include sidebar
+      .row.justify-content-center.m-0.p-0
+        .container.py-4.bg-light.h-100
+          main.col-md-9.ms-sm-auto.col-lg-10.px-md-4
+            h1 Welcome #{user.username}!
+            p Membership
+            if !subscriptions.length
+              p You have no active memberships.
+            else
+              h3 My Memberships
+              each subscription in subscriptions
+                .card.mt-3
+                  .card-body
+                    h5.card-title #{subscription.productName}
+                    p.card-text #{subscription.id}
+                    ul.list-group.list-group-flush
+                      li.list-group-item Subscription ID: #{subscription.id}
+                      li.list-group-item Status: #{subscription.isActive}
+                      li.list-group-item Start date: #{subscription.startDate}
+                      li.list-group-item Next payment due: #{subscription.nextPaymentDate}
+                    if subscription.isActive === true
+                      form(action="/payment/subscription/cancel/" + subscription.id, method="POST")
+                        button.btn.btn-danger(type="submit") Cancel

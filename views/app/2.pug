@@ -1,0 +1,19 @@
+.masonry-container.row
+  each data in scrapedData.reverse()
+    .col-md-4.masonry-item
+      .card.card-clickable(data-id=data._id)
+        if data.preview
+          if data.preview.includes('.mp4')
+            video(width="100%" height="auto" controls style='object-fit: cover;')
+              source(src=data.preview, type="video/mp4")
+          else 
+            img.card-img-top(src=data.thumb, alt=data.title, style='object-fit: cover;')
+        .card-body
+          .d-flex.justify-content-between
+            button.btn.bg-dark.rounded.download-button(data-id=data.url)
+              span(data-feather="download", color="white", stroke-width="2") DL
+            a.btn.bg-dark.rounded(target="_blank" href=data.source)
+              span(data-feather="link", color="white", stroke-width="2") Link
+            button.btn.bg-dark.rounded.info-button(data-id=data.url)
+              span(data-feather="info", color="white", stroke-width="2") Info
+            p.card-title= data.title

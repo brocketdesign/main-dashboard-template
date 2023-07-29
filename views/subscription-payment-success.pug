@@ -1,0 +1,22 @@
+extends default
+
+block content
+  .container-fluid.h-100
+    .row.h-100
+      include sidebar
+      .row.justify-content-center.m-0.p-0
+        .container.py-4.bg-light.h-100
+          main.col-md-9.ms-sm-auto.col-lg-10.px-md-4
+            h1 Payment Success
+            .d-flex.justify-content-between.mb-4
+              p Your payment was successful. Thank you for your subscription!
+              a.btn.btn-primary(type="button" href="/payment/subscription/bought-products") My Menbership
+            p Subscription ID: #{subscription.id}
+            p Amount: ¥#{subscription.plan.amount}
+            p Description: #{subscription.plan.product}
+            if subscription.latest_invoice && subscription.latest_invoice.payment_method_details && subscription.latest_invoice.payment_method_details.card
+                p Payment Method: #{subscription.latest_invoice.payment_method_details.card.brand} ending in #{subscription.latest_invoice.payment_method_details.card.last4}
+            else 
+                p No card information available.
+            p Subscription Started: #{new Date(subscription.created * 1000).toLocaleDateString()}
+            p Next Payment Due: #{new Date(subscription.current_period_end * 1000).toLocaleDateString()}

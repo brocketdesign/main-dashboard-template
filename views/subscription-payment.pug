@@ -1,0 +1,39 @@
+extends default
+
+block content
+  .container-fluid.h-100
+    .row.h-100
+      include sidebar
+      .row.justify-content-center.m-0.p-0
+        .container.py-4.bg-light.h-100
+          main.col-md-9.ms-sm-auto.col-lg-10.px-md-4.my-4
+            h1 Welcome #{user.username}!
+            .d-flex.justify-content-between.mb-4
+              p Choose your subscription
+              a.btn.btn-primary(type="button" href="/payment/subscription/bought-products") My Menbership
+            .row
+              .col-md-6
+                .card.border.pricing
+                  .card-header.bg-white.py-3
+                    p.text-uppercase.small.mb-2 
+                      strong #{basicProductName}
+                    h5.mb-0 ¥#{basicProductPrice}/month
+                  .card-body
+                    ul.list-group.list-group-flush
+                      each val in basicProductDescription.split(',')
+                        li.list-group-item #{val}
+                  .card-footer.bg-white.py-3
+                    button.btn.btn-primary(id="basic-checkout-button" type="button") Subscribe
+              .col-md-6
+                .card.border.pricing
+                  .card-header.bg-white.py-3
+                    p.text-uppercase.small.mb-2 
+                      strong #{premiumProductName}
+                    h5.mb-0 ¥#{premiumProductPrice}/month
+                  .card-body
+                    ul.list-group.list-group-flush
+                      each val in premiumProductDescription.split(',')
+                        li.list-group-item #{val}
+                  .card-footer.bg-white.py-3
+                    button.btn.btn-primary(id="premium-checkout-button" type="button") Subscribe
+  script(src='/js/stripe.js')

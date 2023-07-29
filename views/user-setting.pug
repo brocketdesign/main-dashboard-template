@@ -1,0 +1,192 @@
+extends default
+
+block content
+  .container-fluid.h-100
+    .row.h-100
+        include sidebar
+        .row.justify-content-center.m-0.p-0
+            .container.py-4.bg-light.h-100
+                main.col-md-9.ms-sm-auto.col-lg-10.px-md-4
+                    ul.nav.nav-tabs
+                        li.nav-item
+                            a.nav-link(href='#personalInfo' data-bs-toggle='tab') Personal Info
+                        li.nav-item
+                            a.nav-link(href='#personalGallery' data-bs-toggle='tab') Personal Gallery
+                        li.nav-item
+                            a.nav-link(href='#legal' data-bs-toggle='tab') Legal
+                        li.nav-item
+                            a.nav-link(href='#corporate' data-bs-toggle='tab') Corporate
+                        li.nav-item
+                            a.nav-link(href='#wordpressAuth' data-bs-toggle='tab') WordPress Authentication
+                        li.nav-item
+                            a.nav-link(href='#passwordUpdate' data-bs-toggle='tab') Password Update
+                    .tab-content.pb-5#updateProfile(style="display:none")
+                        #personalInfo.tab-pane.fade
+                            .header
+                                .banner-image(style="cursor:pointer")
+                                    img(src=user.bannerImage || 'https://placehold.co/51x76',, alt='Banner Image' style="height: 40vh; width: 100%; object-fit: cover; object-position: center;cursor:pointer")
+                                .profile-image.text-center(style="transform: translateY(-50%);cursor:pointer")
+                                    img.shadow.border.border-dark(src=user.profileImage || 'https://placehold.co/51x76', alt='User Profile Image' style="object-fit: contain; width: 150px; height: 150px; border-radius: 50%; object-fit: cover;")
+                            form.row.mt-3
+                                .form-group.col-12.col-sm-6
+                                    label(for='profileImage') Profile Image
+                                    .input-group
+                                        input#profileImage.form-control(type='file', name="profileImage", value=user.profileImage)
+                                .form-group.col-12.col-sm-6
+                                    label(for='bannerImage') Banner Image
+                                    .input-group
+                                        input#bannerImage.form-control(type='file', name="bannerImage", value=user.bannerImage)
+                                hr.my-3
+                                .form-group.col-12
+                                    label(for='username') Nickname
+                                    input#username.form-control(name="username", type='text', placeholder='Enter Nickname' value=user.username)
+                                .form-group.col-12.col-sm-6
+                                    label(for='lastName') Last Name
+                                    input#lastName.form-control(name="lastName", type='text', placeholder='Enter Last Name' value=user.lastName)
+                                .form-group.col-12.col-sm-6
+                                    label(for='firstName') First Name
+                                    input#firstName.form-control(name="firstName", type='text', placeholder='Enter First Name' value=user.firstName)
+                                hr.my-3
+                                .form-group.col-12.col-sm-6
+                                    label(for='email') Email
+                                    input#email.form-control(name="email", type='email', placeholder='Enter Email' value=user.email)
+                                .form-group.col-12.col-sm-6
+                                    label(for='phoneNumber') Phone Number
+                                    input#phoneNumber.form-control(name="phoneNumber", type='tel', placeholder='Enter Phone Number' value=user.phoneNumber)
+                                .form-group.col-12.col-sm-6
+                                    label(for='birthDate') Birth Date
+                                    input#birthDate.form-control(name="birthDate", type='date' value=user.birthDate)
+                                hr.my-3
+                                .form-group.col-12.col-sm-6
+                                    label(for='address') Address
+                                    input#address.form-control(name="address", type='text', placeholder='Enter Address' value=user.address)
+                                .form-group.col-12.col-sm-6
+                                    label(for='city') City
+                                    input#city.form-control(name="city", type='text', placeholder='Enter City' value=user.city)
+                                .form-group.col-12.col-sm-6
+                                    label(for='state') State
+                                    input#state.form-control(name="state", type='text', placeholder='Enter State' value=user.state)
+                                .form-group.col-12.col-sm-6
+                                    label(for='zip') Zip Code
+                                    input#zip.form-control(name="zip", type='text', placeholder='Enter Zip Code' value=user.zip)
+                                .form-group.col-12.col-sm-6
+                                    label(for='country') Country
+                                    select#country.form-control(name="country")
+                                    option(value=user.country) Select Country
+                                button.btn.btn-primary.my-4(type='submit') Submit
+                        #personalGallery.tab-pane.fade
+                            form.row.mt-3
+                                .col-12
+                                    if(user.galleryImages)
+                                        .container.my-5
+                                            .row.g-3.justify-content-center
+                                                each image in user.galleryImages
+                                                    img(src=image || '/img/placeholder.png', alt='User Image' style="object-fit: contain; width: 30%; height: auto; object-fit: cover; border-radius: 5px; margin-bottom: 10px;")
+                                                img#image-upload-holder(src='https://placehold.co/51x76', alt='User Image' style="display:none;object-fit: contain; width: 30%; height: auto; object-fit: cover; border-radius: 5px; margin-bottom: 10px;")
+                                                button#upload-btn.m-3(type='button', style="width: 60px;height: 40px;", class='btn btn-outline-primary ') 
+                                                    i.fas.fa-plus
+                                    else
+                                        img#image-upload-holder(src='https://placehold.co/51x76', alt='User Image' style="display:none;object-fit: contain; width: 30%; height: auto; object-fit: cover; border-radius: 5px; margin-bottom: 10px;")
+                                        button#upload-btn.m-3(type='button', style="width: 60px;height: 40px;", class='btn btn-outline-primary ') 
+                                            i.fas.fa-plus
+                                    input#image-upload( type='file', accept='image/*', name='imageUpload', style='display: none;')
+                                .col-12
+                                    button.btn.btn-primary.my-4.w-100(type='submit') Submit
+                        #legal.tab-pane.fade
+                            form.row.mt-3
+                                .form-group.col-12
+                                    label(for='legalID') Legal ID
+                                .input-group
+                                    input#legalID.form-control(name="legalID", type='text', placeholder='Enter Legal ID', value=user.legalID)
+                                hr.my-3
+                                .form-group.col-12.col-sm-6
+                                    label(for='IDtype') ID Type
+                                    select#IDtype.form-control(name="IDtype")
+                                    option(value='') Select ID Type
+                                    // Populate with ID Type options...
+                                .form-group.col-12.col-sm-6
+                                    label(for='IDcountry') ID Country of Issuance
+                                    select#IDcountry.form-control(name="IDcountry")
+                                    option(value='') Select Country
+                                    // Populate with country options...
+                                hr.my-3
+                                .form-group.col-12
+                                    label(for='IDScan') Scan of ID
+                                .input-group
+                                    input#IDScan.form-control(name="IDScan", type='file', value=user.IDScan)
+                                hr.my-3
+                                .form-group.col-12
+                                    label(for='proofOfAddress') Proof of Address
+                                .input-group
+                                    input#proofOfAddress.form-control(name="proofOfAddress", type='file', value=user.proofOfAddress)
+                                hr.my-3
+                                .form-group.col-12
+                                    label(for='termsConditions') Terms and Conditions
+                                .form-check
+                                    input#termsConditions.form-check-input(name="termsConditions", type='checkbox')
+                                    label.form-check-label(for='termsConditions') I agree to the Terms and Conditions
+                                button.btn.btn-primary.my-4(type='submit') Submit
+                        #corporate.tab-pane.fade
+                            form.row.mt-3
+                                .form-group.col-12
+                                    label(for='corporateName') Corporate Name
+                                .input-group
+                                    input#corporateName.form-control(name="corporateName", type='text', placeholder='Enter Corporate Name', value=user.corporateName)
+                                hr.my-3
+                                .form-group.col-12.col-sm-6
+                                    label(for='corporateID') Corporate ID
+                                    input#corporateID.form-control(name="corporateID", type='text', placeholder='Enter Corporate ID', value=user.corporateID)
+                                .form-group.col-12.col-sm-6
+                                    label(for='industry') Industry
+                                    input#industry.form-control(name="industry", type='text', placeholder='Enter Industry', value=user.industry)
+                                hr.my-3
+                                .form-group.col-12.col-sm-6
+                                    label(for='corporateAddress') Corporate Address
+                                    input#corporateAddress.form-control(name="corporateAddress", type='text', placeholder='Enter Corporate Address', value=user.corporateAddress)
+                                .form-group.col-12.col-sm-6
+                                    label(for='corporateCity') City
+                                    input#corporateCity.form-control(name="corporateCity", type='text', placeholder='Enter City', value=user.corporateCity)
+                                .form-group.col-12.col-sm-6
+                                    label(for='corporateState') State
+                                    input#corporateState.form-control(name="corporateState", type='text', placeholder='Enter State', value=user.corporateState)
+                                .form-group.col-12.col-sm-6
+                                    label(for='corporateZip') Zip Code
+                                    input#corporateZip.form-control(name="corporateZip", type='text', placeholder='Enter Zip Code', value=user.corporateZip)
+                                .form-group.col-12.col-sm-6
+                                    label(for='corporateCountry') Country
+                                    select#corporateCountry.form-control(name="corporateCountry")
+                                    option(value='') Select Country
+                                    // Populate with country options...
+                                hr.my-3
+                                .form-group.col-12
+                                    label(for='corporateProfile') Corporate Profile
+                                    textarea#corporateProfile.form-control(rows='3')
+                                button.btn.btn-primary.my-4(type='submit') Submit
+                        #wordpressAuth.tab-pane.fade
+                            form.row.mt-3
+                                .form-group.col-12
+                                    label(for='wpURL') WordPress Website URL
+                                    .input-group
+                                        input#wpURL.form-control(name="wpURL", type='url', placeholder='Enter WordPress URL', value=user.wpURL)
+                                hr.my-3
+                                // wpPostStatus acheckbox to choose the status of the new posts
+                                .form-group.col-12.col-sm-6
+                                    label(for='wpUsername') WordPress Username
+                                    input#wpUsername.form-control(name="wpUsername", type='text', placeholder='Enter WordPress Username', value=user.wpUsername)
+                                .form-group.col-12.col-sm-6
+                                    label(for='wpPassword') WordPress Password
+                                    input#wpPassword.form-control(name="wpPassword", type='password', placeholder='Enter WordPress Password', value=user.wpPassword)
+                                button.btn.btn-primary.my-4(type='submit') Submit
+                        #passwordUpdate.tab-pane.fade
+                            form.row.mt-3
+                                .form-group.col-12.col-sm-6
+                                    label(for='userOldPassword') Old Password
+                                    input#userOldPassword.form-control(name="userOldPassword", type='password', placeholder='Enter Old Password', required)
+                                hr.my-3
+                                .form-group.col-12.col-sm-6
+                                    label(for='userPassword') New Password
+                                    input#userPassword.form-control(name="userPassword", type='password', placeholder='Enter New Password', required)
+                                .form-group.col-12.col-sm-6
+                                    label(for='userPasswordVerification') New Password Verification
+                                    input#userPasswordVerification.form-control(name="userPasswordVerification", type='password', placeholder='Enter New Password for Verification', required)
+                                button.btn.btn-primary.my-4(type='submit') Submit

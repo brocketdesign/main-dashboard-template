@@ -1,0 +1,72 @@
+extends default
+
+block content
+    //- Background image
+    div#intro.bg-image.vh-100.shadow-1-strong
+        video(style="min-width: 100%; min-height: 100%;" playsinline autoplay muted loop)
+            source.h-100(src="https://mdbootstrap.com/img/video/animation-intro-min.mp4" type="video/mp4")
+        div.mask(style="background: linear-gradient(45deg, rgba(29, 236, 197, 0.7), rgba(91, 14, 214, 0.7) 100%);")
+            div.container.d-flex.align-items-center.justify-content-center.text-center.h-100
+                div.text-white
+                    h1.mb-3 電子契約サービスです
+                    h5.mb-4 契約作業をオンラインだけで完結させます。 
+                    a.btn.btn-outline-light.btn-lg.m-2(href="/user/login" role="button" rel="nofollow" ) ログイン
+                    a.btn.btn-outline-light.btn-lg.m-2(href="/user/signup" role="button") アカウントを作成
+    //- Main layout
+    main.mt-5
+        div.container
+            //- Section: Content
+            section
+                div.row
+                    div.col-md-6.gx-5.mb-4
+                        div.bg-image.hover-overlay.ripple.shadow-2-strong.rounded-5(data-mdb-ripple-color="light")
+                            img.img-fluid(src="https://mdbootstrap.com/img/new/slides/031.jpg")
+                            a(href="#!")
+                                div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
+                    div.col-md-6.gx-5.mb-4
+                        h4.strong 簡単に利用できます
+                        p.text-muted
+                            | クラウドサインは、契約作業をオンライン上で完結させることができる便利な電子契約サービスです。煩わしい手続きや用紙の準備は必要ありません。素早く効率的に契約を行いましょう。
+                        p.strong セキュアで信頼性があります
+                        p.text-muted
+                            | 当社のサービスはセキュリティに優れており、個人情報や機密データは厳重に保護されます。安心してご利用いただけます。
+            hr.my-5
+            //- Section: Content
+            section.text-center
+                h4.mb-5.strong 多様な機能があります
+                div.row
+                    div.col-lg-4.col-md-12.mb-4
+                        div.card
+                            div.bg-image.hover-overlay.ripple(data-mdb-ripple-color="light")
+                                img.img-fluid(src="https://mdbootstrap.com/img/new/standard/nature/184.jpg")
+                                a(href="#!")
+                                    div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
+                            div.card-body
+                                h5.card-title 契約書作成
+                                p.card-text
+                                    | クラウドサインでは簡単に契約書を作成できます。カスタマイズ可能なテンプレートを使用して、手間なく契約内容を記入できます。
+                                a.btn.btn-primary 詳細を見る
+
+                    div.col-lg-4.col-md-6.mb-4
+                        div.card
+                            div.bg-image.hover-overlay.ripple(data-mdb-ripple-color="light")
+                                img.img-fluid(src="https://mdbootstrap.com/img/new/standard/nature/023.jpg")
+                                a(href="#!")
+                                    div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
+                            div.card-body
+                                h5.card-title 署名の管理
+                                p.card-text
+                                    | クラウドサインでは電子署名を簡単に管理できます。複数の参加者との契約にも対応しています。
+                                a.btn.btn-primary 詳細を見る
+
+                    div.col-lg-4.col-md-6.mb-4
+                        div.card
+                            div.bg-image.hover-overlay.ripple(data-mdb-ripple-color="light")
+                                img.img-fluid(src="https://mdbootstrap.com/img/new/standard/nature/111.jpg")
+                                a(href="#!")
+                                    div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
+                            div.card-body
+                                h5.card-title 安全性と信頼性
+                                p.card-text
+                                    | クラウドサインでは個人情報の保護に力を入れています。安心して大切な契約を行いましょう。
+                                a.btn.btn-primary 詳細を見る

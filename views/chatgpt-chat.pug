@@ -1,0 +1,31 @@
+extends default
+
+block content
+  .container-fluid.h-100
+    .row.h-100
+      include sidebar
+      .row.justify-content-center.m-0.p-0
+        .container.py-4.bg-light.h-100
+          main.col-md-9.ms-sm-auto.col-lg-10.px-md-4.position-relative
+            .chat-window.overflow-auto#message-container.container.pb-5.mb-5.me-3.bg-light(style="position: fixed; bottom: 0; max-height: calc(100vh - 80px); overflow: auto;")
+              #messages.list-unstyled.m-auto(style="overflow: scroll;width:65%;")
+                li.my-4.template(style="display:none")
+                  p.my-2.userName(style="font-size:12px")
+                    p.rounded.bg-light.p-2.border.message.p-3.d-inline-block
+                  p.text-muted.mt-2.time(style="font-size:9px")
+                each item in user.openai_conversation
+                  li.my-4
+                    p.mb-3.userName(style="font-size:12px") #{user.username}
+                    p.rounded.bg-.p-2.border.message.chat-message.user.p-3.d-inline-block= item.message
+                    p.text-muted.mt-2.time(style="font-size:9px") #{new Date(item.message_time).toLocaleDateString()+' - '+new Date(item.message_time).toLocaleTimeString()}
+                  li.my-4.text-end
+                    p.mb-3.userName(style="font-size:12px") Agent
+                    p.rounded.bg-.p-2.border.message.chat-message.agent.p-3.d-inline-block= item.response || item.completion
+                    p.text-muted.mt-2.time(style="font-size:9px") #{new Date(item.response_time).toLocaleDateString()+' - '+new Date(item.response_time).toLocaleTimeString()}
+            #chat-input-section.h-15.d-flex.align-items-center.position-fixed.container.pb-5.me-3.bg-white(style="bottom: 0;")
+              .input-group.shadow.m-auto(style="width:75%;")
+                input.form-control.form-control-lg.py-4.border-0(type='text', placeholder='Type your message...')
+                button.btn.btn-outline-secondary(type='submit')
+                  i.fas.fa-paper-plane
+              button.btn.shadow-none.scroll-down(style="position: absolute; top: 10px; right: 30px;display:none")
+                i.fas.fa-arrow-down

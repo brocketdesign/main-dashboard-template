@@ -1,0 +1,22 @@
+extends default
+
+block content
+  .container-fluid.h-100
+    .row.h-100
+      include sidebar
+      .row.justify-content-center.m-0.p-0
+        .container.py-4.bg-light.h-100
+          main.col-md-9.ms-sm-auto.col-lg-10.px-md-4
+            h1 Welcome #{user.username}!
+            form(action=`/dashboard/app/${mode}`, method="GET")
+              .input-group.mb-3
+                input(type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", aria-label="Search")
+                button(type="submit", class="btn btn-primary") Search
+            if uniqueCurrentPages
+              if uniqueCurrentPages.length
+                ul
+                  each page in uniqueCurrentPages
+                    li
+                      a(href=`/dashboard/app/${mode}/?searchTerm=${page}`)= page
+              else
+                p No unique pages found.

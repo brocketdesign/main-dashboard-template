@@ -1,0 +1,36 @@
+.chat-message.agent{
+    background-color: #1c82a214;
+}
+
+.chat-message.user{
+    background-color: #33a21c14;
+}
+.card-clickable:hover {
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease-in-out;
+  }
+  .card-img-top {
+    height: 200px; /* Adjust the desired height */
+  }
+@media (max-width: 768px) {  /* assuming 768px is the breakpoint for mobile view */
+    #positionElement {
+      position: absolute !important;
+      top: auto !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: auto !important;
+      transform: none !important;
+    }
+    .alert{
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: auto !important;
+        transform: none !important;
+        margin: 0 !important;
+        border-radius: 0;
+    }
+  }
+  
