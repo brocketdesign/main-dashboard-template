@@ -1,0 +1,21 @@
+extends default
+
+block content
+  .container-fluid.h-100
+    .row.h-100
+      include sidebar
+      .row.justify-content-center.m-0.p-0
+        .container.py-4.bg-light.h-100
+          main.col-md-9.ms-sm-auto.col-lg-10.px-md-4.position-relative
+            form
+              .form-group
+                label(for='input1') Input 1
+                input#input1.form-control(type='text', placeholder='Enter first value')
+              .form-group
+                label(for='input2') Input 2
+                input#input2.form-control(type='text', placeholder='Enter second value')
+              button#compare.btn.btn-primary(type='submit')
+                i.fas.fa-paper-plane
+            .response
+              h3 Result
+              p#result

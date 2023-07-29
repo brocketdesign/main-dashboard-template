@@ -54,7 +54,61 @@ router.post('/openai/send-prompt', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+router.post('/openai/compare', async (req, res) => {
+  const { Configuration, OpenAIApi } = require('openai');
 
+  const configuration = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  
+  const openai = new OpenAIApi(configuration);
+
+  const { input1, input2, time } = req.body;
+  if(!input1 || !input2){
+    res.status(500).send('Error with the input');
+    return
+  }
+  console.log(`Generate response for:  ${input1} and ${input2}`)
+
+  const messages = [
+    { role: 'system', content: 'You are a powerful assistant' },
+    { role: 'user', content: `Compare this "${input1}" to "${input2}". 
+    Respond with an array of objects that conain all the differences. An object by difference.
+    [{"input1":"","input2":"","difference":""}].
+    return only the JSON. no comments.` },
+  ];
+
+  try {
+    const generatedJson = await generateJson(messages,openai);
+    console.log(generatedJson)
+
+    const dataUpdate = { input1, input2, completion:generatedJson, response_time: new Date(),message_time:time };
+    const result = await global.db.collection('users').updateOne(
+      { _id: req.user._id },
+      { $push: { openai_compare: dataUpdate } }
+    );
+
+    res.json({ success: true, completion:generatedJson});
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal server error');
+  }
+});
+
+const generateJson = async (messages,openai) => {
+  const completion = await openai.createChatCompletion({
+    model: process.env.COMPLETIONS_MODEL,
+    messages,
+    max_tokens: 2000 // Specify the maximum token limit
+  });
+
+  try {
+    return JSON.parse(completion.data.choices[0].message.content);
+  } catch (e) {
+    console.log(completion.data.choices[0].message.content)
+    throw new Error('The JSON structure generated from GPT is not valid. Please try again.');
+  }
+};
 // Wordpress 
 router.post('/post-article', async (req, res) => {
   const wordpress = require( "wordpress" );

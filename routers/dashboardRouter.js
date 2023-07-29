@@ -26,9 +26,8 @@ router.get('/', ensureAuthenticated,ensureMembership, async (req, res) => {
     res.redirect('/dashboard/app/1');
 });
 // ChatGPT
-
-router.get('/app/openai/chat', ensureAuthenticated, ensureMembership, async (req, res) => {
-    res.render('chatgpt-chat.pug', { user:req.user, title:'ChatGPT' });
+router.get('/app/openai/:app', ensureAuthenticated, ensureMembership, async (req, res) => {
+  res.render(`chatgpt-${req.params.app}.pug`, { user:req.user, title:'ChatGPT' });
 });
 // Stable diffusion 
 router.get('/app/stable-diffusion', ensureAuthenticated, ensureMembership, async (req, res) => {

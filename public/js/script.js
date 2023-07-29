@@ -94,6 +94,7 @@ $(document).ready(function() {
     handleDownloadButton();
     handleCardButton();
     handleChat();
+    handleCOmpare();
     feather.replace()
 });
 
@@ -297,7 +298,7 @@ const handleDownloadButton = () => {
 
       // Check if the card has already been processed
       if ($buttonContainer.hasClass('done')) {
-            handleFormResult(false, 'Video has already been Downloaded') 
+        handleFormResult(false, 'Video has already been Downloaded') 
           console.log('Card has already been processed.');
           return;
       }
@@ -349,7 +350,80 @@ const handleDownloadButton = () => {
       });
   });
 }
+const handleCOmpare = () => {
+    $('#compare').on('click', function(e) {
+        e.preventDefault();
 
+        const $this = $(this);
+        const $input1 = $('#input1').val();
+        const $input2 = $('#input2').val();
+
+        if (!input1 || !input2) {
+            
+            handleFormResult(false, 'Error in comparaison') 
+            return;
+        }
+
+
+        $this.find('i').hide(); // hide plane icon
+        $this.append('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>'); // add spinner
+
+        // simulate request
+        $.ajax({
+            url: '/api/openai/compare', // replace with your endpoint
+            method: 'POST',
+            data: { input1:$input1,input2:$input2,time:new Date() },
+            success: function(response) {
+
+                console.log(response);
+                $this.find('.spinner-border').remove(); // remove spinner
+                $this.find('i').show(); // show plane icon
+
+                // Create a table
+                let table = $('<table>').addClass('table table-striped');
+
+                // Create table header
+                let thead = $('<thead>').addClass('black white-text');
+                let headerRow = $('<tr>');
+                headerRow.append($('<th>').text('Input 1'));
+                headerRow.append($('<th>').text('Input 2'));
+                headerRow.append($('<th>').text('Difference'));
+                thead.append(headerRow);
+                table.append(thead);
+
+                // Create table body
+                let tbody = $('<tbody>');
+
+                for(let item of response.completion){
+                    let row = $('<tr>');
+                    row.append($('<td>').text(item.input1));
+                    row.append($('<td>').text(item.input2));
+                    row.append($('<td>').text(item.difference));
+                    tbody.append(row);
+                }
+
+                table.append(tbody);
+
+                // Append the table to the result div
+                $('#result').empty().append(table);
+
+            },
+            error: function(error) {
+                console.error(error);
+                handleFormResult(false, 'Error in comparaison') 
+                $this.find('.spinner-border').remove(); // remove spinner
+                $this.find('i').show(); // show plane icon
+            },
+            finally: function(error) {
+                console.error(error);
+                handleFormResult(false, 'Error in comparaison') 
+                $this.find('.spinner-border').remove(); // remove spinner
+                $this.find('i').show(); // show plane icon
+            }
+        });
+    });
+
+}
  const handleChat = () => {
     $('#chat-input-section button').on('click', function(e) {
         e.preventDefault();
