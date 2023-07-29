@@ -5,13 +5,6 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const passport = require('passport');
 
-const firebase = require('firebase/app');
-const firebaseAuth = require('firebase/auth')
-const firebaseConfig = require('../services/firebaseKey')
-
-// Initialize Firebase
-const firebaseApp = firebase.initializeApp(firebaseConfig.key);
-
 const { email, sendEmail } = require('../services/email')
 
 const { ObjectId } = require('mongodb');
@@ -107,28 +100,9 @@ router.get('/login', (req, res) => {
   res.render('user-login'); // Render the login template
 });
 
-router.post('/login', (req, res) => {
-
-  const { email, password } = req.body;
-  console.log(`Login request: ${JSON.stringify(req.body)}`);
-
-  const auth = firebaseAuth.getAuth()
-  firebaseAuth.signInWithEmailAndPassword(auth, email, password)
-  .then((userCredential) => {
-    // Signed in 
-    var user = userCredential.user;
-
-    req.flash('info', 'You are now logged in!');
-    res.redirect('/payment/subscription');
-  })
-  .catch((error) => {
-    var errorCode = error.code;
-    var errorMessage = error.message;
-    req.flash('error', errorMessage.replace('Firebase: ','')); // Set an info flash message
-    console.log(errorMessage);
-    res.redirect('/user/login');
-  });
-
+router.post('/login', passport.authenticate('local', { failureRedirect: '/user/login', failureFlash: 'Invalid username or password.' }), (req, res) => {
+  req.flash('info', 'You are now logged in!');
+  res.redirect('/payment/subscription');
 });
 
 
@@ -239,34 +213,22 @@ router.post('/signup', async (req, res, next) => {
       req.flash('error', 'User with the same email or username already exists.'); // Set an error flash message
       return res.redirect('/user/signup');
     }
-    const auth = firebaseAuth.getAuth()
-    firebaseAuth.createUserWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      // Signed in 
-      var user = userCredential.user;
-        
-      global.db.collection('users').insertOne({ email: email, username: username  });
   
-      const welcomeEmailData = {
-        FIRSTNAME: username, 
-      };
+    const hash = await bcrypt.hash(password, 10);
 
-      sendEmail(email, 'welcome', welcomeEmailData)
-        .then(() => console.log('Email sent!'))
-        .catch(error => console.error(`Error sending email: ${error}`));
+    await global.db.collection('users').insertOne({ email: email, username: username, password: hash  });
+ 
+    const welcomeEmailData = {
+      FIRSTNAME: username, 
+    };
+
+    sendEmail(email, 'welcome', welcomeEmailData)
+      .then(() => console.log('Email sent!'))
+      .catch(error => console.error(`Error sending email: ${error}`));
 
 
-      req.flash('info', 'Successfully signed up! You can now log in.'); // Set an info flash message
-      res.redirect('/user/login');
-    })
-    .catch((error) => {
-      var errorCode = error.code;
-      var errorMessage = error.message;
-      req.flash('error', errorMessage.replace('Firebase: ','')); // Set an info flash message
-      console.log(errorMessage);
-      res.redirect('/user/signup');
-    });
-
+    req.flash('info', 'Successfully signed up! You can now log in.'); // Set an info flash message
+    res.redirect('/user/login');
   } catch (err) {
     console.log('Signup error:', err);
     return next(err);
