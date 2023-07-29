@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 
+const admin = require('firebase-admin');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const passport = require('passport');
@@ -214,9 +215,14 @@ router.post('/signup', async (req, res, next) => {
       return res.redirect('/user/signup');
     }
   
-    const hash = await bcrypt.hash(password, 10);
 
-    await global.db.collection('users').insertOne({ email: email, username: username, password: hash  });
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+      username
+    });
+
+    await global.db.collection('users').insertOne({ email: email, username: username });
  
     const welcomeEmailData = {
       FIRSTNAME: username, 
