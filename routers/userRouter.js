@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 
-const admin = require('firebase-admin');
+const { getAuth, createUserWithEmailAndPassword } = require('firebase-admin');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const passport = require('passport');
@@ -216,25 +216,32 @@ router.post('/signup', async (req, res, next) => {
     }
   
 
-    const userRecord = await admin.auth().createUser({
-      email,
-      password,
-      username
-    });
-
-    await global.db.collection('users').insertOne({ email: email, username: username });
+    const auth = getAuth();
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Signed in 
+        const user = userCredential.user;
+        global.db.collection('users').insertOne({ email: email, username: username });
  
-    const welcomeEmailData = {
-      FIRSTNAME: username, 
-    };
+        const welcomeEmailData = {
+          FIRSTNAME: username, 
+        };
+    
+        sendEmail(email, 'welcome', welcomeEmailData)
+          .then(() => console.log('Email sent!'))
+          .catch(error => console.error(`Error sending email: ${error}`));
+    
+    
+        req.flash('info', 'Successfully signed up! You can now log in.'); // Set an info flash message
+        res.redirect('/user/login');
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log(errorMessage)
+        return next(error);
+      });
 
-    sendEmail(email, 'welcome', welcomeEmailData)
-      .then(() => console.log('Email sent!'))
-      .catch(error => console.error(`Error sending email: ${error}`));
-
-
-    req.flash('info', 'Successfully signed up! You can now log in.'); // Set an info flash message
-    res.redirect('/user/login');
   } catch (err) {
     console.log('Signup error:', err);
     return next(err);
