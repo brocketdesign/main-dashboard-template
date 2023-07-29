@@ -3,16 +3,10 @@ const { ObjectId } = require('mongodb');
 
 async function ManageScraper(url,mode,user) {
 
-    const scrapeMode = require(`./scraper/scrapeMode${mode}`)
+  const scrapeMode = require(`./scraper/scrapeMode${mode}`)
   const collection = global.db.collection('scrapedData'); // Replace 'scrapedData' with your desired collection name
   const query = url
-
-  if(!url){
-    url =process.env.DEFAULT_URL
-  }else if (!url.includes('http')){
-    url = `${process.env.DEFAULT_URL}/s/${url}/`
-  }
-
+  
   // Check if the data has already been scraped today
   const today = new Date().setHours(0, 0, 0, 0);
 
@@ -21,8 +15,8 @@ async function ManageScraper(url,mode,user) {
   const userInfo = await global.db.collection('users').findOne({ _id: userId });
 
   const existingData = userInfo.scrapInfo?.url; // Using optional chaining to handle cases where scrapInfo is not present or does not have a url field
-  
-  if(existingData){
+
+  if(!url || existingData){
     console.log('Data has been scraped in the last 24 hours')
     try {
   
@@ -31,8 +25,13 @@ async function ManageScraper(url,mode,user) {
         let userScrapedData = userInfo.scrapedData || []; // Initialize as an empty array if it doesn't exist yet
     
         // Filter the userScrapedData to get elements that have the currentPage field
-        const userScrapedDataWithCurrentPage = userScrapedData.filter(item => item.currentPage === url && item.mode == mode);
-    
+        let userScrapedDataWithCurrentPage
+        if(url){
+           userScrapedDataWithCurrentPage = userScrapedData.filter(item => item.currentPage === url && item.mode == mode);
+        }else{
+           userScrapedDataWithCurrentPage = userScrapedData.reverse().filter(item => item.mode == mode).slice(0,50);
+        }
+
         if (userScrapedDataWithCurrentPage.length > 0) {
           // If there are elements with the currentPage field, return them
           console.log('Data has already been scraped today.');
@@ -48,7 +47,9 @@ async function ManageScraper(url,mode,user) {
     }
   }
 
-
+  if(!url.includes('http')){
+    url = `${process.env.DEFAULT_URL}/s/${url}/`
+  }
     var scrapedData = await scrapeMode(query,url)
     if(scrapedData.length == 0){
 

@@ -7,6 +7,7 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+public/downloads
 public/uploads
 public/output
 services/firebaseKey.js
