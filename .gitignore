@@ -9,6 +9,7 @@ lerna-debug.log*
 
 public/uploads
 public/output
+services/firebaseKey.js
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
