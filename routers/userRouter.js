@@ -5,6 +5,25 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const passport = require('passport');
 
+const initializeApp = require('firebase/app');
+require('firebase/auth')
+const getAnalytics = require('firebase/analytics')
+
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_apiKey,
+  authDomain: process.env.FIREBASE_authDomain,
+  databaseURL: process.env.FIREBASE_databaseURL,
+  projectId: process.env.FIREBASE_projectId,
+  storageBucket: process.env.FIREBASE_storageBucket,
+  messagingSenderId: process.env.FIREBASE_messagingSenderId,
+  appId: process.env.FIREBASE_appId,
+  measurementId: process.env.FIREBASE_measurementId,
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
 const { email, sendEmail } = require('../services/email')
 
 const { ObjectId } = require('mongodb');

@@ -8,4 +8,3 @@ exports.firebaseAdmin = firebase.initializeApp({
   }),
   databaseURL: process.env.FIREBASE_DATABASE_URL
 });
-
