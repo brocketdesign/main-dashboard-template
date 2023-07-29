@@ -3,6 +3,8 @@ const router = express.Router();
 
 const getHighestQualityVideoURL = require("../modules/getHighestQualityVideoURL")
 const ensureAuthenticated = require('../middleware/authMiddleware');
+const {formatDateToDDMMYYHHMMSS} = require('../services/tools')
+const parsePDF = require('../modules/pdf-parse')
 
 const axios = require('axios');
 const path = require('path');
@@ -54,7 +56,20 @@ router.post('/openai/send-prompt', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
-router.post('/openai/compare', async (req, res) => {
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, process.env.UPLOAD_STORAGE_FOLDER);
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${file.fieldname}-${req.user._id}-${formatDateToDDMMYYHHMMSS()}.jpg`);
+  }
+});
+
+
+const upload = multer( {storage: storage });
+
+router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }]), async (req, res) => {
   const { Configuration, OpenAIApi } = require('openai');
 
   const configuration = new Configuration({
@@ -64,6 +79,12 @@ router.post('/openai/compare', async (req, res) => {
   const openai = new OpenAIApi(configuration);
 
   const { input1, input2, time } = req.body;
+
+  if(req.files.pdf1 && req.files.pdf2){
+     input1 = await parsePDF(req.files.pdf1)
+     input2 = await parsePDF(req.files.pdf2)
+  }
+
   if(!input1 || !input2){
     res.status(500).send('Error with the input');
     return
@@ -94,6 +115,8 @@ router.post('/openai/compare', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+
+
 
 const generateJson = async (messages,openai) => {
   const completion = await openai.createChatCompletion({

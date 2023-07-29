@@ -1,0 +1,20 @@
+extends default
+
+block content
+  .container-fluid.h-100
+    .row.h-100
+      include sidebar
+      .row.justify-content-center.m-0.p-0
+        .container.py-4.bg-light.h-100
+          main.col-md-9.ms-sm-auto.col-lg-10.px-md-4.position-relative
+            form(method='POST' action='/compare' enctype='multipart/form-data')
+              .form-group
+                label(for='pdf1') PDF 1
+                input#pdf1.form-control(type='file', name='pdf1', accept='.pdf')
+              .form-group
+                label(for='pdf2') PDF 2
+                input#pdf2.form-control(type='file', name='pdf2', accept='.pdf')
+              button#compare.btn.btn-primary(type='submit') Compare
+            .response
+              h3 Result
+              p#result

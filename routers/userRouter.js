@@ -1,10 +1,10 @@
 const express = require('express');
 const multer = require('multer');
+const {formatDateToDDMMYYHHMMSS} = require('../services/tools')
 
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const passport = require('passport');
-
 const { email, sendEmail } = require('../services/email')
 
 const { ObjectId } = require('mongodb');
@@ -19,14 +19,12 @@ const storage = multer.diskStorage({
     cb(null, process.env.UPLOAD_STORAGE_FOLDER);
   },
   filename: function (req, file, cb) {
-    let prefix = '';
-
     cb(null, `${file.fieldname}-${req.user._id}-${formatDateToDDMMYYHHMMSS()}.jpg`);
   }
 });
 
 
-const upload = multer({  dest: 'uploads/', storage: storage });
+const upload = multer( {storage: storage });
 
 router.post('/updateProfile', upload.fields([{ name: 'profileImage' }, { name: 'bannerImage' }, {name : 'imageUpload'}]), async (req, res) => {
 
@@ -252,20 +250,6 @@ router.post('/isOldPasswordCorrect', (req, res) => {
     res.status(500).json({ message: 'An error occurred while verifying the old password.' });
   });
 });
-
-
-function formatDateToDDMMYYHHMMSS() {
-  const now = new Date();
-  const day = String(now.getDate()).padStart(2, '0');
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const year = String(now.getFullYear()).substr(-2);
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  const ddmmyyhhmmss = `${day}${month}${year}${hours}${minutes}${seconds}`;
-  return ddmmyyhhmmss;
-}
-
 
 
 module.exports = router;
