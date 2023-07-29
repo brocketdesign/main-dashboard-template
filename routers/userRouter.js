@@ -1,7 +1,9 @@
 const express = require('express');
 const multer = require('multer');
 
-const { getAuth, createUserWithEmailAndPassword } = require('firebase-admin');
+const firebaseApp = require('../services/firebase')
+const { getAuth, createUserWithEmailAndPassword } = require('firebase/auth');
+
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const passport = require('passport');
@@ -101,9 +103,23 @@ router.get('/login', (req, res) => {
   res.render('user-login'); // Render the login template
 });
 
-router.post('/login', passport.authenticate('local', { failureRedirect: '/user/login', failureFlash: 'Invalid username or password.' }), (req, res) => {
-  req.flash('info', 'You are now logged in!');
-  res.redirect('/payment/subscription');
+router.post('/login', (req, res) => {
+  const { email, password } = req.body
+  const auth = getAuth();
+  signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      // Signed in 
+      const user = userCredential.user;
+      req.flash('info', 'You are now logged in!');
+      res.redirect('/payment/subscription');
+    })
+    .catch((error) => {
+      const errorCode = error.code;
+      const errorMessage = error.message;
+      console.log(errorMessage)
+      req.flash('error', 'We could not identify you');
+      res.redirect('/user/login');
+    });
 });
 
 
@@ -215,7 +231,6 @@ router.post('/signup', async (req, res, next) => {
       return res.redirect('/user/signup');
     }
   
-
     const auth = getAuth();
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
