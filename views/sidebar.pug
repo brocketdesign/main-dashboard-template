@@ -7,36 +7,52 @@
           | Video
         ul.list-unstyled.collapse#contents-collapse.pt-3(class=`${mode == 1 ? "show":"hide"}`)
           li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/1') Latest
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/1') 
+              i.fas.fa-search.me-3
+              | Search
           li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/1/history') History
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/1/history') 
+              i.fas.fa-history.me-3
+              | History
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse2', aria-controls='contents-collapse3') 
-          i.fas.fa-image.me-3
+          i.fas.fa-reddit.me-3
           | Reddit
         ul.list-unstyled.collapse#contents-collapse2.pt-3(class=`${mode == 2 ? "show":"hide"}`)
           li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/2') Latest
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/2') 
+              i.fas.fa-search.me-3
+              | Search
           li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/2/history') History
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/2/history') 
+              i.fas.fa-history.me-3
+              | History
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse3', aria-controls='contents-collapse3') 
           i.fas.fa-image.me-3
           | Google Image
         ul.list-unstyled.collapse#contents-collapse3.pt-3(class=`${mode == 3 ? "show":"hide"}`)
           li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/3') Latest
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/3') 
+              i.fas.fa-search.me-3
+              | Search
           li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/3/history') History
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/3/history') 
+              i.fas.fa-history.me-3
+              | History
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse4', aria-controls='contents-collapse4') 
           i.fas.fa-mixcloud.me-3
           | Stable Diffusion
         ul.list-unstyled.collapse#contents-collapse4.pt-3(class=`${mode == 'stable-diffusion' ? "show":"hide"}`)
           li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/stable-diffusion') Generate
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/stable-diffusion') 
+              i.fas.fa-image.me-3
+              | Generate
           li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/stable-diffusion/gallery') Gallery  
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/stable-diffusion/gallery') 
+              i.fas.fa-images.me-3
+              | Gallery  
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse5', aria-controls='contents-collapse4') 
           i.fas.fa-comments.me-3

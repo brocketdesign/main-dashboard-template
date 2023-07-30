@@ -96,6 +96,7 @@ $(document).ready(function() {
     handleChat();
     handleCOmpare();
     handleCOmparePDF();
+    handleSwitchNSFW();
     feather.replace()
 });
 
@@ -423,7 +424,29 @@ const handleCOmparePDF = () => {
 
 }
 
+const handleSwitchNSFW= () => {
+    // Check if the local variable exists
+    var switchState = localStorage.getItem('handleSwitchNSFW');
 
+    // Initialize the switch based on the local variable
+    if (switchState !== null) {
+        $('#nsfw').prop('checked', switchState === 'true');
+    }
+
+    // Save the state of the switch to a local variable when it's toggled
+    $('#nsfw').change(function() {
+        localStorage.setItem('handleSwitchNSFW', $(this).is(':checked'));
+        console.log('NSFW: ',$(this).is(':checked'))
+        const nsfw = $(this).is(':checked')
+        $.ajax({
+            url: `/user/nsfw`,
+            type: 'POST',
+            data: {nsfw},
+            success: handleFormSuccess,
+            error: handleFormError
+        });
+    });
+}
 const handleCOmpare = () => {
     $('#compare').on('click', function(e) {
         e.preventDefault();

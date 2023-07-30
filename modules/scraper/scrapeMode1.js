@@ -1,62 +1,97 @@
 const puppeteer = require('puppeteer');
-const { ObjectId } = require('mongodb');
+const { ObjectId, GoogleApis } = require('mongodb');
 
-async function scrapeMode1(query,url) {
+const searchYoutube = async (query, url, mode, nsfw) => {
+  const { google } = require('googleapis');
 
-  try {
+  const youtube = google.youtube({
+    version: 'v3',
+    auth: process.env.FIREBASE_API_KEY
+  });
 
-    const browser = await puppeteer.launch({ 
-      headless: false ,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
-    });
-    
-    const page = await browser.newPage();
+  const response = await youtube.search.list({
+    part: 'snippet',
+    q: query,
+    maxResults: 10,
+  });
 
+  const result = response.data.items.map(item => {
+    const { title, thumbnails, description } = item.snippet;
+    const videoId = item.id.videoId;
+    const link = `https://www.youtube.com/watch?v=${videoId}`;
+    const thumb = item.snippet.thumbnails;
+    const imageUrl = thumb.high ? thumb.high.url : thumb.default.url;
+    const alt = title;
+    const currentPage = url;
 
-    await page.goto(url, { waitUntil: 'networkidle2' });
+    return { video_id: videoId, imageUrl, alt, link, currentPage, query, mode, nsfw };
+  });
 
-    // Extract the desired data using JavaScript executed within the page context
-    const scrapedData = await page.evaluate((url,query) => {
-      const data = [];
+  return result;
+}
+
+const scrapeWebsite = (query, mode, nsfw, url) => {
+  return new Promise(async (resolve, reject) => {
+    try {
       
-      // Example: Scraping image URLs, alt attributes, and hrefs
-      const items = Array.from(document.querySelectorAll('#container .video-list .video-item'));
-      items.forEach((item) => {
-        try {
-          const thumb = item.querySelector('.thumb');
-          const coverImg = thumb.querySelector('picture img.cover');
-          const link = thumb.getAttribute('href');
-          const video_id = item.getAttribute("data-id")
-          const imageUrl = coverImg ? coverImg.getAttribute('data-src') : '';
-          const alt = coverImg ? coverImg.getAttribute('alt') : '';
-          const currentPage = url;
+      if(url){
+        url = url.includes('http') ? url : `${process.env.DEFAULT_URL}/s/${url}/`;
+      }else{
+        url = process.env.DEFAULT_URL;
+      }
 
-          // Log the scraped data
-          console.log('Scraped Element:');
-          console.log('Video ID: ',video_id)
-          console.log('Image URL:', imageUrl);
-          console.log('Alt:', alt);
-          console.log('Link:', link);
-          console.log('------------------');
-
-          data.push({ video_id, imageUrl, alt, link });
-        } catch (error) {
-          console.log('Error occurred while scraping an element:', error);
-        }
+      const browser = await puppeteer.launch({
+        headless: false,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
       });
 
-      return data;
-    }, url,query);
-    
-    await browser.close();
+      const page = await browser.newPage();
+      await page.goto(url, { waitUntil: 'networkidle2' });
 
-    return scrapedData; 
+      const scrapedData = await page.evaluate((url, query, mode, nsfw) => {
+        const items = Array.from(document.querySelectorAll('#container .video-list .video-item'));
+        const data = items.map(item => {
+          try {
+            const thumb = item.querySelector('.thumb');
+            const coverImg = thumb.querySelector('picture img.cover');
+            const link = thumb.getAttribute('href');
+            const video_id = item.getAttribute("data-id");
+            const imageUrl = coverImg ? coverImg.getAttribute('data-src') : '';
+            const alt = coverImg ? coverImg.getAttribute('alt') : '';
+            const currentPage = url;
+  
+            return { video_id, imageUrl, alt, link ,currentPage, query, mode, nsfw };
+          } catch (error) {
+            console.log(error)
+          }
+        });
 
+        return data;
+      }, url, query, mode, nsfw);
+
+      await browser.close();
+
+      resolve(scrapedData);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+async function scrapeMode1(query, mode, nsfw, url) {
+  try {
+    if(nsfw == 'false'){
+      console.log('Operating a safe search');
+      return await searchYoutube(query, url, mode, nsfw);
+    }
+
+    console.log('Operating a NSFW search');
+    const data = await scrapeWebsite(query, mode, nsfw, url);
+    return data;
   } catch (error) {
     console.log('Error occurred while scraping and saving data:', error);
-    return []; // Return an empty array in case of an error
+    return [];
   }
-
 }
 
 module.exports = scrapeMode1;

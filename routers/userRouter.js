@@ -198,6 +198,18 @@ router.post('/resetpassword', async (req, res, next) => {
   }
 });
 
+router.post('/nsfw', async (req, res, next) => {
+  const { nsfw } = req.body;
+  try{
+    await global.db.collection('users').updateOne({_id: new ObjectId(req.user._id)},{$set:{nsfw}}) 
+    res.status(200).json({message:'NSFW sttatus updated'});
+  }catch(err){
+    console.log(err)
+    res.status(500).json({message:'NSFW sttatus updated failed'});
+  }
+
+});
+
 router.post('/signup', async (req, res, next) => {
   const { email, username, password } = req.body;
   console.log(`Signup request: ${JSON.stringify(req.body)}`);

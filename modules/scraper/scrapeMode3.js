@@ -3,27 +3,27 @@ var Scraper = require('images-scraper');
 const rp = require('request-promise-native');
 const { ObjectId } = require('mongodb');
 
-async function scrapeMode3(query,url) {
+async function scrapeMode3(query, mode, nsfw, url) {
 
   if(!query){
     return []
   }
-  
+  console.log('is it safe ?', !nsfw)
   const google = new Scraper({
     puppeteer: {
       headless: false,
     },
-    safe: false   // enable/disable safe search
+    safe: !nsfw   // enable/disable safe search
   });
- 
+
   try {
-    
+
     scrapedData = await google.scrape(query, 100);
 
     // Map each element to add the fields
     scrapedData = scrapedData.map((data) => ({
       ...data,
-      video_id: generateRandomID(8) 
+      video_id: generateRandomID(8)
     }));
     
     return scrapedData

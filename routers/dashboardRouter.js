@@ -74,12 +74,13 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
 
     console.log('Dashboard page requested');
     const { mode } = req.params; // Get the 'mode' parameter from the route URL
-    const { searchTerm } = req.query; // Get the search term from the query parameter
-
+    let { searchTerm, nsfw } = req.query; // Get the search term from the query parameter
+    nsfw = req.user.nsfw === 'true'?true:false
+    console.log({ searchTerm, nsfw } )
     // If 'mode' is not provided, use the mode from the session (default to '1')
     const currentMode = mode || req.session.mode || '1';
 
-    let scrapedData = await ManageScraper(searchTerm,mode,req.user);
+    let scrapedData = await ManageScraper(searchTerm,nsfw,mode,req.user);
 
     res.render(`app/${mode}`, { user: req.user, searchTerm, scrapedData, mode, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 });
