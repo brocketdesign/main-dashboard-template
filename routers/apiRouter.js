@@ -5,6 +5,7 @@ const getHighestQualityVideoURL = require("../modules/getHighestQualityVideoURL"
 const ensureAuthenticated = require('../middleware/authMiddleware');
 const {formatDateToDDMMYYHHMMSS} = require('../services/tools')
 const parsePDF = require('../modules/pdf-parse')
+const multer = require('multer');
 
 const axios = require('axios');
 const path = require('path');
@@ -62,7 +63,7 @@ const storage = multer.diskStorage({
     cb(null, process.env.UPLOAD_STORAGE_FOLDER);
   },
   filename: function (req, file, cb) {
-    cb(null, `${file.fieldname}-${req.user._id}-${formatDateToDDMMYYHHMMSS()}.jpg`);
+    cb(null, `${file.fieldname}-${req.user._id}-${formatDateToDDMMYYHHMMSS()}.pdf`);
   }
 });
 
@@ -78,17 +79,22 @@ router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }
   
   const openai = new OpenAIApi(configuration);
 
-  const { input1, input2, time } = req.body;
+  let { input1, input2, time } = req.body;
+  try{
+    if(req.files.pdf1 && req.files.pdf2){
+      input1 = await parsePDF(req.files.pdf1[0].path)
+      input2 = await parsePDF(req.files.pdf2[0].path)
+  }
 
-  if(req.files.pdf1 && req.files.pdf2){
-     input1 = await parsePDF(req.files.pdf1)
-     input2 = await parsePDF(req.files.pdf2)
+  }catch(e){
+    console.log('No PDF provided')
   }
 
   if(!input1 || !input2){
     res.status(500).send('Error with the input');
     return
   }
+
   console.log(`Generate response for:  ${input1} and ${input2}`)
 
   const messages = [

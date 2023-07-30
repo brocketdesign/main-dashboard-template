@@ -20,6 +20,7 @@
     "openai": "^3.3.0",
     "passport": "^0.6.0",
     "passport-local": "^1.0.0",
+    "pdf-parse": "^1.1.1",
     "pug": "^3.0.2",
     "puppeteer": "^20.9.0",
     "redgifs-dl": "github:losparviero/redgifs-dl",

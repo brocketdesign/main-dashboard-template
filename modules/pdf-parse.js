@@ -6,7 +6,7 @@ function pdfToText(filePath) {
         let dataBuffer = fs.readFileSync(filePath);
 
         pdfParse(dataBuffer).then(function(data) {
-            resolve(data.text);
+            resolve(data.text.substring(0,500));
         }).catch(function(error) {
             reject(error);
         });
