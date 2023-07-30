@@ -4,7 +4,7 @@ const router = express.Router();
 const getHighestQualityVideoURL = require("../modules/getHighestQualityVideoURL")
 const ensureAuthenticated = require('../middleware/authMiddleware');
 const {formatDateToDDMMYYHHMMSS} = require('../services/tools')
-const parsePDF = require('../modules/pdf-parse')
+const pdfToChunks = require('../modules/pdf-parse')
 const multer = require('multer');
 
 const axios = require('axios');
@@ -82,8 +82,8 @@ router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }
   let { input1, input2, time } = req.body;
   try{
     if(req.files.pdf1 && req.files.pdf2){
-      input1 = await parsePDF(req.files.pdf1[0].path)
-      input2 = await parsePDF(req.files.pdf2[0].path)
+      input1 = await pdfToChunks(req.files.pdf1[0].path)
+      input2 = await pdfToChunks(req.files.pdf2[0].path)
   }
 
   }catch(e){
