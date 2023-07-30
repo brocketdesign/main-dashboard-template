@@ -10,13 +10,17 @@ block content
             h1 Welcome #{user.username}!
             form(action=`/dashboard/app/${mode}`, method="GET")
               .input-group.mb-3
-                input(type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", aria-label="Search")
-                button(type="submit", class="btn btn-primary") Search
-            if uniqueCurrentPages
-              if uniqueCurrentPages.length
-                ul
-                  each page in uniqueCurrentPages
-                    li
-                      a(href=`/dashboard/app/${mode}/?searchTerm=${page}`)= page
-              else
-                p No unique pages found.
+                .input-group-prepend
+                  .form-check.form-switch.input-group-text
+                    label.form-check-label.badge.me-3.bg-danger(for="nsfw") NSFW
+                    input.form-check-input(type="checkbox", role="switch", id="nsfw", name="nsfw")
+                input(type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
+                button(type="submit", class="btn btn-primary", style="z-index: 1;") Search
+              if uniqueCurrentPages
+                if uniqueCurrentPages.length
+                  ul.list-group
+                    each page in uniqueCurrentPages
+                      li.list-group-item
+                        a(href=`/dashboard/app/${mode}/?searchTerm=${page}`)= page
+                else
+                  p No unique pages found.

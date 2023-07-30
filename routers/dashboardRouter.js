@@ -32,12 +32,19 @@ router.get('/app/openai/:app', ensureAuthenticated, ensureMembership, async (req
 // Stable diffusion 
 router.get('/app/stable-diffusion', ensureAuthenticated, ensureMembership, async (req, res) => {
 
-    // Retrieve categories from MongoDB
-    const categories = await global.db.collection('categories').find().toArray();
-    const models = await global.sdapi.getSdModels()
-
-    res.render('stable-diffusion-index', { user:req.user, categories,models,mode:'stable-diffusion', title:'Stable Diffusion' });
-});
+  try {
+      // Retrieve categories from MongoDB
+      const categories = await global.db.collection('categories').find().toArray();
+      const models = await global.sdapi.getSdModels()
+  
+      res.render('stable-diffusion-index', { user:req.user, categories,models,mode:'stable-diffusion', title:'Stable Diffusion' });
+  
+  } catch (error) {
+    console.log('error')
+    req.flash('error','Stable diffusion API is not ready')
+    res.redirect('/dashboard/app/stable-diffusion/gallery')
+  }
+  });
   
 router.get('/app/stable-diffusion/gallery', ensureAuthenticated,ensureMembership, async (req, res) => {
   try {
@@ -103,7 +110,7 @@ if (userInfo) {
   const scrapedData = userInfo.scrapedData || []; // Get the scrapedData array from userInfo
 
   // Filter the scrapedData array based on the 'mode'
-  const filteredData = scrapedData.filter(item => item.mode === mode);
+  const filteredData = scrapedData.filter(item => item.mode === mode && item.nsfw === req.user.nsfw);
 
   // Use Set to get unique 'currentPage' fields
   const uniqueCurrentPagesSet = new Set(filteredData.map(item => item.query ));

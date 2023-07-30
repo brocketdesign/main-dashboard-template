@@ -12,8 +12,8 @@ block content
               .input-group.mb-3
                 .input-group-prepend
                   .form-check.form-switch.input-group-text
+                    label.form-check-label.badge.me-3.bg-danger(for="nsfw") NSFW
                     input.form-check-input(type="checkbox", role="switch", id="nsfw", name="nsfw")
-                    label.form-check-label(for="nsfw")
                 input(type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
                 button(type="submit", class="btn btn-primary", style="z-index: 1;") Search
             if uniqueCurrentPages
