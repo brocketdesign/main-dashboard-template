@@ -47,32 +47,34 @@ async function ManageScraper(url,mode,user) {
     }
   }
 
-  if(!url.includes('http')){
-    url = `${process.env.DEFAULT_URL}/s/${url}/`
-  }
-    var scrapedData = await scrapeMode(query,url)
-    if(scrapedData.length == 0){
 
-      const userInfoEnd = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-      const userScrapedData = userInfoEnd.scrapedData 
-      const userScrapedDataWithCurrentPage = userScrapedData.filter(item => item.mode == mode).slice(0, 50);
-      console.log('userScrapedDataWithCurrentPage: ',userScrapedDataWithCurrentPage)
-      console.log(mode)
-      return userScrapedDataWithCurrentPage; // Return the scraped data array
-
-    }
-    // Map each element to add the fields
-    scrapedData = scrapedData.map((data) => ({
-      ...data,
-      currentPage: url,
-      query:query,
-      mode: mode,
-    }));
-          
     //console.log('scrapedData: ',scrapedData)
 
     try {
-    
+      
+      if(!url.includes('http')){
+        url = `${process.env.DEFAULT_URL}/s/${url}/`
+      }
+      
+      var scrapedData = await scrapeMode(query,url)
+      if(scrapedData.length == 0){
+  
+        const userInfoEnd = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+        const userScrapedData = userInfoEnd.scrapedData 
+        const userScrapedDataWithCurrentPage = userScrapedData.filter(item => item.mode == mode).slice(0, 50);
+        console.log('userScrapedDataWithCurrentPage: ',userScrapedDataWithCurrentPage)
+        console.log(mode)
+        return userScrapedDataWithCurrentPage; // Return the scraped data array
+  
+      }
+      // Map each element to add the fields
+      scrapedData = scrapedData.map((data) => ({
+        ...data,
+        currentPage: url,
+        query:query,
+        mode: mode,
+      }));
+            
       if (userInfo) {
         // Access the scrapedData object from the user document
         let userScrapedData = userInfo.scrapedData || []; // Initialize as an empty array if it doesn't exist yet

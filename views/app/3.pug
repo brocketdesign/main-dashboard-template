@@ -3,7 +3,7 @@ extends ../dashboard
 block dynamicContent
   .masonry-container.row
     each data in scrapedData.reverse()
-      .col-md-4.mb-4.masonry-item
+      .col-md-4.mb-4.masonry-item.carousel-item
         .card(class=`card-clickable-${mode}` data-id=data._id)
           img.card-img-top-3(src=data.url, alt=data.title, )
           .card-body
