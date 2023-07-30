@@ -14,6 +14,54 @@ The repository is structured as follows:
 - `routers`: Contains the application's routers for handling different types of requests.
 - `services`: Contains services used by the application, such as email and Firebase services.
 - `views`: Contains Pug templates for the application's views.
+- 
+## Functionalities
+
+This application provides a variety of functionalities, including:
+
+### OpenAI Chat API Integration
+
+The application can send prompts to the OpenAI API and receive responses. This functionality is used to compare text from two uploaded PDF files.
+
+### PDF Comparison
+
+Users can upload two PDF files, which are then converted to text and compared using the OpenAI API.
+
+### File Upload
+
+The application supports file uploads, which is used in the PDF comparison feature.
+
+### User Authentication
+
+The application includes middleware to ensure that users are authenticated.
+
+### Database Operations
+
+The application interacts with a MongoDB database to store and retrieve data related to users and their interactions with the OpenAI API.
+
+### Reddit Data Fetching
+
+The application can fetch data from Reddit based on subreddit and filter parameters.
+
+### Generative Image AI
+
+The application has routes for interacting with a generative image AI. This includes getting the current model, changing the model, and generating an image based on a prompt.
+
+### Video Download
+
+The application can download videos from provided URLs.
+
+### Form Submission
+
+The application supports form submissions and saves the form data to a MongoDB collection.
+
+### Video Fetching
+
+The application can fetch the highest quality video URL for a provided video ID.
+
+### WordPress Integration
+
+The application can post articles to a WordPress site.
 
 ## Setup
 
