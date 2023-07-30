@@ -1,17 +1,110 @@
 extends ../dashboard
 
 block dynamicContent
-  .masonry-container.row
+  .masonry-container.row.custom-carousel-container
     each data in scrapedData.reverse()
-      .col-md-4.mb-4.masonry-item.carousel-item
+      .col-md-4.mb-4.masonry-item.custom-carousel-item
         .card(class=`card-clickable-${mode}` data-id=data._id)
-          img.card-img-top-3(src=data.url, alt=data.title, )
+          img.card-img-top-3(type="button" src=data.url, alt=data.title, )
           .card-body
-            .d-flex.justify-content-between
-              .download-button(data-id=data.url)
+            .d-flex.justify-content-between.tool-bar
+              .download-button(type="button" data-id=data.url)
                 i.fas.fa-download
-              a(target="_blank" href=data.source)
+              a.source(target="_blank" href=data.source)
                 i.fas.fa-link
-              .info-button(data-id=data.url)
+              .info-button(type="button" data-id=data.url)
                 i.fas.fa-info
             p.card-title(style="display:none")= data.title
+  #slickModal.modal.fade(tabindex='-1')
+    .modal-dialog.modal-dialog-centered.modal-xl
+      .modal-content(style="background=#fff")
+        #slickCarousel.slick-carousel
+        #slickCarousel-tool-bar.position-absolute.d-flex.justify-content-between.p-3(style="z-index: 3;width:25%;")
+          #closeSlickModal(type="button")
+            i.fas.fa-times
+          .download-button(type="button")
+            i.fas.fa-download
+          a.source(target="_blank" href="#")
+              i.fas.fa-link
+  style.
+    #slickModal .modal-dialog {
+      max-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    #slickCarousel .slick-slide img {
+      height: 90vh;
+      object-fit: contain;
+    }
+    .slick-prev {
+    left: 0;
+    bottom: 0;
+    top: 0;
+    width: 50%;
+    opacity: 0;
+      position:absolute;
+      z-index: 2;
+    }
+    .slick-next {
+      right: 0;
+      bottom: 0;
+      top: 0;
+      width: 50%;
+      opacity: 0;
+      position:absolute;
+      z-index: 2;
+    }
+  script.
+    $(document).ready(function() {
+        const images = $('.custom-carousel-item').map(function() {
+          return {
+            img: $(this).find('img').attr('src'),
+            id: $(this).find('.download-button').attr('data-id'),
+            source: $(this).find('.source').attr('href')
+          };
+        }).get();
+       $('.custom-carousel-item img').on('click', function() {
+        var clickedImageIndex = images.findIndex(function(image) {
+          return image.img === $(this).attr('src');
+        }.bind(this));
+
+        $('#slickCarousel').empty();
+
+        for (var i = 0; i < images.length; i++) {
+          $('#slickCarousel').append('<div><img src="' + images[i].img + '" class="d-block w-100"></div>');
+        }
+
+        $('#slickCarousel').on('afterChange swipe', function(event, slick, currentSlide) {
+          const $buttonDownload = $('#slickCarousel-tool-bar').find('.download-button')
+          $buttonDownload.attr('data-id',images[currentSlide].id)
+          $('#slickCarousel-tool-bar').find('.source').attr('href',images[currentSlide].source)
+          $buttonDownload.removeClass('done text-primary')
+        });
+
+        $('#slickModal').on('shown.bs.modal', function () {
+          $('#slickCarousel').slick('slickGoTo', clickedImageIndex);
+        });
+
+        $('#slickCarousel').slick({
+          dots: false,
+          infinite: true,
+          speed: 300,
+          slidesToShow: 1,
+          adaptiveHeight: true
+        });
+
+
+        //$('#slickCarousel').slick('slickGoTo', clickedImageIndex);
+
+
+        $('#slickModal').modal('show');
+      });
+      $('#closeSlickModal').on('click', function() {
+        $('#slickModal').modal('hide');
+      });
+      $('#slickModal').on('hidden.bs.modal', function () {
+        $('#slickCarousel').slick('unslick');
+        $('#slickModal').off('shown.bs.modal');
+      });
+    });

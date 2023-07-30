@@ -329,7 +329,7 @@ const handleDownloadButton = () => {
         $spinner.remove();
 
         if(!$buttonContainer.find('i').length){
-          $buttonContainer.append(DLicon).css("color","green")
+          $buttonContainer.append(DLicon).addClass("text-primary")
         }
         console.log('Video download successful.');
         handleFormResult(true, 'Video Downloaded')         

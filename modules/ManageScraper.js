@@ -23,11 +23,11 @@ async function ManageScraper(url,mode,user) {
       if (userInfo) {
         // Access the scrapedData array from the user document
         let userScrapedData = userInfo.scrapedData || []; // Initialize as an empty array if it doesn't exist yet
-    
+
         // Filter the userScrapedData to get elements that have the currentPage field
         let userScrapedDataWithCurrentPage
         if(url){
-           userScrapedDataWithCurrentPage = userScrapedData.filter(item => item.currentPage === url && item.mode == mode);
+           userScrapedDataWithCurrentPage = userScrapedData.filter(item => (item.currentPage === url || item.query === url) && item.mode == mode);
         }else{
            userScrapedDataWithCurrentPage = userScrapedData.reverse().filter(item => item.mode == mode).slice(0,50);
         }
@@ -35,6 +35,7 @@ async function ManageScraper(url,mode,user) {
         if (userScrapedDataWithCurrentPage.length > 0) {
           // If there are elements with the currentPage field, return them
           console.log('Data has already been scraped today.');
+          console.log(userScrapedDataWithCurrentPage[0])
           return userScrapedDataWithCurrentPage;
         } else {
           console.log('No data scraped for the current page.');
@@ -51,30 +52,29 @@ async function ManageScraper(url,mode,user) {
     //console.log('scrapedData: ',scrapedData)
 
     try {
-      
-      if(!url.includes('http')){
-        url = `${process.env.DEFAULT_URL}/s/${url}/`
-      }
-      
-      var scrapedData = await scrapeMode(query,url)
-      if(scrapedData.length == 0){
-  
-        const userInfoEnd = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-        const userScrapedData = userInfoEnd.scrapedData 
-        const userScrapedDataWithCurrentPage = userScrapedData.filter(item => item.mode == mode).slice(0, 50);
-        console.log('userScrapedDataWithCurrentPage: ',userScrapedDataWithCurrentPage)
-        console.log(mode)
-        return userScrapedDataWithCurrentPage; // Return the scraped data array
-  
-      }
-      // Map each element to add the fields
-      scrapedData = scrapedData.map((data) => ({
-        ...data,
-        currentPage: url,
-        query:query,
-        mode: mode,
-      }));
-            
+        if(!url.includes('http')){
+      url = `${process.env.DEFAULT_URL}/s/${url}/`
+    }
+    
+    var scrapedData = await scrapeMode(query,url)
+    if(scrapedData.length == 0){
+
+      const userInfoEnd = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+      const userScrapedData = userInfoEnd.scrapedData 
+      const userScrapedDataWithCurrentPage = userScrapedData.filter(item => item.mode == mode).slice(0, 50);
+      console.log('userScrapedDataWithCurrentPage: ',userScrapedDataWithCurrentPage)
+      console.log(mode)
+      return userScrapedDataWithCurrentPage; // Return the scraped data array
+
+    }
+    // Map each element to add the fields
+    scrapedData = scrapedData.map((data) => ({
+      ...data,
+      currentPage: url,
+      query:query,
+      mode: mode,
+    }));
+          
       if (userInfo) {
         // Access the scrapedData object from the user document
         let userScrapedData = userInfo.scrapedData || []; // Initialize as an empty array if it doesn't exist yet
@@ -110,7 +110,7 @@ async function ManageScraper(url,mode,user) {
     const userScrapedData = userInfoEnd.scrapedData 
     const userScrapedDataWithCurrentPage = userScrapedData.filter(item => item.currentPage === url && item.mode == mode);
 
-    console.log('userScrapedDataWithCurrentPage: ',userScrapedDataWithCurrentPage)
+    console.log('userScrapedDataWithCurrentPage: ',userScrapedDataWithCurrentPage[0])
 
     return userScrapedDataWithCurrentPage; // Return the scraped data array
 }
