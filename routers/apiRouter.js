@@ -86,7 +86,7 @@ router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }
       input2 = await pdfToChunks(req.files.pdf2[0].path)
   }
 
-  }catch(e){
+}catch(e){
     console.log('No PDF provided')
   }
 
@@ -95,14 +95,14 @@ router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }
     return
   }
 
-  console.log(`Generate response for:  ${input1} and ${input2}`)
+  console.log(`Generate response for:  ${input1[0].length} and ${input2[0].length}`)
 
   const messages = [
     { role: 'system', content: 'You are a powerful assistant' },
-    { role: 'user', content: `Compare this "${input1}" to "${input2}". 
-    Respond with an array of objects that conain all the differences. An object by difference.
-    [{"input1":"","input2":"","difference":""}].
-    return only the JSON. no comments.` },
+    { role: 'user', content: `Compare this "${input1[0]}" to "${input2[0]}". 
+    Generate a summary of each PDF and compare the summaries. you should answer in the document language.
+    [{"input2":"","input2":"","difference":""}].
+    return only the JSON array.` },
   ];
 
   try {
