@@ -5,8 +5,12 @@ block dynamicContent
         each data in scrapedData.reverse()
             .col-md-4.mb-4
                 .card.card-clickable(data-id=data.video_id, data-isdl=(data.filePath?"true":"false"))
-                    img.card-img-top(src=data.imageUrl, alt=data.alt, style='object-fit: cover;')
-                    .card-body
+                    .card-top.py-2.px-3.position-absolute
+                        .d-flex.justify-content-between
+                            .delete-button.text-white(type="button" data-id=data.video_id)
+                                i.fas.fa-times
+                    img.card-img-top(src=data.imageUrl, data-id=data.video_id, alt=data.alt, style='object-fit: cover;')
+                    .card-body.py-1
                         .d-flex.justify-content-between
                             .download-button(data-id=data.video_id, style="display:none")
                                 i.fas.fa-download
@@ -14,4 +18,4 @@ block dynamicContent
                                 i.fas.fa-link
                             .info-button(data-id=data.url)
                                 i.fas.fa-info
-                        p.card-title(style="display:none")= data.alt
+                        p.card-title(style="display:none")= data.alt 

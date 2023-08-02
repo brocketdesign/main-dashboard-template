@@ -115,12 +115,12 @@ router.get('/subscription-payment-success', async (req, res) => {
     await global.db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
       { 
-        $set: { subscriptionId: subscriptionId, stripeCustomerID: subscription.customer  } 
+        $set: { subscription, subscriptionId, stripeCustomerID: subscription.customer  } 
       }
     );
   
 
-  res.render('subscription-payment-success', { subscription }); 
+  res.render('subscription-payment-success', { user:req.user, subscription }); 
 });
 
 router.get('/subscription-payment-error', (req, res) => {

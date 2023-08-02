@@ -3,7 +3,7 @@ const router = express.Router();
 
 const getHighestQualityVideoURL = require("../modules/getHighestQualityVideoURL")
 const ensureAuthenticated = require('../middleware/authMiddleware');
-const {formatDateToDDMMYYHHMMSS} = require('../services/tools')
+const {formatDateToDDMMYYHHMMSS,findElementIndex,saveData} = require('../services/tools')
 const pdfToChunks = require('../modules/pdf-parse')
 const multer = require('multer');
 
@@ -80,26 +80,32 @@ router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }
   const openai = new OpenAIApi(configuration);
 
   let { input1, input2, time } = req.body;
+  let isPDF = false
   try{
+
     if(req.files.pdf1 && req.files.pdf2){
+      isPDF = true
       input1 = await pdfToChunks(req.files.pdf1[0].path)
       input2 = await pdfToChunks(req.files.pdf2[0].path)
-  }
+    }
 
-}catch(e){
-    console.log('No PDF provided')
-  }
+  }catch(e){
+      console.log('No PDF provided')
+    }
 
   if(!input1 || !input2){
     res.status(500).send('Error with the input');
     return
   }
-
-  console.log(`Generate response for:  ${input1[0].length} and ${input2[0].length}`)
+  if(isPDF){
+    input1 = input1[0]
+    input2 = input2[0]
+  }
+  console.log(`Generate response for:  ${input1} and ${input2}`)
 
   const messages = [
     { role: 'system', content: 'You are a powerful assistant' },
-    { role: 'user', content: `Compare this "${input1[0]}" to "${input2[0]}". 
+    { role: 'user', content: `Compare this "${input1}" to "${input2}". 
     Generate a summary of each PDF and compare the summaries. you should answer in the document language.
     [{"input2":"","input2":"","difference":""}].
     return only the JSON array.` },
@@ -121,7 +127,6 @@ router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }
     res.status(500).send('Internal server error');
   }
 });
-
 
 
 const generateJson = async (messages,openai) => {
@@ -230,7 +235,12 @@ router.post('/dl', async (req, res) => {
       return;
     }
 
-    console.log('Downloading video from URL:', url);
+    if(!url.includes('http')){
+      res.status(200).json({ message: 'File already downloaded.' });
+      return
+    }
+    
+    console.log('Downloading from URL:', url);
 
     const response = await axios.get(url, { responseType: 'stream', maxContentLength: 10 * 1024 * 1024 });
     console.log('Received response for URL:', url);
@@ -284,7 +294,6 @@ router.post('/dl', async (req, res) => {
       }else{
         console.log('Element not founded')
       }
-
 
       // Send a success status response after the file is downloaded
       res.status(200).json({ message: 'File downloaded successfully.' });
@@ -409,6 +418,21 @@ router.post('/image', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Error generating image');
+  }
+});
+
+router.post('/hide', async (req, res) => {
+  const element_id = req.body.id;
+  try {
+    const statusUpdate = await saveData(req.user, element_id, {hide:true})
+    if(!statusUpdate){
+      res.status(500).json({ message:'An error occured' });
+      return
+    }
+    res.status(200).json({ message:'This element wont be displayed anymore' });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message:'An error occured' });
   }
 });
 

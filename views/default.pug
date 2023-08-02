@@ -39,16 +39,16 @@ html
                   a.nav-link(href='/user/login') Login
       #back-alert.alert-container.container.position-relative(style="cursor:pointer")
         if messages.error
-          .alert.alert-danger.position-absolute.top-0.start-50.translate-middle-x.mt-3.border.border-danger.shadow(style="z-index: 1;")
+          .alert.alert-danger.position-absolute.top-0.border.border-danger.shadow(style="z-index: 1;")
             each msg in messages.error
               span #{msg}
         if messages.info
-          .alert.alert-info.position-absolute.top-0.start-50.translate-middle-x.mt-3.border.border-primary.shadow(style="z-index: 1;")
+          .alert.alert-info.position-absolute.top-0.border.border-primary.shadow(style="z-index: 1;")
             each msg in messages.info
               span #{msg}
       #front-alert.alert-container.container.position-relative(style="cursor:pointer;")
-          .alert.alert-danger.position-absolute.top-0.start-50.translate-middle-x.mt-3.border.border-danger.shadow(style="z-index: 1;display:none")
-          .alert.alert-info.alert-success.position-absolute.top-0.start-50.translate-middle-x.mt-3.border.border-primary.shadow(style="z-index: 1;display:none")
+          .alert.alert-danger.position-absolute.top-0.border.border-danger.shadow(style="z-index: 1;display:none")
+          .alert.alert-info.alert-success.position-absolute.top-0.border.border-primary.shadow(style="z-index: 1;display:none")
     block content
     script(src='https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js')
     script(src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.js")

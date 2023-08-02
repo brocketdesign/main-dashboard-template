@@ -18,9 +18,7 @@ const previewImage = (imageInput, imagePreview) => {
 const inputTrigger = (inputElement, triggerElement) => {
     triggerElement.addEventListener('click', () => inputElement.click());
 }
-
-// Masonry setup
-$(window).on('load', function() {
+const handleMasonry = () => {
     if(document.querySelector('.masonry-container')){
         new Masonry('.masonry-container', {
             itemSelector: '.masonry-item',
@@ -28,6 +26,10 @@ $(window).on('load', function() {
             percentPosition: true
         });
     }
+}
+// Masonry setup
+$(window).on('load', function() {
+    handleMasonry()
 });
 
 $(document).ready(function() {
@@ -87,8 +89,26 @@ $(document).ready(function() {
     // Other event listeners
     $(document).on('click', '.alert-container', function() { $(this).fadeOut();  });
     $(".card.pricing").hover(() => $(this).addClass('border-primary'), () => $(this).removeClass('border-primary'));
-    
-    // Card Clickable
+    $('.delete-button').click(function() {  handleHiding($(this).data('id'))  });
+    $('.card img').on('error', function() { 
+        var videoId = $(this).data('id');
+        console.log('Image load error for: ',videoId)
+        handleHiding(videoId); 
+        handleMasonry()
+    });
+    $('.card img').on('load', function() { 
+        handleMasonry()
+    });
+    $(".card").on('mouseenter', function(){
+        $(this).find('.hover').show();
+    });
+
+    $(".card").on('mouseleave', function(){
+        $(this).find('.hover').hide();
+    });
+
+    $('input#searchTerm').on('change',function(){$('#page').val(1)})
+
     handleScrollDownButton();
     handleCardClickable();
     handleDownloadButton();
@@ -97,6 +117,8 @@ $(document).ready(function() {
     handleCOmpare();
     handleCOmparePDF();
     handleSwitchNSFW();
+    handleGridRange();
+    handleLoadMore();
     feather.replace()
 });
 
@@ -204,22 +226,28 @@ const handleFormSuccess = response => {
 }
 
 const handleFormError = (jqXHR, textStatus, errorThrown) => {
+    console.log('An unexpected error occurred.')
     handleFormResult(false, 'An unexpected error occurred.');
 }
 
 const handleFormResult = (isSuccess, message) => {
     let btnColor = isSuccess ? 'success' : 'danger';
     let btnSelector = `button[type="submit"]`;
+
     $(btnSelector).removeClass('btn-primary').addClass(`btn-${btnColor}`);
-    // Stop any ongoing animations and hide the alert
-    $("#front-alert .alert-"+btnColor).stop().hide();
+
+    // Stop any ongoing animations and hide all alerts
+    $("#front-alert .alert-success").stop().hide();
+    $("#front-alert .alert-danger").stop().hide();
+
     $("#front-alert .alert-"+btnColor).text(message).fadeIn().delay(5000).fadeOut();
+
     setTimeout(() => $(btnSelector).removeClass(`btn-${btnColor}`).addClass('btn-primary'), 5000);
 }
 
 // Handling of card clicking
 const handleCardClickable = () => {
-  $('.card-clickable img').click(function() {
+  $('.card-clickable-1 img').click(function() {
     const $thisCard = $(this).parent()
     var id = $thisCard.data('id');
     var isdl = $thisCard.data('isdl');
@@ -238,10 +266,10 @@ const handleCardClickable = () => {
 
       // Check if the spinner is already present, if not, create and append it to the card
       if (!$thisCard.find('.spinner-border').length) {
-          var $spinner = $('<div>').addClass('spinner-border position-absolute text-white').css({inset:"0px", margin:"25% auto"}).attr('role', 'status');
+          var $spinner = $('<div>').addClass('spinner-border position-absolute text-white').css({inset:"0px", margin:"20% auto"}).attr('role', 'status');
           var $span = $('<span>').addClass('visually-hidden').text('Loading...');
           $spinner.append($span);
-          $thisCard.find('.card-body').append($spinner);
+          $thisCard.find('.card-body-over').append($spinner);
       }
 
       // Show the spinner while the download is in progress
@@ -262,7 +290,11 @@ const handleCardClickable = () => {
                   autoplay: false,
                   controls: true,
                   width: "100%"
-              });
+              }).on('loadeddata', function() {
+                // Code to be executed when the video is ready to play
+                console.log('Video ready to play');
+                handleMasonry()
+            });;
 
               console.log('Video element created:', $video);
               $thisCard.find('.card-img-top').remove()
@@ -277,7 +309,7 @@ const handleCardClickable = () => {
                 $downloadButton.show()
                 console.log('Download button added to card body.');
             }
-
+                
               // Hide the spinner
               $spinner.hide();
           } else {
@@ -435,6 +467,7 @@ const handleSwitchNSFW= () => {
 
     // Save the state of the switch to a local variable when it's toggled
     $('#nsfw').change(function() {
+        $('input#searchTerm').val('')
         localStorage.setItem('handleSwitchNSFW', $(this).is(':checked'));
         console.log('NSFW: ',$(this).is(':checked'))
         const nsfw = $(this).is(':checked')
@@ -442,13 +475,17 @@ const handleSwitchNSFW= () => {
             url: `/user/nsfw`,
             type: 'POST',
             data: {nsfw},
-            success: handleFormSuccess,
+            success: (response) => {
+                //handleFormResult(true, response.message);
+                location.href = location.origin + location.pathname;
+
+            },
             error: handleFormError
         });
     });
 }
 const handleCOmpare = () => {
-    $('#compare').on('click', function(e) {
+    $('#compare').on('submit', function(e) {
         e.preventDefault();
 
         const $this = $(this).find('button[type="submit"]');
@@ -587,3 +624,102 @@ const handleCOmpare = () => {
         });
     });
  }
+const handleHiding = (videoId) => {
+    let $container = $(`.card[data-id=${videoId}]`)
+    $.ajax({
+        url: '/api/hide',
+        method: 'POST',
+        data: { id: videoId },
+        success: function(response) {
+            $container.remove()
+            handleMasonry()
+            handleFormResult(true,response.message)
+            // Handle the success response
+            console.log(response);
+            },
+        error: handleFormError
+    });
+
+}
+
+
+function updategridlayout(value) {
+    // Function implementation goes here
+    // This function will be called when the range input is changed
+    // You can update the grid layout or perform any other actions based on the 'value'
+  
+    // Remove any existing col- classes from grid items
+    $('.grid-item').removeClass(function (index, className) {
+      return (className.match(/(^|\s)col-\S+/g) || []).join(' ');
+    });
+  
+    // Calculate the column width class based on the range value
+    const colClass = `col-${12 / value}`;
+  
+    // Add the new col- class to each grid item
+    $('.grid-item').addClass(colClass);
+    handleMasonry()
+  }
+  
+  
+  const handleGridRange = () => {
+    // Check if the local variable exists
+    var rangeState = localStorage.getItem('rangeState');
+  
+    // Initialize the range input based on the local variable
+    if (rangeState !== null) {
+      $('#grid-range').val(rangeState);
+      updategridlayout(rangeState)
+    }
+  
+    // Save the state of the range input to local storage when it's toggled
+    $('#grid-range').change(function() {
+      const value = $(this).val();
+      localStorage.setItem('rangeState', value);
+      updategridlayout(value); // Call the function to update the grid layout with the new value
+    });
+  };
+  
+  const handleLoadMore = () => {
+    const currentPage = $('#page').val()
+    if(currentPage==1){
+        $('.load-more-previous').remove()
+    }
+    $('.load-more').on('click', function(){
+        let nextPage
+        if($(this).hasClass('load-more-next')){
+            nextPage = parseInt(currentPage) + 1
+        }else{
+            nextPage = parseInt(currentPage) - 1
+            nextPage < 0 ? 1 : nextPage
+        }
+        const currentPageQueries = getCurrentPageQueries();
+        let query = currentPageQueries.searchTerm || null 
+
+        console.log({currentPage,nextPage,query})
+
+        $('#page').val(nextPage)
+        $('input#searchTerm').val(query)
+        setTimeout(() => {
+            $('form#search').submit()
+        }, 1000);
+    })
+  }
+
+  function getCurrentPageQueries() {
+  // Get the URL parameters
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+
+  // Create an empty object to store the queries
+  const queries = {};
+
+  // Loop through each query parameter and add it to the object
+  for (const [key, value] of urlParams) {
+    queries[key] = value;
+  }
+
+  // Return the queries object
+  return queries;
+}
+

@@ -81,15 +81,18 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
 
     console.log('Dashboard page requested');
     const { mode } = req.params; // Get the 'mode' parameter from the route URL
-    let { searchTerm, nsfw } = req.query; // Get the search term from the query parameter
+    let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
     nsfw = req.user.nsfw === 'true'?true:false
-    console.log({ searchTerm, nsfw } )
+    console.log({ searchTerm, nsfw, page } )
+    page = parseInt(page) || 1
+    console.log({ searchTerm, nsfw, page } )
+
     // If 'mode' is not provided, use the mode from the session (default to '1')
     const currentMode = mode || req.session.mode || '1';
 
-    let scrapedData = await ManageScraper(searchTerm,nsfw,mode,req.user);
+    let scrapedData = await ManageScraper(searchTerm,nsfw,mode,req.user, page);
 
-    res.render(`app/${mode}`, { user: req.user, searchTerm, scrapedData, mode, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+    res.render(`search`, { user: req.user, searchTerm, scrapedData, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 });
 
 // Route for handling '/dashboard/:mode'
@@ -108,9 +111,9 @@ const userInfo = await global.db.collection('users').findOne({ _id: userId });
 
 if (userInfo) {
   const scrapedData = userInfo.scrapedData || []; // Get the scrapedData array from userInfo
-
+  const nsfw = req.user.nsfw === 'true'
   // Filter the scrapedData array based on the 'mode'
-  const filteredData = scrapedData.filter(item => item.mode === mode && item.nsfw === req.user.nsfw);
+  const filteredData = scrapedData.filter(item => item.mode === mode && item.nsfw === nsfw);
 
   // Use Set to get unique 'currentPage' fields
   const uniqueCurrentPagesSet = new Set(filteredData.map(item => item.query ));

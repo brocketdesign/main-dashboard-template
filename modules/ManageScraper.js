@@ -21,46 +21,55 @@ async function findAndUpdateUser(userId, newScrapedData = null) {
 }
 
 // Helper function to get user's scraped data based on criteria
-function getUserScrapedData(user, url, mode, nsfw) {
+function getUserScrapedData(user, url, mode, nsfw, page) {
   let userScrapedData = user.scrapedData || [];
   let userScrapedDataWithCurrentPage;
 
   if(url){
-    console.log({url,mode,nsfw})
     userScrapedDataWithCurrentPage = userScrapedData.filter(item => 
-       item.query == url && item.mode == mode && item.nsfw == nsfw);
+       item.query == url && item.mode == mode && item.nsfw == nsfw && !item.hide && item.page == page );
   }else{
-    console.log(nsfw);
     userScrapedDataWithCurrentPage = userScrapedData.reverse().filter(item => 
-      item.mode == mode && item.nsfw == nsfw).slice(0,50);
+      item.mode == mode && item.nsfw == nsfw && !item.hide && item.page == page );
   }
 
-  return userScrapedDataWithCurrentPage;
+  return userScrapedDataWithCurrentPage.slice(0,50);
 }
 
-async function ManageScraper(url, nsfw, mode, user) {
+async function ManageScraper(url, nsfw, mode, user, page) {
   const scrapeMode = require(`./scraper/scrapeMode${mode}`);
   const userId = new ObjectId(user._id);
   const currentTime = new Date().getTime();
 
   const userInfo = await findAndUpdateUser(userId);
   const existingData = userInfo.scrapInfo?.url; 
-  const existingDataTime = Number(existingData);
+  const existingDataTime = Number(existingData.time);
   const moreThan24h = !!(currentTime - existingDataTime > 24*60*60*1000);
-  
-  if(!url || !moreThan24h) {
-    const userScrapedDataWithCurrentPage = getUserScrapedData(userInfo, url, mode, nsfw);
 
-    if (userScrapedDataWithCurrentPage.length > 0) {
-      console.log('Data has already been scraped today.');
-      console.log(userScrapedDataWithCurrentPage[0]);
-      return userScrapedDataWithCurrentPage;
-    } else {
-      console.log('No data scraped for the current page.');
+  let currentPage = 1
+  if(user.scrapInfo){
+    try{
+      currentPage = user.scrapInfo[url].page
+    }catch(err){
+      console.log('NO page data founded')
     }
   }
 
-  var scrapedData = await scrapeMode(url, mode, nsfw, url);
+if (page <= currentPage) {
+    if(!url || !moreThan24h) {
+      const userScrapedDataWithCurrentPage = getUserScrapedData(userInfo, url, mode, nsfw, page);
+  
+      if (userScrapedDataWithCurrentPage.length > 0) {
+        console.log('Data has already been scraped today.');
+        console.log(userScrapedDataWithCurrentPage[0]);
+        return userScrapedDataWithCurrentPage;
+      } else {
+        console.log('No data scraped for the current page.');
+      }
+    }
+}
+
+  var scrapedData = await scrapeMode(url, mode, nsfw, url, page);
 
   if(scrapedData.length == 0) {
     const userScrapedDataWithCurrentPage = getUserScrapedData(userInfo, url, mode, nsfw).slice(0, 50);
@@ -74,6 +83,7 @@ async function ManageScraper(url, nsfw, mode, user) {
     query: url,
     mode: mode,
     nsfw: nsfw,
+    page: page
   }));
 
   await findAndUpdateUser(userId, scrapedData);
@@ -81,13 +91,13 @@ async function ManageScraper(url, nsfw, mode, user) {
 
   await global.db.collection('users').updateOne(
     { _id: new ObjectId(userId) },
-    { $set: { 'scrapInfo.url': currentTime } },
+    { $set: { ['scrapInfo.' + url]: {time:currentTime, page:page >= currentPage?page:currentPage} } }, // Concatenate 'scrapInfo.' with your variable
     { upsert: true }
   );
   // Retrieve updated user info from the database
   const updatedUserInfo = await findAndUpdateUser(userId);
   // Pass updated user info to the function
-  const userScrapedDataWithCurrentPage = getUserScrapedData(updatedUserInfo, url, mode, nsfw);
+  const userScrapedDataWithCurrentPage = getUserScrapedData(updatedUserInfo, url, mode, nsfw, page);
   
   console.log('x userScrapedDataWithCurrentPage: ', userScrapedDataWithCurrentPage[0]);
 

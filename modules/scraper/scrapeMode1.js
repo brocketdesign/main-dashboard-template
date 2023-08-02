@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
 const { ObjectId, GoogleApis } = require('mongodb');
 
-const searchYoutube = async (query, url, mode, nsfw) => {
+const searchYoutube = async (query, url, mode, nsfw, page) => {
   const { google } = require('googleapis');
 
   const youtube = google.youtube({
@@ -12,7 +12,7 @@ const searchYoutube = async (query, url, mode, nsfw) => {
   const response = await youtube.search.list({
     part: 'snippet',
     q: query,
-    maxResults: 10,
+    maxResults: 30,
   });
 
   const result = response.data.items.map(item => {
@@ -30,12 +30,12 @@ const searchYoutube = async (query, url, mode, nsfw) => {
   return result;
 }
 
-const scrapeWebsite = (query, mode, nsfw, url) => {
+const scrapeWebsite = (query, mode, nsfw, url, page) => {
   return new Promise(async (resolve, reject) => {
     try {
       
       if(url){
-        url = url.includes('http') ? url : `${process.env.DEFAULT_URL}/s/${url}/`;
+        url = url.includes('http') ? url : `${process.env.DEFAULT_URL}/s/${url}/${}/?o=all`;
       }else{
         url = process.env.DEFAULT_URL;
       }
@@ -78,15 +78,14 @@ const scrapeWebsite = (query, mode, nsfw, url) => {
   });
 }
 
-async function scrapeMode1(query, mode, nsfw, url) {
+async function scrapeMode1(query, mode, nsfw, url, page) {
   try {
-    if(nsfw == 'false'){
+    if(!nsfw){
       console.log('Operating a safe search');
-      return await searchYoutube(query, url, mode, nsfw);
+      return await searchYoutube(query, url, mode, nsfw, page);
     }
-
     console.log('Operating a NSFW search');
-    const data = await scrapeWebsite(query, mode, nsfw, url);
+    const data = await scrapeWebsite(query, mode, nsfw, url, page);
     return data;
   } catch (error) {
     console.log('Error occurred while scraping and saving data:', error);

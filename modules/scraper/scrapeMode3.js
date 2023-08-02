@@ -3,22 +3,18 @@ var Scraper = require('images-scraper');
 const rp = require('request-promise-native');
 const { ObjectId } = require('mongodb');
 
-async function scrapeMode3(query, mode, nsfw, url) {
-
-  if(!query){
-    return []
-  }
-  console.log('is it safe ?', !nsfw)
-  const google = new Scraper({
-    puppeteer: {
-      headless: false,
-    },
-    safe: !nsfw   // enable/disable safe search
-  });
+async function searchGoogleImage(query, mode, nsfw, url) {
 
   try {
 
-    scrapedData = await google.scrape(query, 100);
+    const google = new Scraper({
+      puppeteer: {
+        headless: false,
+      },
+      safe: true   // enable/disable safe search
+    });
+
+    let scrapedData = await google.scrape(query, 100);
 
     // Map each element to add the fields
     scrapedData = scrapedData.map((data) => ({
@@ -33,6 +29,37 @@ async function scrapeMode3(query, mode, nsfw, url) {
     return []; // Return an empty array in case of an error
   }
 
+}
+async function searchPorn(query, mode, nsfw, url, page) {
+
+  const Pornsearch = require('pornsearch')
+  const Searcher = new Pornsearch(query, driver = 'pornhub');
+  
+  let scrapedData = await Searcher.gifs(page)
+  scrapedData = scrapedData.map((data) => ({
+    ...data,
+    video_id: generateRandomID(8)
+  }));
+
+  return scrapedData
+}
+
+async function scrapeMode3(query, mode, nsfw, url, page) {
+  try {
+    if(!query){
+      return []
+    }
+    if(!nsfw){
+      console.log('Operating a safe search');
+      return await searchGoogleImage(query, mode, nsfw, url, page);
+    }
+    console.log('Operating a NSFW search');
+    const data = await searchPorn(query, mode, nsfw, url, page);
+    return data;
+  } catch (error) {
+    console.log('Error occurred while scraping and saving data:', error);
+    return [];
+  }
 }
 function generateRandomID(length) {
   const digits = '0123456789';
