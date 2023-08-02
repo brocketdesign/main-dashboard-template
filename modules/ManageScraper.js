@@ -29,7 +29,7 @@ function getUserScrapedData(user, url, mode, nsfw, page) {
     userScrapedDataWithCurrentPage = userScrapedData.filter(item => 
        item.query == url && item.mode == mode && item.nsfw == nsfw && !item.hide && item.page == page );
   }else{
-    userScrapedDataWithCurrentPage = userScrapedData.reverse().filter(item => 
+    userScrapedDataWithCurrentPage = userScrapedData.filter(item => 
       item.mode == mode && item.nsfw == nsfw && !item.hide && item.page == page );
   }
 
@@ -88,7 +88,7 @@ if (page <= currentPage) {
 
   await findAndUpdateUser(userId, scrapedData);
   console.log('Scraped data saved.');
-
+  url = url ? url : process.env.DEFAULT_URL
   await global.db.collection('users').updateOne(
     { _id: new ObjectId(userId) },
     { $set: { ['scrapInfo.' + url]: {time:currentTime, page:page >= currentPage?page:currentPage} } }, // Concatenate 'scrapInfo.' with your variable

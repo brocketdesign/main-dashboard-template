@@ -35,7 +35,7 @@ const scrapeWebsite = (query, mode, nsfw, url, page) => {
     try {
       
       if(url){
-        url = url.includes('http') ? url : `${process.env.DEFAULT_URL}/s/${url}/${}/?o=all`;
+        url = url.includes('http') ? url : `${process.env.DEFAULT_URL}/s/${url}/${page}/?o=all`;
       }else{
         url = process.env.DEFAULT_URL;
       }

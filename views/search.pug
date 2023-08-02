@@ -5,24 +5,27 @@ block dynamicContent
   div.range
     input.form-range(type="range" id="grid-range" min="1" max="4" value="3")
   .masonry-container.row.custom-carousel-container
-    each data in scrapedData
-      .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode, data-id=data.video_id, data-isdl=(data.filePath?"true":"false"))
-        .card(class=`card-clickable-${mode}`, data-id=data.video_id)
-          .card-top.py-2.px-3.position-absolute
-            .d-flex.justify-content-between
-                .delete-button.text-white.hover.shadow(type="button" data-id=data.video_id style="display:none")
-                    i.fas.fa-trash-alt
-          img.card-img-top(type="button", data-id=data.video_id, src=data.url || data.imageUrl, alt=data.title, )
-          .card-body-over.py-1.w-100.position-absolute
-          .card-body.py-1.w-100.position-absolute.hover(style="bottom: 0;background-color: #00000082;display:none")
-            .d-flex.justify-content-between.tool-bar
-              .download-button.text-white(type="button", data-id=(mode==1?data.video_id:data.url))
-                i.fas.fa-download
-              a.source.text-white(target="_blank" href=data.source||data.link||data.webm||data.url)
-                i.fas.fa-link
-              .info-button.text-white(type="button" data-id=data.url)
-                i.fas.fa-info
-            p.card-title.text-white(style="display:none")= data.title
+    if scrapedData.length > 0 
+      each data in scrapedData.reverse()
+        .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode, data-id=data.video_id, data-isdl=(data.filePath?"true":"false"))
+          .card(class=`card-clickable-${mode}`, data-id=data.video_id)
+            .card-top.py-2.px-3.position-absolute
+              .d-flex.justify-content-between
+                  .delete-button.text-white.hover.shadow(type="button" data-id=data.video_id style="display:none")
+                      i.fas.fa-trash-alt
+            img.card-img-top(type="button", data-id=data.video_id, src=data.url || data.imageUrl, alt=data.title, )
+            .card-body-over.py-1.w-100.position-absolute
+            .card-body.py-1.w-100.position-absolute.hover(style="bottom: 0;background-color: #00000082;display:none")
+              .d-flex.justify-content-between.tool-bar
+                .download-button.text-white(type="button", data-id=(mode==1?data.video_id:data.url))
+                  i.fas.fa-download
+                a.source.text-white(target="_blank" href=data.source||data.link||data.webm||data.url)
+                  i.fas.fa-link
+                .info-button.text-white(type="button" data-id=data.url)
+                  i.fas.fa-info
+              p.card-title.text-white(style="display:none")= data.title
+    else
+      p Nothing here !
   .d-flex.justify-content-center.w-100.p-3
     button.btn.bg-outline-dark.border.load-more.load-more-previous(type="button")
       i.fas.fa-angle-left.me-3
