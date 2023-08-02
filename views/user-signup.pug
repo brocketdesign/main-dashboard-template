@@ -6,21 +6,21 @@ block content
       .col
         .card.shadow
           .card-body
-            h1.card-title.text-center Signup
+            h1.card-title.text-center 新規登録
             if error
               .border-rounded.px-3.py-2   
                 p=error
             form(action='/user/signup', method='POST')
               .mb-3
-                label(for='email', class='form-label') Email:
+                label(for='email', class='form-label') メールアドレス:
                 input(type='text', name='email', id='email', class='form-control')
               .mb-3
-                label(for='username', class='form-label') Username:
+                label(for='username', class='form-label') ユーザー名:
                 input(type='text', name='username', id='username', class='form-control')
               .mb-3
-                label(for='password', class='form-label') Password:
+                label(for='password', class='form-label') パスワード:
                 input(type='password', name='password', id='password', class='form-control')
-              button(type='submit', class='btn btn-primary btn-block') Signup
+              button(type='submit', class='btn btn-primary btn-block') 新規登録
             p.card-text.text-center.mt-3
-              | Already have an account? 
-              a(href='/user/login') Login
+              | 既にアカウントをお持ちですか？ 
+              a(href='/user/login') ログイン

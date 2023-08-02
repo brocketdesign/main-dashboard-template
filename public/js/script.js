@@ -50,7 +50,7 @@ $(document).ready(function() {
         console.log(formData);
 
         if (!checkFormChange(initialFormData, formData)) {
-            alert('No changes have been made to the form.');
+            alert('フォームに変更はありません。');
             return
         }
 
@@ -155,17 +155,17 @@ const validatePasswordFields = async formData => {
 
     if (oldPassword) {
         if (!await isOldPasswordCorrect(oldPassword)) {
-            return 'Old password is incorrect';
+            return '古いパスワードが正しくありません';
         }
     }
 
     if (newPassword && newPasswordVerification) {
         if (!areNewPasswordsSame(newPassword, newPasswordVerification)) {
-            return 'New password and password verification do not match';
+            return '新しいパスワードとパスワードの確認が一致しません';
         }
     } else if (newPassword || newPasswordVerification) {
         // Only check if both fields are filled if one of them is filled
-        return 'Please fill out all password fields';
+        return 'すべてのパスワードフィールドを入力してください';
     }
 
     return null; // Return null if there's no error
@@ -226,8 +226,8 @@ const handleFormSuccess = response => {
 }
 
 const handleFormError = (jqXHR, textStatus, errorThrown) => {
-    console.log('An unexpected error occurred.')
-    handleFormResult(false, 'An unexpected error occurred.');
+    console.log('予期せぬエラーが発生しました。')
+    handleFormResult(false, '予期せぬエラーが発生しました。');
 }
 
 const handleFormResult = (isSuccess, message) => {
@@ -267,7 +267,7 @@ const handleCardClickable = () => {
       // Check if the spinner is already present, if not, create and append it to the card
       if (!$thisCard.find('.spinner-border').length) {
           var $spinner = $('<div>').addClass('spinner-border position-absolute text-white').css({inset:"0px", margin:"20% auto"}).attr('role', 'status');
-          var $span = $('<span>').addClass('visually-hidden').text('Loading...');
+          var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
           $spinner.append($span);
           $thisCard.find('.card-body-over').append($spinner);
       }
@@ -332,7 +332,7 @@ const handleDownloadButton = () => {
 
       // Check if the card has already been processed
       if ($buttonContainer.hasClass('done')) {
-        handleFormResult(false, 'Video has already been Downloaded') 
+        handleFormResult(false, '既にダウンロードされています') 
           console.log('Card has already been processed.');
           return;
       }
@@ -346,7 +346,7 @@ const handleDownloadButton = () => {
       // Check if the spinner is already present, if not, create and append it to the card
       if (!$(this).find('.spinner-border').length) {
           var $spinner = $('<div>').addClass('spinner-border spinner-border-sm text-dark').attr('role', 'status');
-          var $span = $('<span>').addClass('visually-hidden').text('Loading...');
+          var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
           $spinner.append($span);
           $(this).prepend($spinner);
       }
@@ -365,7 +365,7 @@ const handleDownloadButton = () => {
           $buttonContainer.append(DLicon).addClass("text-primary")
         }
         console.log('Video download successful.');
-        handleFormResult(true, 'Video Downloaded')         
+        handleFormResult(true, 'ビデオがダウンロードされました')         
         // Hide the spinner when the download finishes
         $spinner.hide();
       }).fail(function() {
@@ -416,9 +416,9 @@ const handleCOmparePDF = () => {
                 // Create table header
                 let thead = $('<thead>').addClass('black white-text');
                 let headerRow = $('<tr>');
-                headerRow.append($('<th>').text('Input 1'));
-                headerRow.append($('<th>').text('Input 2'));
-                headerRow.append($('<th>').text('Difference'));
+                headerRow.append($('<th>').text('入力1'));
+                headerRow.append($('<th>').text('入力2'));
+                headerRow.append($('<th>').text('差分'));
                 thead.append(headerRow);
                 table.append(thead);
 
@@ -441,13 +441,13 @@ const handleCOmparePDF = () => {
             },
             error: function(error) {
                 console.error(error);
-                handleFormResult(false, 'Error in comparaison') 
+                handleFormResult(false, '比較中にエラーが発生しました') 
                 $this.find('.spinner-border').remove(); // remove spinner
                 $this.find('i').show(); // show plane icon
             },
             finally: function(error) {
                 console.error(error);
-                handleFormResult(false, 'Error in comparaison') 
+                handleFormResult(false, '比較中にエラーが発生しました') 
                 $this.find('.spinner-border').remove(); // remove spinner
                 $this.find('i').show(); // show plane icon
             }
@@ -494,7 +494,7 @@ const handleCOmpare = () => {
 
         if (!input1 || !input2) {
             
-            handleFormResult(false, 'Error in comparaison') 
+            handleFormResult(false, '比較中にエラーが発生しました') 
             return;
         }
 
@@ -544,13 +544,13 @@ const handleCOmpare = () => {
             },
             error: function(error) {
                 console.error(error);
-                handleFormResult(false, 'Error in comparaison') 
+                handleFormResult(false, '比較中にエラーが発生しました') 
                 $this.find('.spinner-border').remove(); // remove spinner
                 $this.find('i').show(); // show plane icon
             },
             finally: function(error) {
                 console.error(error);
-                handleFormResult(false, 'Error in comparaison') 
+                handleFormResult(false, '比較中にエラーが発生しました') 
                 $this.find('.spinner-border').remove(); // remove spinner
                 $this.find('i').show(); // show plane icon
             }
@@ -583,7 +583,7 @@ const handleCOmpare = () => {
         
         // Add user message
         $template.addClass('my-4');
-        $template.find('.userName').text('User');
+        $template.find('.userName').text('ユーザー');
         $template.find('.message').addClass('user').text(prompt);
         $template.find('.time').text(new Date().toLocaleTimeString());
         $messages.append($template);
@@ -600,7 +600,7 @@ const handleCOmpare = () => {
                 // Add agent message
                 const $agentTemplate = $('.template').clone().removeAttr('style class');
                 $agentTemplate.addClass('my-4 text-end');
-                $agentTemplate.find('.userName').text('Agent');
+                $agentTemplate.find('.userName').text('エージェント');
                 $agentTemplate.find('.message').addClass('agent').text(response.dataUpdate.completion);
                 $agentTemplate.find('.time').text(new Date(response.dataUpdate.response_time).toLocaleTimeString());
                 $messages.append($agentTemplate);

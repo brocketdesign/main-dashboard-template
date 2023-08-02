@@ -30,12 +30,11 @@ const searchYoutube = async (query, url, mode, nsfw, page) => {
   return result;
 }
 
-const scrapeWebsite = (query, mode, nsfw, url, page) => {
+const scrapeWebsite = (query, mode, nsfw, url, pageNum) => {
   return new Promise(async (resolve, reject) => {
     try {
-      
       if(url){
-        url = url.includes('http') ? url : `${process.env.DEFAULT_URL}/s/${url}/${page}/?o=all`;
+        url = url.includes('http') ? url : `${process.env.DEFAULT_URL}/s/${url}/${pageNum}/?o=all`;
       }else{
         url = process.env.DEFAULT_URL;
       }

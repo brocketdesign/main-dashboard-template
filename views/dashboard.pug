@@ -11,12 +11,12 @@ block content
             form#search(action=`/dashboard/app/${mode}`, method="GET")
               .input-group.mb-3
                 .input-group-prepend
-                  .form-check.form-switch.input-group-text
+                  .form-check.form-switch.input-group-text.m-0.rounded-0
                     label.form-check-label.badge.me-3.bg-danger(for="nsfw") NSFW
-                    input.form-check-input(type="checkbox", role="switch", id="nsfw", name="nsfw")
+                    input.form-check-input(type="checkbox", role="switch", id="nsfw", name="nsfw", style="z-index: 1;")
                 input(type="hidden" name="page" id="page" value=page)
                 input#searchTerm(type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
-                button(type="submit", class="btn btn-primary", style="z-index: 1;") Search
+                button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") Search
             if uniqueCurrentPages
               if uniqueCurrentPages.length
                 ul

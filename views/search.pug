@@ -1,7 +1,7 @@
 extends dashboard
 
 block dynamicContent
-  label.form-label(for="grid") Number of Elements per Row
+  label.form-label(for="grid") 1行あたりの要素数
   div.range
     input.form-range(type="range" id="grid-range" min="1" max="4" value="3")
   .masonry-container.row.custom-carousel-container
@@ -13,7 +13,7 @@ block dynamicContent
               .d-flex.justify-content-between
                   .delete-button.text-white.hover.shadow(type="button" data-id=data.video_id style="display:none")
                       i.fas.fa-trash-alt
-            img.card-img-top(type="button", data-id=data.video_id, src=data.url || data.imageUrl, alt=data.title, )
+            img.card-img-top(type="button", style="object-fit:cover" ,data-id=data.video_id, src=data.url || data.imageUrl, alt=data.title, )
             .card-body-over.py-1.w-100.position-absolute
             .card-body.py-1.w-100.position-absolute.hover(style="bottom: 0;background-color: #00000082;display:none")
               .d-flex.justify-content-between.tool-bar
@@ -25,15 +25,15 @@ block dynamicContent
                   i.fas.fa-info
               p.card-title.text-white(style="display:none")= data.title
     else
-      p Nothing here !
-  .d-flex.justify-content-center.w-100.p-3
-    button.btn.bg-outline-dark.border.load-more.load-more-previous(type="button")
-      i.fas.fa-angle-left.me-3
-      | Previous
-    span.px-3.btn.btn-white #{page}
-    button.btn.bg-outline-dark.border.load-more.load-more-next(type="button")
-      | Next 
-      i.fas.fa-angle-right.ms-3
+      p ここには何もありません！
+    .d-flex.justify-content-center.w-100.p-3
+      button.btn.bg-outline-dark.border.load-more.load-more-previous(type="button")
+        i.fas.fa-angle-left.me-3
+        | 前へ
+      span.px-3.btn.btn-white #{page}
+      button.btn.bg-outline-dark.border.load-more.load-more-next(type="button")
+        | 次へ
+        i.fas.fa-angle-right.ms-3
   #slickModal.modal.fade(tabindex='-1')
     .modal-dialog.modal-dialog-centered.modal-xl
       .modal-content.rounded-0(style="background:#000;")

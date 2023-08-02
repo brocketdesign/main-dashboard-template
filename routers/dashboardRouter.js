@@ -76,6 +76,25 @@ router.get('/app/stable-diffusion/gallery', ensureAuthenticated,ensureMembership
   }
 });
 
+const Parser = require('rss-parser');
+const parser = new Parser();
+
+const feedUrls = [
+  'https://business.nikkei.com/rss/sns/nb.rdf',
+  'https://www.nhk.or.jp/rss/news/cat1.xml',
+  'https://www.nhk.or.jp/rss/news/cat6.xml'
+];
+
+router.get('/app/news', ensureAuthenticated, ensureMembership, async (req, res) => {
+  try {
+    const feeds = await Promise.all(feedUrls.map(url => parser.parseURL(url)));
+    res.render('news', { user: req.user, feeds, mode: 'news', title: 'ニュース' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error retrieving news.');
+  }
+});
+
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) => {
 
@@ -83,7 +102,6 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
     const { mode } = req.params; // Get the 'mode' parameter from the route URL
     let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
     nsfw = req.user.nsfw === 'true'?true:false
-    console.log({ searchTerm, nsfw, page } )
     page = parseInt(page) || 1
     console.log({ searchTerm, nsfw, page } )
 
@@ -112,15 +130,33 @@ const userInfo = await global.db.collection('users').findOne({ _id: userId });
 if (userInfo) {
   const scrapedData = userInfo.scrapedData || []; // Get the scrapedData array from userInfo
   const nsfw = req.user.nsfw === 'true'
-  // Filter the scrapedData array based on the 'mode'
-  const filteredData = scrapedData.filter(item => item.mode === mode && item.nsfw === nsfw);
+  let data = []
+  try {
+    // Filter the scrapedData array based on the 'mode'
+    const filteredData = scrapedData.filter(item => item.mode === mode && item.nsfw === nsfw);
+    // Create an object where the key is the 'query' and the value is an array of up to four items matching that 'query'.
+    const queryMap = filteredData.reduce((acc, item) => {
+      if(!item.query){
+        // If item.query is not defined or is falsy, skip to the next item.
+        return acc;
+      }
+  
+      if(!acc[item.query]) {
+        acc[item.query] = []; // If this 'query' is not already a key in the object, add it with an empty array as the value.
+      }
+      
+      if(acc[item.query].length < 4) { 
+        // If the array for this 'query' has less than four items, add the current item.
+        acc[item.query].push(item);
+      }
+      return acc;
+    }, {});
+    data = queryMap
+  } catch (error) {
+    console.log(error)
+  }
 
-  // Use Set to get unique 'currentPage' fields
-  const uniqueCurrentPagesSet = new Set(filteredData.map(item => item.query ));
-  const uniqueCurrentPages = Array.from(uniqueCurrentPagesSet);
-
-  console.log(uniqueCurrentPages);
-  res.render('history', { user: req.user, uniqueCurrentPages, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
+  res.render('history', { user: req.user, data, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
 
 } else {
   console.log('User not found in the database.');

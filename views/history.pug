@@ -11,16 +11,19 @@ block content
             form(action=`/dashboard/app/${mode}`, method="GET")
               .input-group.mb-3
                 .input-group-prepend
-                  .form-check.form-switch.input-group-text
+                  .form-check.form-switch.input-group-text.rounded-0.m-0
                     label.form-check-label.badge.me-3.bg-danger(for="nsfw") NSFW
-                    input.form-check-input(type="checkbox", role="switch", id="nsfw", name="nsfw")
+                    input.form-check-input(type="checkbox", role="switch", id="nsfw", name="nsfw", style="z-index: 1;")
                 input(type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
-                button(type="submit", class="btn btn-primary", style="z-index: 1;") Search
-              if uniqueCurrentPages
-                if uniqueCurrentPages.length
-                  ul.list-group
-                    each page in uniqueCurrentPages
-                      li.list-group-item
-                        a(href=`/dashboard/app/${mode}/?searchTerm=${page}`)= page
-                else
-                  p No unique pages found.
+                button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") Search
+            if data
+              .row
+                each query, index in Object.keys(data)
+                  a.col-6.text-center.mb-3(href=`/dashboard/app/${mode}/?searchTerm=${query}`)
+                    span=query
+                    .card(style="overflow: hidden;")
+                      .card-body.row.p-0.rounded
+                        each item in data[query]
+                          img.col-6.p-0(data-id=item.video_id, src=item.url || item.imageUrl, alt=item.title, style="object-fit:cover")
+            else
+              p Your search history will be displayed here.
