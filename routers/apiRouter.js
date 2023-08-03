@@ -227,7 +227,7 @@ router.post('/dl', async (req, res) => {
 
   try {
     // Get the highest quality video URL for the given video_id
-    const url = video_id.includes('http') ? video_id :  await getHighestQualityVideoURL(video_id,req.user);
+    const url = await getHighestQualityVideoURL(video_id,req.user);
 
     if (!url) {
       console.log('Video URL not found for video_id:', video_id);
@@ -273,14 +273,14 @@ router.post('/dl', async (req, res) => {
 
       const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
       const AllData = userInfo.scrapedData;
-      
+      console.log(video_id)
       const foundElement = AllData.find(item => item.video_id === video_id);
       // Find the index of the element with the desired video_id in the scrapedData array
       const elementIndex = AllData.findIndex(item => item.video_id === video_id);
 
       if(elementIndex !== -1){
         AllData[elementIndex].filePath = filePath.replace('public','');
-  
+        
         // Update the user document in the 'users' collection with the modified scrapedData array
         await global.db.collection('users').updateOne(
           { _id: new ObjectId(req.user._id) },

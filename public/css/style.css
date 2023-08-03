@@ -1,10 +1,7 @@
-.chat-message.agent{
-    background-color: #1c82a214;
+.chat-message{
+    background-color: #ffffff;
 }
 
-.chat-message.user{
-    background-color: #33a21c14;
-}
 .card-clickable:hover {
     cursor: pointer;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);

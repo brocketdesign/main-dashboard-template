@@ -124,7 +124,7 @@ router.get('/subscription-payment-success', async (req, res) => {
 });
 
 router.get('/subscription-payment-error', (req, res) => {
-  res.render('subscription-payment-error'); // Render the login template
+  res.render('subscription-payment-error',{user:req.user}); // Render the login template
 });
 
 router.post('/subscription/cancel/:subscriptionId', async (req, res) => {

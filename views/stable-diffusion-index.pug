@@ -37,14 +37,14 @@ block content
                     .col-12
                       .categories.card.h-100.rounded-0(data-id=`category-${category.id}` style=`cursor: pointer;`)
                         .card-body(style=`cursor: pointer;`)
-                          h6.d-inline.card-title.mx-2(data-name=category.name) #{category.name}
+                          h6.d-inline.card-title.mx-2(data-name=category.name) #{category.name_JP}
                           span.tag(data-id=`category-${category.id}`)
                         .subcategories.row.row-cols-1.row-cols-md-2.g-4.mt-1(data-id=`subcategory-${category.id}` style=`display:none;`)
                           each subcategory in category.subcategories
                             .col-12.m-0.w-100
                               .card.h-100.rounded-0(style=`cursor: pointer;`)
                                 .card-body.py-1(data-id=`subcategory-${category.id}-${subcategory.id}` style=`cursor: pointer;`)
-                                  span.card-title(data-name=subcategory.name) #{subcategory.name}
+                                  span.card-title(data-name=subcategory.name) #{subcategory.name_JP}
                                   .row.row-cols-1.row-cols-md-2.g-4.mt-1(data-id=`tag-${category.id}-${subcategory.id}` style=`display:none;`)
                                     each tag in subcategory.tags
                                       - const categoryID = category.id;
@@ -54,7 +54,7 @@ block content
                                       .col-12.m-0.w-100
                                         .card.h-100.tags.rounded-0(style=`cursor: pointer;` data-id=`${categoryID}-${subcategoryID}-${tagID}` class=`${selected ? 'selected' : ''}`)
                                           .card-body.py-1(style=`cursor: pointer;`)
-                                            span.card-title(data-id=`${categoryID}-${subcategoryID}-${tagID}` data-name=tag.name)=tag.name!=undefined?tag.name:tag.name 
+                                            span.card-title(data-id=`${categoryID}-${subcategoryID}-${tagID}` data-name=tag.name)=tag.name_JP!=undefined?tag.name_JP:tag.name 
                 .col-12.col-sm-9.order-1.order-sm-2
                   #diffused-image-gallery.mt-2.row(style="width:100%")
   script(src="/js/stable-diffusion-script.js")

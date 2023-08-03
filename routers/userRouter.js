@@ -263,5 +263,24 @@ router.post('/isOldPasswordCorrect', (req, res) => {
   });
 });
 
+router.post('/reset', async (req, res) => {
+  const { mode } = req.body;
+  console.log('Reset data for mode:',mode)
+  try{
+    if(!mode){
+      console.log('All data reseted ! For user:',req.user.id)
+      await global.db.collection('users').updateOne({_id: new ObjectId(req.user._id)},
+      {$set:{
+        scrapInfo:{},
+        scrapedData:[],
+      }})
+    }
+    res.status(200).json({ message: 'Data deleted' });
+  }catch{
+    res.status(500).json({ message: 'An error occurred while deleting data.' });
+
+  }
+
+});
 
 module.exports = router;

@@ -15,6 +15,9 @@ async function getHighestQualityVideoURL(video_id, user) {
       console.log('Element with video_id not found.');
       return null;
     }
+    if(foundElement.url){
+      return foundElement.url
+    }
 
     if (hasBeenScrapedRecently(foundElement)) {
       return getVideoFilePathOrHighestQualityURL(foundElement);

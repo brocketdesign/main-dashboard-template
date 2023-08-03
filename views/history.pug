@@ -17,9 +17,9 @@ block content
                 input(type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
                 button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") Search
             if data
-              .row
-                each query, index in Object.keys(data)
-                  a.col-6.text-center.mb-3(href=`/dashboard/app/${mode}/?searchTerm=${query}`)
+              .masonry-container.row.custom-carousel-container
+                each query, index in Object.keys(data).reverse()
+                  a.masonry-item.col-6.text-center.mb-3(href=`/dashboard/app/${mode}/?searchTerm=${query}`)
                     span=query
                     .card(style="overflow: hidden;")
                       .card-body.row.p-0.rounded

@@ -105,6 +105,10 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
     page = parseInt(page) || 1
     console.log({ searchTerm, nsfw, page } )
 
+    if(!searchTerm){
+      res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
+      return
+    }
     // If 'mode' is not provided, use the mode from the session (default to '1')
     const currentMode = mode || req.session.mode || '1';
 
@@ -147,7 +151,9 @@ if (userInfo) {
       
       if(acc[item.query].length < 4) { 
         // If the array for this 'query' has less than four items, add the current item.
-        acc[item.query].push(item);
+        if(item.hide != true){
+          acc[item.query].push(item);
+        }
       }
       return acc;
     }, {});

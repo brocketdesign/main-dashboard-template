@@ -27,12 +27,22 @@ function getUserScrapedData(user, url, mode, nsfw, page) {
 
   if(url){
     userScrapedDataWithCurrentPage = userScrapedData.filter(item => 
-       item.query == url && item.mode == mode && item.nsfw == nsfw && !item.hide && item.page == page );
+       item.query == url && 
+       item.mode == mode && 
+       item.nsfw == nsfw && 
+       !item.hide && 
+       item.page == page &&
+       !item.filePath
+      );
   }else{
     userScrapedDataWithCurrentPage = userScrapedData.filter(item => 
-      item.mode == mode && item.nsfw == nsfw && !item.hide && item.page == page );
+        item.mode == mode && 
+        item.nsfw == nsfw && 
+        !item.hide && 
+        item.page == page &&
+        !item.filePath
+    ); 
   }
-
   return userScrapedDataWithCurrentPage.slice(0,50);
 }
 
@@ -42,9 +52,12 @@ async function ManageScraper(url, nsfw, mode, user, page) {
   const currentTime = new Date().getTime();
 
   const userInfo = await findAndUpdateUser(userId);
-  const existingData = userInfo.scrapInfo?.url; 
-  const existingDataTime = Number(existingData.time);
-  const moreThan24h = !!(currentTime - existingDataTime > 24*60*60*1000);
+
+
+  const existingData = userInfo.scrapInfo?.[url];
+  const moreThan24h = existingData
+      ? currentTime - Number(existingData.time) > 24 * 60 * 60 * 1000
+      : true;
 
   let currentPage = 1
   if(user.scrapInfo){

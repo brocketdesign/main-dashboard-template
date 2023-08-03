@@ -34,7 +34,7 @@ $(window).on('load', function() {
 
 $(document).ready(function() {
     let formChanged = false;
-    let form = $('#updateProfile form');
+    let form = $('#updateProfile form').not('#reset-form');
     let inputs = $('#updateProfile form input, #updateProfile form select, #updateProfile form textarea');
     let initialFormData = new FormData(form[0]);
 
@@ -119,6 +119,7 @@ $(document).ready(function() {
     handleSwitchNSFW();
     handleGridRange();
     handleLoadMore();
+    handleResetFormSubmission();
     feather.replace()
 });
 
@@ -364,8 +365,8 @@ const handleDownloadButton = () => {
         if(!$buttonContainer.find('i').length){
           $buttonContainer.append(DLicon).addClass("text-primary")
         }
-        console.log('Video download successful.');
-        handleFormResult(true, 'ビデオがダウンロードされました')         
+        console.log('download successful.');
+        handleFormResult(true, 'ダウンロードされました')         
         // Hide the spinner when the download finishes
         $spinner.hide();
       }).fail(function() {
@@ -705,6 +706,22 @@ function updategridlayout(value) {
         }, 1000);
     })
   }
+  const handleResetFormSubmission = () => {
+    $('form#reset-form').on('submit', function(e) {
+        e.preventDefault();
+        const confirmation = confirm("Are you sure you want to reset? This action cannot be undone.");
+
+        if (confirmation) {
+            $.ajax({
+                url: `/user/reset`,
+                type: 'POST',
+                data: {mode:$('#mode').val()},
+                success: handleFormSuccess,
+                error: handleFormError
+            });
+        }
+    }); 
+}
 
   function getCurrentPageQueries() {
   // Get the URL parameters
