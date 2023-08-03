@@ -13,7 +13,7 @@ block dynamicContent
               .d-flex.justify-content-between
                   .delete-button.text-white.hover.shadow(type="button" data-id=data.video_id style="display:none")
                       i.fas.fa-trash-alt
-            img.card-img-top(type="button", style="object-fit:cover" ,data-id=data.video_id, src=data.url || data.imageUrl, alt=data.title, )
+            img.card-img-top(type="button", style="object-fit:cover" ,data-id=data.video_id, src=data.url || data.thumb || data.imageUrl, alt=data.title,data.imageUrl=data.imageUrl?data.imageUrl:undefined )
             .card-body-over.py-1.w-100.position-absolute
             if mode == 1
               .card-body.py-1.w-100(style="bottom: 0;background-color: #00000082;")

@@ -6,6 +6,7 @@ const ensureAuthenticated = require('../middleware/authMiddleware');
 const {formatDateToDDMMYYHHMMSS,findElementIndex,saveData} = require('../services/tools')
 const pdfToChunks = require('../modules/pdf-parse')
 const multer = require('multer');
+const searchSubreddits = require('../modules/search.subreddits')
 
 const axios = require('axios');
 const path = require('path');
@@ -334,6 +335,12 @@ router.get('/reddit/:subreddit', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch data from Reddit' });
   }
 });
+
+router.get('/searchSubreddits', async (req, res)=> {
+  const db = req.app.locals.db;
+  let query=req.query.query;
+  res.send(await searchSubreddits(query))
+})
 
 // API routers for generative image AI
 router.get('/current-model', async (req, res) => {

@@ -15,8 +15,9 @@ block content
                     label.form-check-label.badge.me-3.bg-danger(for="nsfw") NSFW
                     input.form-check-input(type="checkbox", role="switch", id="nsfw", name="nsfw", style="z-index: 1;")
                 input(type="hidden" name="page" id="page" value=page)
-                input#searchTerm(type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
+                input#searchTerm(onfocus=mode==2?'searchSubreddits(this)':undefined ,type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
                 button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") Search
+              ul.list-group#subRedditSearchRes.bg-white.w-100.position-absolute.border.shadow(style="max-height: 50vh;overflow: auto;z-index: 3;display: contents;")
             if uniqueCurrentPages
               if uniqueCurrentPages.length
                 ul

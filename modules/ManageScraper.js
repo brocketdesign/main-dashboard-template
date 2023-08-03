@@ -72,7 +72,7 @@ if (page <= currentPage) {
     if(!url || !moreThan24h) {
       const userScrapedDataWithCurrentPage = getUserScrapedData(userInfo, url, mode, nsfw, page);
   
-      if (userScrapedDataWithCurrentPage.length > 0) {
+      if (userScrapedDataWithCurrentPage.length > 1) {
         console.log('Data has already been scraped today.');
         console.log(userScrapedDataWithCurrentPage[0]);
         return userScrapedDataWithCurrentPage;

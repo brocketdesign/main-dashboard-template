@@ -1,9 +1,9 @@
 const { ObjectId } = require('mongodb');
 const axios = require('axios');
 
-async function scrapeAndSaveDataMode2(query , filter, allowR18) {
+async function scrapeAndSaveDataMode2(query, mode, nsfw, url, page, filter='images') {
   const collection = global.db.collection('scrapedData');
-
+  const subreddit = query
   if(subreddit== false){
     return false
   }
@@ -23,18 +23,24 @@ async function scrapeAndSaveDataMode2(query , filter, allowR18) {
   }
 
   let result = []
+  let AllData = []
   try {
-    const response = await axios.get(`https://www.reddit.com/r/${subreddit}.json`);
+    let getUrl = subreddit
+    if(!subreddit.includes('http')){
+      getUrl = `https://www.reddit.com${subreddit}new/.json?count=25&after=`
+    }
+    const response = await axios.get(getUrl);
 
     const data = response.data.data.children.map((child) => child.data);
 
     // Filter the data based on the 'filter' query parameter
     result = data.reduce((filteredData, post) => {
-      if (filter === 'images' && !post.is_video && (!post.over_18 || allowR18 === 'true')) {
+      console.log((filter === 'images' && !post.is_video && (!post.over_18 || nsfw )),nsfw)
+      if (filter === 'images' && !post.is_video && (!post.over_18 || nsfw)) {
         filteredData.push(post);
-      } else if (filter === 'videos' && post.is_video && (!post.over_18 || allowR18 === 'true')) {
+      } else if (filter === 'videos' && post.is_video && (!post.over_18 || nsfw)) {
         filteredData.push(post);
-      } else if (filter === 'default' && (!post.over_18 || allowR18 === 'true')) {
+      } else if (filter === 'default' && (!post.over_18 || nsfw)) {
         filteredData.push(post);
       }
       return filteredData;
@@ -52,25 +58,33 @@ async function scrapeAndSaveDataMode2(query , filter, allowR18) {
       }
     }
 
-    await collection.insertOne({
+    AllData.push({
       thumb: post.thumbnail,
-      preview : preview,
+      imageUrl : preview,
       source: `https://www.reddit.com${post.permalink}`,
       link: post.url_overridden_by_dest,
       title: post.title,
       subreddit: subreddit, 
-      mode:"2"
+      video_id: generateRandomID(8)
     });
   }
   } catch (error) {
     console.log(error)
     console.log('Failed to fetch data from Reddit' )
   }
-  await collection.updateOne({ subreddit: subreddit }, {$set : {date:today,subreddit:subreddit}}, { upsert: true });
 
-  const AllData = await collection.find({subreddit:subreddit}).toArray();
-  //console.log(AllData)
+  console.log(AllData)
   return AllData; // Return the scraped data array
 }
+function generateRandomID(length) {
+  const digits = '0123456789';
+  let randomID = '';
 
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * digits.length);
+    randomID += digits.charAt(randomIndex);
+  }
+
+  return randomID;
+}
 module.exports = scrapeAndSaveDataMode2;

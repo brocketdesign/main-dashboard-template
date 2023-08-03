@@ -723,6 +723,76 @@ function updategridlayout(value) {
     }); 
 }
 
+// Function to search subreddits
+function searchSubreddits(el) {
+    // Checking if the element does not have a 'wait' class
+    if (!$(el).hasClass('wait')) {
+  
+      // Adding 'wait' class to the element
+      $(el).addClass('wait')
+  
+      // Implementing a delay using setTimeout
+      setTimeout(async () => {
+  
+        // Clearing the content of 'searchRes' and adding a loading indicator
+        $('#searchRes').empty().append(`
+          <li class="list-group-item loading text-center p-3">
+            <div class="loader spinner-border">
+              <span class="visually-hidden">Loading ...</span>
+            </div>
+          </li>
+        `);
+  
+        // Getting the search key from the element's value
+        const key = $(el).val();
+  
+        // Forming the API URL
+        const apiUrl = `/api/searchSubreddits?query=${key}`;
+  
+        // Checking if key is not empty and is more than 0 characters long
+        if (key && key.length > 0) {
+  
+          // Fetching data from the API
+          try {
+            const response = await $.get(apiUrl);
+  
+            // Mapping over the response data and forming the content
+            const content = response.map(element => {
+              const url = encodeURIComponent(`https://www.reddit.com${element['url']}new/.json?count=25&after=`);
+              return `
+                <li class="list-group-item btn text-start">
+                  <span data-title="${element['title']}" data-url="${url}" data-value="${element['url']}" onclick="searchFor(this)">
+                    ${element['title']}
+                  </span>
+                  <span class="bg-danger badge float-end r18 ${element.r18}">
+                    R18
+                  </span>
+                </li>
+              `;
+            }).join('');
+  console.log(content)
+            // Removing the loading indicator and appending the content
+            $('#subRedditSearchRes').append(content);
+          } catch (error) {
+            console.error(error);
+          }
+        } else {
+          // If key is empty, clearing the content of 'searchRes'
+          $('#subRedditSearchRes').empty();
+        }
+  
+        // Removing the 'wait' class from the element
+        $(el).removeClass('wait');
+  
+      }, 1000);
+    }
+  }
+  function searchFor(el){
+    let url = $(el).data('url')
+    let value = $(el).data('value')
+    $('#searchTerm').val(value)
+    $('form#search').submit()
+  }
   function getCurrentPageQueries() {
   // Get the URL parameters
   const queryString = window.location.search;
