@@ -90,6 +90,60 @@ $(document).ready(function() {
     $(document).on('click', '.alert-container', function() { $(this).fadeOut();  });
     $(".card.pricing").hover(() => $(this).addClass('border-primary'), () => $(this).removeClass('border-primary'));
     $('.delete-button').click(function() {  handleHiding($(this).data('id'))  });
+
+    $('.summarize-button').click(function(event) { 
+        event.preventDefault(); // Prevents the default click behavior
+        const confirmation = confirm("Are you sure you post this video summary ?");
+
+        if (!confirmation) {
+            return
+        }
+        const videoId = $(this).data('id');
+          console.log('Download button clicked for:', {videoId});
+          var $buttonContainer = $(this);
+    
+          // Check if the card has already been processed
+          if ($buttonContainer.hasClass('done')) {
+            handleFormResult(false, '既にダウンロードされています') 
+              console.log('Card has already been processed.');
+              return;
+          }
+    
+          // Mark the card as done to avoid processing it again
+          $buttonContainer.addClass('done');
+    
+          const DLicon = $buttonContainer.find('i').clone();
+          $buttonContainer.html('');
+    
+          // Check if the spinner is already present, if not, create and append it to the card
+          if (!$(this).find('.spinner-border.for-summary').length) {
+              var $spinner = $('<div>').addClass('spinner-border for-summary spinner-border-sm text-white').attr('role', 'status');
+              var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
+              $spinner.append($span);
+              $buttonContainer.prepend($spinner);
+          }
+    
+          // Show the spinner while the download is in progress
+          var $spinner = $(this).find('.spinner-border');
+          $spinner.show();
+          $.ajax({
+            url: '/api/openai/summarize',
+            method: 'POST',
+            data: { videoId },
+            success: function(response) {
+                handleFormResult(true,response.message)
+    
+                $spinner.remove();
+    
+                if(!$buttonContainer.find('i').length){
+                $buttonContainer.append(DLicon)
+                }
+                // Handle the success response
+                console.log(response);
+                },
+            error: handleFormError
+        });
+    });
     $('.card img').on('error', function() { 
         var videoId = $(this).data('id');
         console.log('Image load error for: ',videoId)
@@ -266,14 +320,15 @@ const handleCardClickable = () => {
       $thisCard.addClass('done');
 
       // Check if the spinner is already present, if not, create and append it to the card
-      if (!$thisCard.find('.spinner-border').length) {
-          var $spinner = $('<div>').addClass('spinner-border position-absolute text-white').css({inset:"0px", margin:"20% auto"}).attr('role', 'status');
+      if (!$thisCard.find('.spinner-border .for-strm').length) {
+          var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute text-white bg-dark').css({inset:"0px", margin:"20% auto"}).attr('role', 'status');
           var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
           $spinner.append($span);
           $thisCard.find('.card-body-over').append($spinner);
       }
 
       // Show the spinner while the download is in progress
+        $thisCard.find('.card-body-over').show();
       var $spinner = $thisCard.find('.spinner-border');
       $spinner.show();
 
@@ -288,9 +343,10 @@ const handleCardClickable = () => {
               // Replace the image with an autoplay video
               var $video = $('<video>').attr({
                   src: response.url,
-                  autoplay: false,
+                  autoplay: true,
                   controls: true,
-                  width: "100%"
+                  width: "100%",
+                  playsinline: true
               }).on('loadeddata', function() {
                 // Code to be executed when the video is ready to play
                 console.log('Video ready to play');
@@ -298,9 +354,12 @@ const handleCardClickable = () => {
             });;
 
               console.log('Video element created:', $video);
-              $thisCard.find('.card-img-top').remove()
+              //$thisCard.find('.card-img-top').remove()
+              
               // Update the card body with the new video
-              $thisCard.prepend($video);
+              //$thisCard.prepend($video);
+              $('#video-holder').html('')
+              $('#video-holder').append($video)//.append($thisCard.find('.tool-bar').clone()).append($thisCard.find('.card-title').clone().show())
 
               console.log('Video added to card body.');
 
@@ -326,9 +385,11 @@ const handleCardClickable = () => {
 
 // Handling of download button clicking
 const handleDownloadButton = () => {
-  $(document).on('click', '.download-button', function() {
-      var id = $(this).data('id');
-      console.log('Download button clicked for card ID:', id);
+  $(document).on('click', '.download-button', function(event) {
+    event.preventDefault(); // Prevents the default click behavior
+    var id = $(this).data('id');
+    var title = $(this).data('title');
+      console.log('Download button clicked for:', {id,title});
       var $buttonContainer = $(this);
 
       // Check if the card has already been processed
@@ -345,8 +406,8 @@ const handleDownloadButton = () => {
       $buttonContainer.html('');
 
       // Check if the spinner is already present, if not, create and append it to the card
-      if (!$(this).find('.spinner-border').length) {
-          var $spinner = $('<div>').addClass('spinner-border spinner-border-sm text-dark').attr('role', 'status');
+      if (!$(this).find('.spinner-border.for-dl').length) {
+          var $spinner = $('<div>').addClass('spinner-border for-dl spinner-border-sm text-white').attr('role', 'status');
           var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
           $spinner.append($span);
           $(this).prepend($spinner);
@@ -357,18 +418,17 @@ const handleDownloadButton = () => {
       $spinner.show();
 
       // Make a request to download the video
-      $.post('/api/dl', { video_id: id }, function(response) {
+      $.post('/api/dl', { video_id: id ,title}, function(response) {
         console.log('Download API Response:', response);
 
         $spinner.remove();
 
         if(!$buttonContainer.find('i').length){
-          $buttonContainer.append(DLicon).addClass("text-primary")
+          $buttonContainer.append(DLicon)
         }
         console.log('download successful.');
-        handleFormResult(true, 'ダウンロードされました')         
-        // Hide the spinner when the download finishes
-        $spinner.hide();
+        handleFormResult(true, 'ダウンロードされました')    
+        
       }).fail(function() {
 
         $spinner.remove();
@@ -625,6 +685,7 @@ const handleCOmpare = () => {
         });
     });
  }
+ 
 const handleHiding = (videoId) => {
     let $container = $(`.card[data-id=${videoId}]`)
     $.ajax({
@@ -642,7 +703,6 @@ const handleHiding = (videoId) => {
     });
 
 }
-
 
 function updategridlayout(value) {
     // Function implementation goes here

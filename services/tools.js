@@ -1,4 +1,13 @@
 const { ObjectId } = require('mongodb');
+const { Configuration, OpenAIApi } = require('openai');
+
+
+// Initialize OpenAI with your API key
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const openai = new OpenAIApi(configuration);
 
 function formatDateToDDMMYYHHMMSS() {
   const now = new Date();
@@ -49,4 +58,17 @@ async function saveData(user, documentId, update){
   }
 }
 
-module.exports = { formatDateToDDMMYYHHMMSS, findElementIndex, saveData }
+async function translateText(text,lang) {
+  let summary = '';
+  
+  const gptResponse = await openai.createCompletion({
+    model: "text-davinci-003",
+    prompt: `Translate the following text in ${lang} :${text} `,
+    max_tokens: 1000,
+    temperature: 0,
+  });
+  
+  return gptResponse.data.choices[0].text.trim();
+}
+
+module.exports = { formatDateToDDMMYYHHMMSS, findElementIndex, saveData ,translateText }

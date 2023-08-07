@@ -24,7 +24,7 @@ const searchYoutube = async (query, url, mode, nsfw, page) => {
     const alt = title;
     const currentPage = url;
 
-    return { video_id: videoId, imageUrl, alt, link, currentPage, query, mode, nsfw };
+    return { video_id: videoId, imageUrl, title, alt, link, currentPage, query, mode, nsfw };
   });
 
   return result;

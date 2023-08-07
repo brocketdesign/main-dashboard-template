@@ -9,32 +9,23 @@ block dynamicContent
       each data in scrapedData.reverse()
         .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode, data-id=data.video_id, data-isdl=(data.filePath?"true":"false"))
           .card(class=`card-clickable-${mode}`, data-id=data.video_id)
+            .card-body-over.position-absolute(style="inset:0;display: none;")
             .card-top.py-2.px-3.position-absolute
               .d-flex.justify-content-between
-                  .delete-button.text-white.hover.shadow(type="button" data-id=data.video_id style="display:none")
+                  .delete-button.btn.btn-dark.border-white.border.hover.shadow(type="button" data-id=data.video_id style="display:none")
                       i.fas.fa-trash-alt
-            img.card-img-top(type="button", style="object-fit:cover" ,data-id=data.video_id, src=data.url || data.thumb || data.imageUrl, alt=data.title,data.imageUrl=data.imageUrl?data.imageUrl:undefined )
-            .card-body-over.py-1.w-100.position-absolute
-            if mode == 1
-              .card-body.py-1.w-100(style="bottom: 0;background-color: #00000082;")
-                .d-flex.justify-content-between.tool-bar
-                  .download-button.text-white(type="button", data-id=data.video_id)
-                    i.fas.fa-download
-                  a.source.text-white(target="_blank" href=data.source||data.link||data.webm||data.url)
-                    i.fas.fa-link
-                  .info-button.text-white(type="button" data-id=data.url)
-                    i.fas.fa-info
-                p.card-title.text-white(style="display:none")= data.title
-            else
-              .card-body.py-1.w-100.position-absolute.hover(style="bottom: 0;background-color: #00000082;display:none")
-                .d-flex.justify-content-between.tool-bar
-                  .download-button.text-white(type="button", data-id=data.video_id)
-                    i.fas.fa-download
-                  a.source.text-white(target="_blank" href=data.source||data.link||data.webm||data.url)
-                    i.fas.fa-link
-                  .info-button.text-white(type="button" data-id=data.url)
-                    i.fas.fa-info
-                p.card-title.text-white(style="display:none")= data.title
+            img.card-img-top(type="button", style="object-fit:cover;height: 100%;" ,data-id=data.video_id, src=data.url || data.thumb || data.imageUrl, alt=data.title,data.imageUrl=data.imageUrl?data.imageUrl:undefined )
+            .card-body.py-1.px-3.w-100.position-absolute.hover(style="bottom: 0;display:none")
+              .d-flex.justify-content-between.tool-bar.py-2
+                .download-button.btn.btn-dark.border-white.border(type="button", data-id=data.video_id, data-title=data.title)
+                  i.fas.fa-download
+                a.source.btn.btn-dark.border-white.border(target="_blank", href=data.source||data.link||data.webm||data.url)
+                  i.fas.fa-link
+                .info-button.btn.btn-dark.border-white.border(type="button" data-id=data.url)
+                  i.fas.fa-info
+                .summarize-button.btn.btn-dark.border-white.border(type="button", data-id=data.video_id)
+                  i.fas.fa-plane
+              p.card-title.text-white.bg-dark.border-white.border.p-3(style="display:none")= data.title
   else
     p ここには何もありません！
   if scrapedData.length > 0 

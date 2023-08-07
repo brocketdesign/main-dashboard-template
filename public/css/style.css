@@ -16,6 +16,14 @@
     transform: translateX(-50%) ;
     border-radius: 0 !important;
   }
+
+@media (min-width: 992px) {
+  .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+  }
+}
 @media (max-width: 768px) {  /* assuming 768px is the breakpoint for mobile view */
     #positionElement {
       position: absolute !important;
@@ -36,6 +44,20 @@
         margin-top: 0 ;
         left: 0 ;
         transform: none ;
+    }
+    #video-holder{
+      position: sticky !important;
+      z-index: 2;
+      top: 0;
+      left:0;
+      right:0;
+      transform: translateX(-3.5%);
+      width: 106.8% !important;
+      max-height: 40vh;;
+      
+    }
+    #video-holder video {
+      max-height: 40vh;;
     }
   }
   

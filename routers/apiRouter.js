@@ -3,10 +3,12 @@ const router = express.Router();
 
 const getHighestQualityVideoURL = require("../modules/getHighestQualityVideoURL")
 const ensureAuthenticated = require('../middleware/authMiddleware');
-const {formatDateToDDMMYYHHMMSS,findElementIndex,saveData} = require('../services/tools')
+const {formatDateToDDMMYYHHMMSS,findElementIndex,saveData, translateText} = require('../services/tools')
 const pdfToChunks = require('../modules/pdf-parse')
 const multer = require('multer');
 const searchSubreddits = require('../modules/search.subreddits')
+const summarizeVideo = require('../modules/youtube-summary')
+const postArticleToWordpress = require('../modules/postArticleToWordpress')
 
 const axios = require('axios');
 const path = require('path');
@@ -130,6 +132,67 @@ router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }
 });
 
 
+// Define the /openai/summarize route
+router.post('/openai/summarize', async (req, res) => {
+  console.log('Received request to /openai/summarize');
+
+  try {
+    const videoId = req.body.videoId;
+    console.log(`Video ID received: ${videoId}`);
+
+    const { elementIndex, foundElement } = await findElementIndex(req.user,videoId);
+    const title = await translateText(foundElement.title,'japanese');
+    console.log(`Title fetched for video: ${title}`);
+
+    const content = await summarizeVideo(req.user,videoId);
+    const embedLink = `https://www.youtube.com/embed/${videoId}`;
+    const iframeEmbed = `<div style="text-align:center;width:100%;"><iframe width="560" height="315" src="${embedLink}" frameborder="0" allowfullscreen></iframe></div>`;
+
+    const contentHtml = `${iframeEmbed}<br>${content.summary}`;
+    console.log(`Content fetched: ${contentHtml.substring(0, 100)}...`); // Displaying first 100 characters for brevity
+
+    saveDataSummarize(req.user, videoId, content)
+
+    const response = await postArticleToWordpress({
+      user: req.user,
+      title: title,
+      content: contentHtml
+    });
+
+    console.log('Article successfully posted to Wordpress:', response);
+
+    res.json({ content, message: 'Successfully summarized and posted' });
+
+  } catch (err) {
+    console.error('Error encountered:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+async function saveDataSummarize(user, videoId, format){
+  try {
+    const userId = user._id;
+    const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+    const AllData = userInfo.scrapedData;
+    const { elementIndex, foundElement } = await findElementIndex(user,videoId);
+
+    if (elementIndex === -1) {
+      console.log('Element with video_id not found.');
+      return;
+    }
+
+    AllData[elementIndex] = Object.assign({}, AllData[elementIndex], format);
+    AllData[elementIndex].last_summarized = Date.now();
+
+    await global.db.collection('users').updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: { scrapedData: AllData } }
+    );
+
+    console.log('Element updated in the database.');
+  } catch (error) {
+    console.log('Error while updating element:', error);
+  }
+}
 const generateJson = async (messages,openai) => {
   const completion = await openai.createChatCompletion({
     model: process.env.COMPLETIONS_MODEL,
@@ -144,6 +207,7 @@ const generateJson = async (messages,openai) => {
     throw new Error('The JSON structure generated from GPT is not valid. Please try again.');
   }
 };
+
 // Wordpress 
 router.post('/post-article', async (req, res) => {
   const wordpress = require( "wordpress" );
@@ -221,14 +285,16 @@ router.get('/video', async (req, res) => {
   }
 });
 
-// Handle file download
+const ytdl = require('ytdl-core');
+const ffmpeg = require('fluent-ffmpeg');
+
 router.post('/dl', async (req, res) => {
-  const video_id = req.body.video_id;
+  const {video_id,title} = req.body;
   console.log('File download requested for video_id:', video_id);
 
   try {
-    // Get the highest quality video URL for the given video_id
-    const url = await getHighestQualityVideoURL(video_id,req.user);
+
+    const url = await getHighestQualityVideoURL(video_id,req.user,false);
 
     if (!url) {
       console.log('Video URL not found for video_id:', video_id);
@@ -238,77 +304,115 @@ router.post('/dl', async (req, res) => {
 
     if(!url.includes('http')){
       res.status(200).json({ message: 'File already downloaded.' });
-      return
+      return;
     }
-    
+
     console.log('Downloading from URL:', url);
 
-    const response = await axios.get(url, { responseType: 'stream', maxContentLength: 10 * 1024 * 1024 });
-    console.log('Received response for URL:', url);
+    let download_directory = process.env.DOWNLOAD_DIRECTORY
+    if (url.includes('youtube.com')) {
+      download_directory = download_directory+'/youtube';
+    }
+    // Get file name from the URL
+    let fileName = `${title}_${Date.now()}.mp4`;
+    let filePath = path.join(download_directory, fileName);
 
-    // Parse the URL and remove the query parameters before extracting fileName
-    let parsedUrl = new URL(url);
-    parsedUrl.search = "";
+    // Create download folder if it doesn't exist
+    await fs.promises.mkdir(download_directory, { recursive: true });
 
-    // Check if the folder exists
-    await fs.access(process.env.DOWNLOAD_DIRECTORY, fs.constants.F_OK, (err) => {
-      if (err) {
-        // Folder does not exist, create it
-        createDownloadFolder(process.env.DOWNLOAD_DIRECTORY);
-      } else {
-        console.log('Download folder already exists.');
-      }
-    });
+    if (url.includes('youtube.com')) {
+      const info = await ytdl.getInfo(video_id);
+      const videoFormat = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
+      const audioFormat = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
+      
+      // Define temporary file paths
+      let videoFilePath = path.join(download_directory, `video_${Date.now()}.mp4`);
+      let audioFilePath = path.join(download_directory, `audio_${Date.now()}.mp4`);
 
-    const fileName = path.basename(parsedUrl.toString());
-    const filePath = path.join(process.env.DOWNLOAD_DIRECTORY, fileName);
+      // Download video
+      const videoDownload = ytdl.downloadFromInfo(info, { format: videoFormat });
+      videoDownload.pipe(fs.createWriteStream(videoFilePath));
 
-    const writer = fs.createWriteStream(filePath);
-    response.data.pipe(writer);
+      // Download audio
+      const audioDownload = ytdl.downloadFromInfo(info, { format: audioFormat });
+      audioDownload.pipe(fs.createWriteStream(audioFilePath));
 
-    writer.on('finish', async() => {
-      console.log('File downloaded:', fileName);
+      // Wait for both downloads to finish
+      await new Promise((resolve, reject) => {
+        videoDownload.on('end', resolve);
+        videoDownload.on('error', reject);
+        audioDownload.on('end', resolve);
+        audioDownload.on('error', reject);
+      });
 
-      // Save the download details to the database (update the video document)
-      const currentTime = new Date().getTime();
+      // Merge video and audio files
+      await new Promise((resolve, reject) => {
+        ffmpeg()
+          .input(videoFilePath)
+          .input(audioFilePath)
+          .outputOptions('-map', '0:v', '-map', '1:a')
+          .saveToFile(filePath)
+          .on('end', resolve)
+          .on('error', reject);
+      });
 
-      const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
-      const AllData = userInfo.scrapedData;
-      console.log(video_id)
-      const foundElement = AllData.find(item => item.video_id === video_id);
-      // Find the index of the element with the desired video_id in the scrapedData array
-      const elementIndex = AllData.findIndex(item => item.video_id === video_id);
+      // Delete temporary files
+      fs.unlinkSync(videoFilePath);
+      fs.unlinkSync(audioFilePath);
+    } else {
+      // If it's not a YouTube video, download it directly
+      const response = await axios.get(url, { responseType: 'stream', maxContentLength: 10 * 1024 * 1024 });
+      console.log('Received response for URL:', url);
 
-      if(elementIndex !== -1){
-        AllData[elementIndex].filePath = filePath.replace('public','');
-        
-        // Update the user document in the 'users' collection with the modified scrapedData array
-        await global.db.collection('users').updateOne(
-          { _id: new ObjectId(req.user._id) },
-          { $set: { scrapedData: AllData } },
-          (err) => {
-            if (err) {
-              console.log('Error occurred while saving download details:', err.message);
-            }
+      const writer = fs.createWriteStream(filePath);
+      response.data.pipe(writer);
+
+      await new Promise((resolve, reject) => {
+        writer.on('finish', resolve);
+        writer.on('error', reject);
+      });
+    }
+
+    // After the file is downloaded, do the same things for both YouTube videos and other types of files
+
+    console.log('File downloaded:', fileName);
+
+    // Save the download details to the database (update the video document)
+    const currentTime = new Date().getTime();
+
+    const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
+    const AllData = userInfo.scrapedData;
+    console.log(video_id)
+    const foundElement = AllData.find(item => item.video_id === video_id);
+    // Find the index of the element with the desired video_id in the scrapedData array
+    const elementIndex = AllData.findIndex(item => item.video_id === video_id);
+
+    if(elementIndex !== -1){
+      AllData[elementIndex].filePath = filePath.replace('public','');
+      
+      // Update the user document in the 'users' collection with the modified scrapedData array
+      await global.db.collection('users').updateOne(
+        { _id: new ObjectId(req.user._id) },
+        { $set: { scrapedData: AllData } },
+        (err) => {
+          if (err) {
+            console.log('Error occurred while saving download details:', err.message);
           }
-        );
-      }else{
-        console.log('Element not founded')
-      }
+        }
+      );
+    }else{
+      console.log('Element not founded')
+    }
 
-      // Send a success status response after the file is downloaded
-      res.status(200).json({ message: 'File downloaded successfully.' });
-    });
+    // Send a success status response after the file is downloaded
+    res.status(200).json({ message: 'File downloaded successfully.' });
 
-    writer.on('error', (err) => {
-      console.log('Error occurred while downloading file:', err.message);
-      res.status(500).json({ error: err.message });
-    });
   } catch (err) {
     console.log('Error occurred while downloading file:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // Endpoint for fetching data from Reddit based on the subreddit and filter parameters
 router.get('/reddit/:subreddit', async (req, res) => {

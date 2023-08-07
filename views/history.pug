@@ -15,12 +15,13 @@ block content
                     label.form-check-label.badge.me-3.bg-danger(for="nsfw") NSFW
                     input.form-check-input(type="checkbox", role="switch", id="nsfw", name="nsfw", style="z-index: 1;")
                 input#searchTerm(onfocus=mode==2?'searchSubreddits(this)':undefined ,type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
-                button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") Search
+                button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") 
+                  i.fas.fa-search
               ul.list-group#subRedditSearchRes.bg-white.w-100.position-absolute.border.shadow(style="max-height: 50vh;overflow: auto;z-index: 3;display: contents;")
             if data
               .masonry-container.row.custom-carousel-container
                 each query, index in Object.keys(data).reverse()
-                  a.masonry-item.col-6.text-center.mb-3(href=`/dashboard/app/${mode}/?searchTerm=${query}`)
+                  a.masonry-item.col-6.col-sm-4.text-center.mb-3(href=`/dashboard/app/${mode}/?searchTerm=${query}`)
                     span=query
                     .card(style="overflow: hidden;")
                       .card-body.row.p-0.rounded

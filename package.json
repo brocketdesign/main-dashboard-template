@@ -13,11 +13,13 @@
     "express-session": "^1.17.3",
     "firebase": "^10.1.0",
     "firebase-admin": "^11.10.1",
+    "fluent-ffmpeg": "^2.1.2",
     "handlebars": "^4.7.7",
     "images-scraper": "^6.4.2",
     "kuromoji": "^0.1.2",
     "mongodb": "^5.7.0",
     "multer": "^1.4.5-lts.1",
+    "natural": "^6.5.0",
     "nodemailer": "^6.9.4",
     "openai": "^3.3.0",
     "passport": "^0.6.0",
@@ -31,7 +33,8 @@
     "stable-diffusion-api": "^0.0.7",
     "stripe": "^12.14.0",
     "tmp": "^0.2.1",
-    "wordpress": "^1.4.2"
+    "wordpress": "^1.4.2",
+    "youtube-transcript": "^1.0.6"
   },
   "scripts": {
     "start": "xvfb-run nodemon app.js"
