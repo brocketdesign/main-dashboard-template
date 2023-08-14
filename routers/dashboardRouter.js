@@ -26,9 +26,57 @@ router.get('/', ensureAuthenticated,ensureMembership, async (req, res) => {
     res.redirect('/dashboard/app/1');
 });
 // ChatGPT
-router.get('/app/openai/:app', ensureAuthenticated, ensureMembership, async (req, res) => {
-  res.render(`chatgpt-${req.params.app}.pug`, { user:req.user, title:'ChatGPT' });
+router.get('/app/openai/ebook/:bookId', ensureAuthenticated, ensureMembership, async (req, res) => {
+  const bookId = req.params.bookId;
+
+  // Fetch the book details from the 'books' collection
+  const bookDetails = await global.db.collection('books').findOne({ _id: new ObjectId(bookId) });
+
+  if (!bookDetails) {
+      return res.redirect('/dashboard/app/openai/ebook');
+  }
+  
+  res.render('chatgpt-ebook.pug', { user: req.user, bookId, book:bookDetails, title: 'ChatGPT ' + bookDetails.title});
 });
+
+router.get('/app/openai/ebook', ensureAuthenticated, ensureMembership, async (req, res) => {
+  const userId = req.user._id;
+
+  // Fetch all book IDs associated with the user
+  const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) }, { projection: { bookIds: 1 } });
+  
+  let books = [];
+
+  if (user && user.bookIds && user.bookIds.length > 0) {
+      // Fetch all books' details associated with the user using the bookIds
+      books = await global.db.collection('books').find({ _id: { $in: user.bookIds.map(id => new ObjectId(id)) } }).toArray();
+  }
+
+  res.render('chatgpt-ebook.pug', { user: req.user, books, title: 'User Books' });
+});
+
+
+router.get('/app/openai/:app', ensureAuthenticated, ensureMembership, async (req, res) => {
+  res.render(`chatgpt-${req.params.app}.pug`, { user:req.user, title:'ChatGPT '+req.params.app });
+});
+async function getBookById(userId, bookId) {
+  // Connect to the users collection
+  const collection = global.db.collection('users');
+
+  // Find the user with the specified book ID
+  const user = await collection.findOne(
+      { _id: new ObjectId(userId), "books.book.book_id": bookId },
+      { projection: { "books.$": 1 } }  // Project only the matching book
+  );
+
+  // If the user is found and has the book, return the book details
+  if (user && user.books && user.books.length > 0) {
+      return user.books[0].book;
+  }
+
+  // If no matching book is found, return null
+  return null;
+}
 // Stable diffusion 
 router.get('/app/stable-diffusion', ensureAuthenticated, ensureMembership, async (req, res) => {
 
@@ -98,28 +146,72 @@ router.get('/app/news', ensureAuthenticated, ensureMembership, async (req, res) 
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) => {
 
-    console.log('Dashboard page requested');
-    const { mode } = req.params; // Get the 'mode' parameter from the route URL
-    let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
-    nsfw = req.user.nsfw === 'true'?true:false
-    page = parseInt(page) || 1
-    console.log({ searchTerm, nsfw, page } )
+  console.log('Dashboard page requested');
+  const { mode } = req.params; // Get the 'mode' parameter from the route URL
+  let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
+  nsfw = req.user.nsfw === 'true'?true:false
+  page = parseInt(page) || 1
 
-    if(!searchTerm){
-      res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
-      return
-    }
-    // If 'mode' is not provided, use the mode from the session (default to '1')
-    const currentMode = mode || req.session.mode || '1';
+  if(!searchTerm){
+    res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
+    return
+  }
+  // If 'mode' is not provided, use the mode from the session (default to '1')
+  const currentMode = mode || req.session.mode || '1';
 
-    let scrapedData = await ManageScraper(searchTerm,nsfw,mode,req.user, page);
+  let scrapedData = await ManageScraper(searchTerm,nsfw,mode,req.user, page);
 
-    res.render(`search`, { user: req.user, searchTerm, scrapedData, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+  res.render(`search`, { user: req.user, searchTerm, scrapedData, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 });
 
 // Route for handling '/dashboard/:mode'
-router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (req, res) => {
+router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, res) => {
 
+  console.log('Dashboard page requested');
+  const { mode } = req.params; // Get the 'mode' parameter from the route URL
+  let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
+  nsfw = req.user.nsfw === 'true'?true:false
+  page = parseInt(page) || 1
+
+  if(!searchTerm){
+    res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
+    return
+  }
+  // If 'mode' is not provided, use the mode from the session (default to '1')
+  const currentMode = mode || req.session.mode || '1';
+
+  let scrapedData = await getUserScrapedData(req.user, searchTerm, mode, nsfw, page) ;
+
+  res.render(`search`, { user: req.user, searchTerm, scrapedData, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+});
+// Helper function to get user's scraped data based on criteria
+function getUserScrapedData(user, url, mode, nsfw, page) {
+  let userScrapedData = user.scrapedData || [];
+  let userScrapedDataWithCurrentPage;
+
+  if(url){
+    userScrapedDataWithCurrentPage = userScrapedData.filter(item => 
+       item.query == url && 
+       item.mode == mode && 
+       item.nsfw == nsfw && 
+       !item.hide && 
+       item.page == page &&
+       item.filePath
+      );
+  }else{
+    userScrapedDataWithCurrentPage = userScrapedData.filter(item => 
+        item.mode == mode && 
+        item.nsfw == nsfw && 
+        !item.hide && 
+        item.page == page &&
+        item.filePath
+    ); 
+  }
+  return userScrapedDataWithCurrentPage.slice(0,50);
+}
+
+// Route for handling '/dashboard/:mode'
+router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (req, res) => {
 
 console.log('Dashboard history page requested');
 const { mode } = req.params; // Get the 'mode' parameter from the route URL
@@ -137,7 +229,7 @@ if (userInfo) {
   let data = []
   try {
     // Filter the scrapedData array based on the 'mode'
-    const filteredData = scrapedData.filter(item => item.mode === mode && item.nsfw === nsfw);
+    const filteredData = scrapedData.filter(item => item.mode === mode && item.nsfw === nsfw && item.hide_query != true);
     // Create an object where the key is the 'query' and the value is an array of up to four items matching that 'query'.
     const queryMap = filteredData.reduce((acc, item) => {
       if(!item.query){

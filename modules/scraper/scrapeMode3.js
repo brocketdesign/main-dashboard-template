@@ -9,9 +9,9 @@ async function searchGoogleImage(query, mode, nsfw, url) {
 
     const google = new Scraper({
       puppeteer: {
-        headless: false,
+        headless: nsfw,
       },
-      safe: true   // enable/disable safe search
+      safe: nsfw   // enable/disable safe search
     });
 
     let scrapedData = await google.scrape(query, 100);
@@ -54,7 +54,9 @@ async function scrapeMode3(query, mode, nsfw, url, page) {
       return await searchGoogleImage(query, mode, nsfw, url, page);
     }
     console.log('Operating a NSFW search');
-    const data = await searchPorn(query, mode, nsfw, url, page);
+    const data1 = await searchPorn(query, mode, nsfw, url, page);
+    const data2 = await searchGoogleImage(query, mode, !nsfw, url, page);
+    const data = data1.concat(data2)
     return data;
   } catch (error) {
     console.log('Error occurred while scraping and saving data:', error);

@@ -24,6 +24,10 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
       await updateLastScraped(foundElement);
       return foundElement.url; 
     }
+    if (foundElement.mode == "2") {
+      await updateLastScraped(foundElement);
+      return foundElement.link; 
+    }
 
     return await searchVideo(AllData, foundElement, user, stream);
   } catch (error) {
@@ -93,7 +97,10 @@ async function saveData(AllData, videoDocument, format, user){
 }
 
 async function searchVideoUrl(AllData, videoDocument, user) {
-  const videoURL = `${process.env.DEFAULT_URL}${videoDocument.link}`;
+  videoURL = videoDocument.link
+  if(!videoDocument.link.includes('http')){
+    videoURL = `${process.env.DEFAULT_URL}${videoDocument.link}`;
+  }
   console.log('Video URL to scrape:', videoURL);
 
   const browser = await puppeteer.launch({ headless: false });

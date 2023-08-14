@@ -10,11 +10,11 @@ async function scrapeAndSaveDataMode2(query, mode, nsfw, url, page, filter='imag
 
   // Check if the data has already been scraped today
   const today = new Date().setHours(0, 0, 0, 0);
-  const existingData = await collection.findOne({ date: today ,subreddit:subreddit});
+  const existingData = await collection.findOne({ date: today ,subreddit:subreddit, page});
 
   try{
     if (existingData) {
-      const AllData = await collection.find({subreddit:subreddit}).toArray();
+      const AllData = await collection.find({subreddit:subreddit,page}).toArray();
       console.log('Data has already been scraped today.');
       return AllData;
     }
@@ -25,17 +25,22 @@ async function scrapeAndSaveDataMode2(query, mode, nsfw, url, page, filter='imag
   let result = []
   let AllData = []
   try {
+    lastID = await collection.findOne({ date: today ,subreddit:subreddit, page:parseInt(page -1 )});
+    if(lastID){
+      lastID = lastID.afterId || ''
+    }
+
     let getUrl = subreddit
     if(!subreddit.includes('http')){
-      getUrl = `https://www.reddit.com${subreddit}new/.json?count=25&after=`
+      getUrl = `https://www.reddit.com${subreddit}new/.json?count=25&after=${lastID}`
     }
+    console.log('Searching data on reddit. ',getUrl)
     const response = await axios.get(getUrl);
 
     const data = response.data.data.children.map((child) => child.data);
 
     // Filter the data based on the 'filter' query parameter
     result = data.reduce((filteredData, post) => {
-      console.log((filter === 'images' && !post.is_video && (!post.over_18 || nsfw )),nsfw)
       if (filter === 'images' && !post.is_video && (!post.over_18 || nsfw)) {
         filteredData.push(post);
       } else if (filter === 'videos' && post.is_video && (!post.over_18 || nsfw)) {
@@ -45,9 +50,10 @@ async function scrapeAndSaveDataMode2(query, mode, nsfw, url, page, filter='imag
       }
       return filteredData;
     }, []);
+    const afterId = result[result.length-1].id
+    console.log({afterId})
   // Save each post data to the MongoDB collection
   for (const post of result) {
-
     let preview = '';
 
     if (post.preview) {
@@ -62,10 +68,12 @@ async function scrapeAndSaveDataMode2(query, mode, nsfw, url, page, filter='imag
       thumb: post.thumbnail,
       imageUrl : preview,
       source: `https://www.reddit.com${post.permalink}`,
-      link: post.url_overridden_by_dest,
+      link: post.url_overridden_by_dest.replace('gifv','gif'),
       title: post.title,
       subreddit: subreddit, 
-      video_id: generateRandomID(8)
+      video_id: generateRandomID(8),
+      afterId,
+      page
     });
   }
   } catch (error) {
@@ -73,7 +81,7 @@ async function scrapeAndSaveDataMode2(query, mode, nsfw, url, page, filter='imag
     console.log('Failed to fetch data from Reddit' )
   }
 
-  console.log(AllData)
+  console.log(AllData[0])
   return AllData; // Return the scraped data array
 }
 function generateRandomID(length) {

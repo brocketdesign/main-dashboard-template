@@ -89,7 +89,26 @@ $(document).ready(function() {
     // Other event listeners
     $(document).on('click', '.alert-container', function() { $(this).fadeOut();  });
     $(".card.pricing").hover(() => $(this).addClass('border-primary'), () => $(this).removeClass('border-primary'));
-    $('.delete-button').click(function() {  handleHiding($(this).data('id'))  });
+    $('.delete-button').click(function(e) { 
+        e.preventDefault()
+        const confirmation = confirm("Are you sure you want to delete this ?");
+
+        if (!confirmation) {
+            return
+        }
+
+         handleHiding($(this).closest('.card').data('id'))  
+    });
+    $('.delete-button-history').click(function(e) {  
+        e.preventDefault()
+        const confirmation = confirm("Are you sure you want to delete this ?");
+
+        if (!confirmation) {
+            return
+        }
+        $(this).closest('a').remove()
+        handleHidingHistory($(this).closest('.card').data('query'))  
+    });
 
     $('.summarize-button').click(function(event) { 
         event.preventDefault(); // Prevents the default click behavior
@@ -98,7 +117,7 @@ $(document).ready(function() {
         if (!confirmation) {
             return
         }
-        const videoId = $(this).data('id');
+        const videoId = $(this).closest('.card').data('id');
           console.log('Download button clicked for:', {videoId});
           var $buttonContainer = $(this);
     
@@ -147,7 +166,7 @@ $(document).ready(function() {
     $('.card img').on('error', function() { 
         var videoId = $(this).data('id');
         console.log('Image load error for: ',videoId)
-        handleHiding(videoId); 
+        $(`.card[data-id=${videoId}]`).remove()
         handleMasonry()
     });
     $('.card img').on('load', function() { 
@@ -163,6 +182,7 @@ $(document).ready(function() {
 
     $('input#searchTerm').on('change',function(){$('#page').val(1)})
 
+    handleBookEditing();
     handleScrollDownButton();
     handleCardClickable();
     handleDownloadButton();
@@ -289,7 +309,7 @@ const handleFormResult = (isSuccess, message) => {
     let btnColor = isSuccess ? 'success' : 'danger';
     let btnSelector = `button[type="submit"]`;
 
-    $(btnSelector).removeClass('btn-primary').addClass(`btn-${btnColor}`);
+    $(btnSelector).removeClass('btn-success').addClass(`btn-${btnColor}`);
 
     // Stop any ongoing animations and hide all alerts
     $("#front-alert .alert-success").stop().hide();
@@ -297,12 +317,13 @@ const handleFormResult = (isSuccess, message) => {
 
     $("#front-alert .alert-"+btnColor).text(message).fadeIn().delay(5000).fadeOut();
 
-    setTimeout(() => $(btnSelector).removeClass(`btn-${btnColor}`).addClass('btn-primary'), 5000);
+    setTimeout(() => $(btnSelector).removeClass(`btn-${btnColor}`).addClass('btn-success'), 5000);
 }
 
 // Handling of card clicking
 const handleCardClickable = () => {
-  $('.card-clickable-1 img').click(function() {
+    $(`.card-clickable-1 img`)
+    .click(function() {
     const $thisCard = $(this).parent()
     var id = $thisCard.data('id');
     var isdl = $thisCard.data('isdl');
@@ -321,7 +342,7 @@ const handleCardClickable = () => {
 
       // Check if the spinner is already present, if not, create and append it to the card
       if (!$thisCard.find('.spinner-border .for-strm').length) {
-          var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute text-white bg-dark').css({inset:"0px", margin:"20% auto"}).attr('role', 'status');
+          var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute text-white bg-dark').css({inset:"0px", margin:"auto"}).attr('role', 'status');
           var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
           $spinner.append($span);
           $thisCard.find('.card-body-over').append($spinner);
@@ -336,6 +357,8 @@ const handleCardClickable = () => {
       $.get('/api/video', { id: id }, function(response) {
           console.log('API Response:', response);
 
+        // Hide the spinner
+        $spinner.hide();
           // Assuming the response from the API is a JSON object with a 'url' property
           if (response && response.url) {
               console.log('Received video URL:', response.url);
@@ -363,6 +386,24 @@ const handleCardClickable = () => {
 
               console.log('Video added to card body.');
 
+              //Add related
+              if(response.related){
+                $('#related').html('')
+                $cardContainer = $('.card.card-clickable-1').clone()
+                for(item in response.related){
+                    $spinner = $cardContainer.find('.spinner-border');
+                    $spinner.hide()
+                    $cardContainer.addClass('item m-2').style('width','18rem')
+                    $cardContainer.attr('data-id',item.video_id).attr('data-title',item.alt)
+                    $cardContainer.find('src').attr('src',item.imageUrl)
+                    $cardContainer.find('a.source').attr('href',item.href)
+                    $cardContainer.find('p.card-title').text(item.alt)
+                    
+                    $('#related').append($cardContainer)
+                }
+                handleCardClickable()
+              }
+
             if (isdl==false && response.url.includes('http')) {
                 // Add the download button
                 var $downloadButton = $thisCard.find('.download-button')
@@ -370,8 +411,6 @@ const handleCardClickable = () => {
                 console.log('Download button added to card body.');
             }
                 
-              // Hide the spinner
-              $spinner.hide();
           } else {
               // If the response does not contain a URL, show an error message or handle it as needed
               console.error('Error: Video URL not available.');
@@ -387,8 +426,8 @@ const handleCardClickable = () => {
 const handleDownloadButton = () => {
   $(document).on('click', '.download-button', function(event) {
     event.preventDefault(); // Prevents the default click behavior
-    var id = $(this).data('id');
-    var title = $(this).data('title');
+    var id = $(this).closest('.info-container').data('id');
+    var title = $(this).closest('.card').data('title');
       console.log('Download button clicked for:', {id,title});
       var $buttonContainer = $(this);
 
@@ -526,12 +565,15 @@ const handleSwitchNSFW= () => {
         $('#nsfw').prop('checked', switchState === 'true');
     }
 
+    handleNSFWlabel(switchState)
+
     // Save the state of the switch to a local variable when it's toggled
     $('#nsfw').change(function() {
         $('input#searchTerm').val('')
         localStorage.setItem('handleSwitchNSFW', $(this).is(':checked'));
         console.log('NSFW: ',$(this).is(':checked'))
         const nsfw = $(this).is(':checked')
+        handleNSFWlabel(nsfw)
         $.ajax({
             url: `/user/nsfw`,
             type: 'POST',
@@ -539,11 +581,19 @@ const handleSwitchNSFW= () => {
             success: (response) => {
                 //handleFormResult(true, response.message);
                 location.href = location.origin + location.pathname;
-
             },
             error: handleFormError
         });
+        
     });
+}
+function handleNSFWlabel(nsfw){
+    if(nsfw === true || nsfw === 'true'){
+        $('label[for="nsfw"]').addClass('bg-danger').removeClass('bg-dark')
+    }else{
+        $('label[for="nsfw"]').removeClass('bg-danger').addClass('bg-dark')
+    }
+    
 }
 const handleCOmpare = () => {
     $('#compare').on('submit', function(e) {
@@ -704,6 +754,20 @@ const handleHiding = (videoId) => {
 
 }
 
+const handleHidingHistory = (query) => {
+    $.ajax({
+        url: '/api/hideHistory',
+        method: 'POST',
+        data: { query: query },
+        success: function(response) {
+            handleMasonry()
+            handleFormResult(true,response.message)
+            // Handle the success response
+            console.log(response);
+            },
+        error: handleFormError
+    });
+}
 function updategridlayout(value) {
     // Function implementation goes here
     // This function will be called when the range input is changed
@@ -847,6 +911,70 @@ function searchSubreddits(el) {
       }, 1000);
     }
   }
+function handleBookEditing(){
+    $('#edit-book textarea').on('input', function() {
+        $(this).css('height', 'auto');
+        $(this).css('height', $(this).prop('scrollHeight') + 'px');
+    });
+    $('textarea').each(function() {
+        $(this).css('height', 'auto');
+        $(this).css('height', $(this).prop('scrollHeight') + 'px');
+    });
+    $(document).on('change','#edit-book input, #edit-book  textarea',function(){
+        const bookID = $('#edit-book').attr('data-id')
+        const keyPath = $(this).attr('data-key');
+        const newValue = $(this).val();
+    
+        handleBook({bookID, keyPath, newValue},'edit-book') 
+    });
+    let lastFocusedInput = null;  // This will store the last focused input or textarea
+
+    $('#edit-book input, #edit-book textarea').on('focus', function() {
+        lastFocusedInput = this;  // Save the focused input or textarea
+    });
+    
+    $('#regen').on('click', function() {
+        if (lastFocusedInput) {
+            $('#regen i').addClass('rotate')
+            const bookID = $('#edit-book').attr('data-id');
+            const keyPath = $(lastFocusedInput).attr('data-key');
+            const newValue = $(lastFocusedInput).val();
+            handleBook({bookID, keyPath, newValue},'regen-ebook',function(response){
+                console.log(response.data)
+                $('#regen i').removeClass('rotate')
+                // Assuming response.data contains the new value you want to insert
+                $(lastFocusedInput).val(response.data);
+            })
+            console.log({bookID, keyPath, newValue});
+        } else {
+            console.log('No input or textarea has been selected.');
+        }
+    });
+    
+    
+}
+
+  async function handleBook(data,apiKey,callback) {
+
+    $.ajax({
+        type: "POST",
+        url: "/api/openai/"+apiKey,  // Your API endpoint for updating book info
+        data: JSON.stringify(data),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function(response) {
+            // Handle success - maybe a notification to the user
+            handleFormResult(true, 'Ebook updated')
+            if(callback){
+                callback(response)
+            }
+        },
+        error: function(err) {
+            // Handle error - notify the user that the update failed
+        }
+    });
+}
+
   function searchFor(el){
     let url = $(el).data('url')
     let value = $(el).data('value')

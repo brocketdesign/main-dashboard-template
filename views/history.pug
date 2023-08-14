@@ -1,31 +1,19 @@
-extends default
+extends dashboard
 
-block content
-  .container-fluid.h-100
-    .row.h-100
-      include sidebar
-      .row.justify-content-center.m-0.p-0
-        .container.py-4.bg-light.h-100
-          main.col-md-9.ms-sm-auto.col-lg-10.px-md-4
-            h1 Welcome #{user.username}!
-            form(action=`/dashboard/app/${mode}`, method="GET")
-              .input-group.mb-3
-                .input-group-prepend
-                  .form-check.form-switch.input-group-text.rounded-0.m-0
-                    label.form-check-label.badge.me-3.bg-danger(for="nsfw") NSFW
-                    input.form-check-input(type="checkbox", role="switch", id="nsfw", name="nsfw", style="z-index: 1;")
-                input#searchTerm(onfocus=mode==2?'searchSubreddits(this)':undefined ,type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
-                button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") 
-                  i.fas.fa-search
-              ul.list-group#subRedditSearchRes.bg-white.w-100.position-absolute.border.shadow(style="max-height: 50vh;overflow: auto;z-index: 3;display: contents;")
-            if data
-              .masonry-container.row.custom-carousel-container
-                each query, index in Object.keys(data).reverse()
-                  a.masonry-item.col-6.col-sm-4.text-center.mb-3(href=`/dashboard/app/${mode}/?searchTerm=${query}`)
-                    span=query
-                    .card(style="overflow: hidden;")
-                      .card-body.row.p-0.rounded
-                        each item in data[query]
-                          img.col-6.p-0(data-id=item.video_id, src=item.url || item.imageUrl, alt=item.title, style="object-fit:cover")
-            else
-              p Your search history will be displayed here.
+block dynamicContent
+  if data
+    .masonry-container.row.custom-carousel-container
+      each query, index in Object.keys(data).reverse()
+        a.masonry-item.col-6.col-sm-3.mb-3.px-2.rounded(href=`/dashboard/app/${mode}/?searchTerm=${query}`)
+          .card.hover(style="overflow: hidden;", data-query=query)
+            .card-top.py-2.px-3.position-absolute
+              .d-flex.justify-content-between
+                  .delete-button-history.btn.btn-dark.border-white.border.hover.shadow(type="button", style="display:none")
+                      i.fas.fa-trash-alt
+            .card-body.row.p-0.rounded
+              each item in data[query]
+                img.col-6.p-0(style="width:50%;height:75px;object-fit:cover", data-id=item.video_id, src=item.url || item.imageUrl || item.thumb, alt=item.title)
+              .text-dark.px-4.py-2.fw-bold
+                span=query
+  else
+    p Your search history will be displayed here.

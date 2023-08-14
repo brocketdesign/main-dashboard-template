@@ -16,10 +16,11 @@ const removeCurrentSlide = (images) => {
 }
 const updateSliderToolBar = (images) => {
     const currentSlide = getCurrentSlide();
-    const $buttonDownload = $('#slickCarousel-tool-bar').find('.download-button')
-    $buttonDownload.attr('data-id',images[currentSlide].id)
+    $('#slickCarousel-tool-bar').attr('data-id',images[currentSlide].id)
+    $('#slickCarousel-tool-bar').attr('data-title',images[currentSlide].title)
     $('#slickCarousel-tool-bar').find('.source').attr('href',images[currentSlide].source)
-    $('#slickCarousel-tool-bar').find('.slider-delete-button').attr('data-id',images[currentSlide].delete)
+    
+    const $buttonDownload = $('#slickCarousel-tool-bar').find('.download-button')
     $buttonDownload.removeClass('done text-primary')
 }
 $(document).ready(function() {
@@ -27,13 +28,14 @@ $(document).ready(function() {
     const images = $('.custom-carousel-item').map(function() {
       return {
         img: $(this).find('img').attr('src'),
-        id: $(this).find('.download-button').attr('data-id'),
+        id: $(this).find('.info-container').attr('data-id'),
         source: $(this).find('.source').attr('href'),
-        delete: $(this).find('.delete-button').attr('data-id'),
+        delete: $(this).find('.info-container').attr('data-id'),
+        title:$(this).find('.info-container').attr('data-title')
       };
     }).get();
-
-   $('.custom-carousel-item[data-mode="3"] img').on('click', function() {
+console.log(images.slice(0,1))
+   $('.custom-carousel-item[data-mode="3"] img, .custom-carousel-item[data-mode="2"] img').on('click', function() {
     var clickedImageIndex = images.findIndex(function(image) {
       return image.img === $(this).attr('src');
     }.bind(this));
@@ -73,7 +75,7 @@ $(document).ready(function() {
   });
 
     $('#slickCarousel-tool-bar').find('.slider-delete-button').on('click',function(){
-        handleHiding($(this).attr('data-id'))
+        handleHiding($(this).closest('#slickCarousel-tool-bar').attr('data-id'))
         removeCurrentSlide(images);
         // Call 'slick("refresh")' to reinitialize the slider after slide removal
         $('#slickCarousel').slick('refresh');

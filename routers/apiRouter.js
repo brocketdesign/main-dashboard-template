@@ -9,11 +9,14 @@ const multer = require('multer');
 const searchSubreddits = require('../modules/search.subreddits')
 const summarizeVideo = require('../modules/youtube-summary')
 const postArticleToWordpress = require('../modules/postArticleToWordpress')
+const scrapeMode1GetRelatedVideo = require('../modules/scraper/scrapeMode1GetRelatedVideo')
+const createBookChapters = require('../modules/createBookChapters')
 
 const axios = require('axios');
 const path = require('path');
 
 const fs = require('fs');
+const url = require('url');
 const { ObjectId } = require('mongodb');
 
 // API router for openAI
@@ -130,8 +133,6 @@ router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }
     res.status(500).send('Internal server error');
   }
 });
-
-
 // Define the /openai/summarize route
 router.post('/openai/summarize', async (req, res) => {
   console.log('Received request to /openai/summarize');
@@ -168,6 +169,128 @@ router.post('/openai/summarize', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+// Define the /openai/ebook route
+router.post('/openai/ebook', async (req, res) => {
+  console.log('Received request to /openai/ebook');
+
+  try {
+    const { topic, language } = req.body;
+    console.log(`Write an ebook about "${topic}" in ${language}`);
+
+    const bookId = await createBookChapters(req.user,topic,language);
+  
+    res.redirect(`/dashboard/app/openai/ebook/${bookId}`);
+
+  } catch (err) {
+    console.error('Error encountered:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/openai/edit-book', async (req, res) => {
+  const {bookID, keyPath, newValue} = req.body;
+
+  let bookData;
+  if (keyPath.includes('.')) {
+      const parts = keyPath.split('.');
+      bookData = {};
+      let current = bookData;
+
+      for (let i = 0; i < parts.length - 1; i++) {
+          current[parts[i]] = {};
+          current = current[parts[i]];
+      }
+
+      current[parts[parts.length - 1]] = newValue;
+  } else {
+      bookData = {[keyPath]: newValue};
+  }
+
+  const bookCollection = global.db.collection('books');
+
+  try {
+    const updateResponse = await bookCollection.updateOne({ _id: new ObjectId(bookID) }, { $set: bookData });
+
+    if(updateResponse.matchedCount == 0) {
+        // Handle no document found with given ID
+        return res.status(404).send({ success: false, message: "No document found with the given ID" });
+    }
+
+    res.send({ success: true });
+  } catch(err) {
+      res.status(500).send({ success: false, message: err.message });
+  }
+});
+router.post('/openai/regen-ebook', async (req, res) => {
+  const {bookID, keyPath, newValue} = req.body;
+  const { Configuration, OpenAIApi } = require('openai');
+  const { ObjectId } = require('mongodb');
+  console.log('Request for regen-ebook', keyPath)
+  const openAIConfig = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  
+  const openaiClient = new OpenAIApi(openAIConfig);
+
+  let bookData;
+  if (keyPath.includes('.')) {
+      const parts = keyPath.split('.');
+      bookData = {};
+      let current = bookData;
+
+      for (let i = 0; i < parts.length - 1; i++) {
+          current[parts[i]] = {};
+          current = current[parts[i]];
+      }
+
+      current[parts[parts.length - 1]] = newValue;
+  } else {
+      bookData = {[keyPath]: newValue};
+  }
+
+  const bookCollection = global.db.collection('books');
+
+  try {
+    const book = await bookCollection.findOne({ _id: new ObjectId(bookID) })
+
+    const chapterPrompt = `
+    I'd like a new version of the following content: ${newValue}. 
+    Your response must be in ${book.language}.
+    `;
+    
+    const gptResponse = await openaiClient.createCompletion({
+        model: "text-davinci-003",
+        prompt: chapterPrompt,
+        max_tokens: newValue.length + 50,
+        temperature: 0,
+    });
+    /*
+    try {
+      
+          const messages = [
+            { role: 'system', content: 'You are a powerful assistant' },
+            { role: 'user', content: chapterPrompt },
+          ];
+          var completion = await openaiClient.createChatCompletion({
+            model: process.env.COMPLETIONS_MODEL,
+            messages,
+            max_tokens: 1000 // Specify the maximum token limit
+          });
+          completion = completion.data.choices[0].message.content
+      
+          console.log(completion)
+    } catch (error) {
+      console.log(error)
+    }
+    */
+    
+    res.send({ success: true, data:gptResponse.data.choices[0].text.trim() });
+  } catch(err) {
+      res.status(500).send({ success: false, message: err.message });
+  }
+});
+
+
 async function saveDataSummarize(user, videoId, format){
   try {
     const userId = user._id;
@@ -246,8 +369,6 @@ router.post('/post-article', async (req, res) => {
   }
 });
 
-
-
 router.post('/submit/:sectionName', ensureAuthenticated, (req, res) => {
   const sectionName = req.params.sectionName;
   const formData = req.body;
@@ -271,14 +392,15 @@ router.get('/video', async (req, res) => {
     const { id } = req.query;
     
     // Call the function to get the highest quality video URL for the provided id
-    const highestQualityURL = await getHighestQualityVideoURL(id,req.user);
+    const url = await getHighestQualityVideoURL(id,req.user);
+    const related = await scrapeMode1GetRelatedVideo(id,req.user,req.user.mode, req.user.nsfw)
 
-    if (!highestQualityURL) {
+    if (!url) {
       return res.status(404).json({ error: 'Video not found or no valid URL available.' });
     }
 
     // Respond with the highest quality video URL
-    return res.json({ url: highestQualityURL });
+    return res.json({ url, related });
   } catch (error) {
     console.error('Error occurred while processing the request:', error);
     return res.status(500).json({ error: 'An error occurred while processing the request.' });
@@ -289,7 +411,8 @@ const ytdl = require('ytdl-core');
 const ffmpeg = require('fluent-ffmpeg');
 
 router.post('/dl', async (req, res) => {
-  const {video_id,title} = req.body;
+  const video_id = req.body.video_id;
+  const title = req.body.title || 'vid';
   console.log('File download requested for video_id:', video_id);
 
   try {
@@ -314,7 +437,8 @@ router.post('/dl', async (req, res) => {
       download_directory = download_directory+'/youtube';
     }
     // Get file name from the URL
-    let fileName = `${title}_${Date.now()}.mp4`;
+    let extension = getFileExtension(url);
+    let fileName = `${title}_${Date.now()}${extension}`;
     let filePath = path.join(download_directory, fileName);
 
     // Create download folder if it doesn't exist
@@ -547,6 +671,45 @@ router.post('/hide', async (req, res) => {
   }
 });
 
+router.post('/hideHistory', async (req, res) => {
+  const query = req.body.query;
+  console.log('Hide the query:', query)
+  if (!query) {
+    return res.status(400).json({ message: 'Query not provided' });
+  }
+
+  const userId = req.user._id; // Assuming you are getting userId from a logged in user
+  
+  try {
+    const userInfo = await global.db.collection('users').findOne({ _id: userId });
+    if (!userInfo) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const scrapedData = userInfo.scrapedData || [];
+    
+    // Loop through scrapedData and update any matching items
+    for (let i = 0; i < scrapedData.length; i++) {
+      if (scrapedData[i].query === query) { // Assuming the 'data' field contains the data you want to match against
+        scrapedData[i].hide_query = true;
+      }
+    }
+
+    // Update the user's scrapedData in the database
+    await global.db.collection('users').updateOne({ _id: userId }, {
+      $set: {
+        scrapedData: scrapedData
+      }
+    });
+
+    res.status(200).json({ message: 'This element wont be displayed anymore' });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'An error occured' });
+  }
+});
+
+
 async function saveImageToDB(db, userID, prompt, image) {
   const imageID = new ObjectId();
   const collection = db.collection('images');
@@ -598,6 +761,14 @@ function createDownloadFolder(downloadDirectory) {
       console.log('Download folder created successfully.');
     }
   });
+}
+
+function getFileExtension(urlString) {
+    const parsedUrl = new URL(urlString);
+    const pathname = parsedUrl.pathname;
+    const filename = path.basename(pathname);
+    const fileExtension = path.extname(filename);
+    return fileExtension;
 }
 
 module.exports = router;

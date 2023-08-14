@@ -99,6 +99,7 @@ router.get('/login', (req, res) => {
 });
 
 router.post('/login', passport.authenticate('local', { failureRedirect: '/user/login', failureFlash: 'Invalid username or password.' }), (req, res) => {
+  req.user.nsfw = false
   req.flash('info', 'You are now logged in!');
   res.redirect('/payment/subscription');
 });
