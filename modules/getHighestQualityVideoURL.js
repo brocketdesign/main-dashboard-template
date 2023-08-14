@@ -21,11 +21,11 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     }
 
     if (foundElement.mode == "3") {
-      await updateLastScraped(foundElement);
+      await saveData(AllData, foundElement,{filePath:foundElement.url}, user)
       return foundElement.url; 
     }
-    if (foundElement.mode == "2") {
-      await updateLastScraped(foundElement);
+    if (foundElement.mode == "2" || foundElement.mode == "4") {
+      await saveData(AllData, foundElement,{filePath:foundElement.link}, user)
       return foundElement.link; 
     }
 

@@ -1,4 +1,4 @@
-#sidebarMenu.collapse.d-lg-block.sidebar.collapse.bg-white.position-fixed.h-100.col-md-3.col-lg-2.p-0.shadow(style="z-index:10;")
+#sidebarMenu.collapse.sidebar.collapse.bg-white.position-fixed.h-100.col-md-3.col-lg-3.p-0.shadow(style="z-index:10;display:none")
   .position-sticky
     .list-group.list-group-flush
       li.list-group-item.list-group-item-action.py-2
@@ -10,9 +10,14 @@
           i.fas.fa-video.me-3
           | ビデオ
       li.list-group-item.list-group-item-action.py-2.ripple
-        a(href="/dashboard/app/3/history") 
+        a(href="/dashboard/app/3/history", data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse7', aria-controls='contents-collapse7') 
           i.fas.fa-image.me-3
           | 画像
+        ul.list-unstyled.collapse#contents-collapse7.pt-3(class=`${mode == "news" ? "show":"hide"}`)
+          li
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/4/history') 
+              i.fas.fa-search.me-3
+              | image
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="/dashboard/app/2") 
           i.fas.fa-reddit.me-3
@@ -29,7 +34,7 @@
           li
             a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/news/') 
               i.fas.fa-history.me-3
-              | パラメータ.list-group-item-action.py-2.ripple
+              | パラメータ
       li.list-group-item
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse4', aria-controls='contents-collapse4') 
           i.fas.fa-mixcloud.me-3

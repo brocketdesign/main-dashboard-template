@@ -97,7 +97,7 @@ if (page <= currentPage) {
     mode: mode,
     nsfw: nsfw,
     page: page
-  }));
+  })); 
 
   await findAndUpdateUser(userId, scrapedData);
   console.log('Scraped data saved.');

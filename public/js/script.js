@@ -182,6 +182,10 @@ $(document).ready(function() {
 
     $('input#searchTerm').on('change',function(){$('#page').val(1)})
 
+
+
+
+    handleSideBar();
     handleBookEditing();
     handleScrollDownButton();
     handleCardClickable();
@@ -998,3 +1002,38 @@ function handleBookEditing(){
   return queries;
 }
 
+// Function to handle toggle click event
+function toggleSidebarMenu() {
+    // Initialize the variable. Parse the value to a boolean using the double negation trick.
+    var isSidebarMenuVisible = JSON.parse(localStorage.getItem('isSidebarMenuVisible') || 'false');
+
+    // Toggle the variable
+    isSidebarMenuVisible = !isSidebarMenuVisible;
+
+    // Update the local storage
+    localStorage.setItem('isSidebarMenuVisible', JSON.stringify(isSidebarMenuVisible));
+
+    if (isSidebarMenuVisible) {
+        $('#sidebarMenu').hide();
+        $('main').removeClass('ms-sm-auto col-md-8 col-lg-9').addClass('col-12');
+    } else {
+        $('#sidebarMenu').show();
+        $('main').addClass('ms-sm-auto col-md-8 col-lg-9').removeClass('col-12');
+    }
+}
+function handleSideBar() {
+    // Initialize the variable. Parse the value to a boolean using the double negation trick.
+    var isSidebarMenuVisible = JSON.parse(localStorage.getItem('isSidebarMenuVisible') || 'false');
+
+    if (isSidebarMenuVisible) {
+        $('#sidebarMenu').hide();
+        $('main').removeClass('ms-sm-auto col-md-8 col-lg-9').addClass('col-12');
+    } else {
+        $('#sidebarMenu').show();
+        $('main').addClass('ms-sm-auto col-md-8 col-lg-9').removeClass('col-12');
+    }
+    $('main').show();
+
+    // Assign the event handler to the button. Note: Don't call the function here, just reference it.
+    $('#sidebarMenuToggle').on('click', toggleSidebarMenu);
+}

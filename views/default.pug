@@ -23,9 +23,7 @@ html
           a.navbar-brand(href='/')
             img.logo.mx-2(src='/img/logo.png', alt='ロゴ' style="max-width: 50px;")
             | ホーム
-          button.navbar-toggler.d-lg-none(type="button", data-bs-toggle="collapse", data-bs-target="#sidebarMenu")
-            i.fas.fa-bars
-          button.navbar-toggler.d-none(type='button', data-bs-toggle='collapse', data-bs-target='#navbarCollapse')
+          button#sidebarMenuToggle.btn.text-white.shadow-0(type="button")
             i.fas.fa-bars
           #navbarCollapse.collapse.navbar-collapse
             ul.navbar-nav.ms-auto.mb-2.mb-md-0

@@ -3,8 +3,6 @@ extends default
 block content
     //- Background image
     div#intro.bg-image.vh-100.shadow-1-strong
-        video(style="min-width: 100%; min-height: 100%;" playsinline autoplay muted loop)
-            source.h-100(src="https://mdbootstrap.com/img/video/animation-intro-min.mp4" type="video/mp4")
         div.mask(style="background: linear-gradient(45deg, rgba(29, 236, 197, 0.7), rgba(91, 14, 214, 0.7) 100%);")
             div.container.d-flex.align-items-center.justify-content-center.text-center.h-100
                 div.text-white
@@ -12,6 +10,9 @@ block content
                     h5.mb-4 契約作業をオンラインだけで完結させます。 
                     a.btn.btn-outline-light.btn-lg.m-2(href="/user/login" role="button" rel="nofollow" ) ログイン
                     a.btn.btn-outline-light.btn-lg.m-2(href="/user/signup" role="button") アカウントを作成
+                    .text-white
+                        if ngrok 
+                            a(href=ngrok) NGROK is available !
     //- Main layout
     main.mt-5
         div.container

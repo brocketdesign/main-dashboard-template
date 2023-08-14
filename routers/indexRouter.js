@@ -1,17 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 
 // Require and use 'express-session' middleware
 const session = require('express-session');
 
-router.get('/',(req, res, next) => {
+router.get('/',async(req, res, next) => {
   if (req.isAuthenticated()) {
     return res.redirect('/dashboard'); // Redirect to the dashboard if user is logged in
   }
   // Set the mode to 1 in the session
   req.session.mode = '1';
 
+  let ngrok = process.env.NGROK 
+
   console.log('Top page requested');
-  res.render('index'); // Render the top page template
+  res.render('index',{ngrok}); // Render the top page template
 });
 module.exports = router;

@@ -49,8 +49,6 @@ router.post('/openai/send-prompt', async (req, res) => {
     });
     completion = completion.data.choices[0].message.content
 
-    console.log(completion)
-
     const dataUpdate = { message: prompt, completion: completion, response_time: new Date(),message_time:time };
     const result = await global.db.collection('users').updateOne(
       { _id: req.user._id },
@@ -254,7 +252,7 @@ router.post('/openai/regen-ebook', async (req, res) => {
     const book = await bookCollection.findOne({ _id: new ObjectId(bookID) })
 
     const chapterPrompt = `
-    I'd like a new version of the following content: ${newValue}. 
+    I'd like a paraphrase of the following content: ${newValue}. 
     Your response must be in ${book.language}.
     `;
     

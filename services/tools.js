@@ -1,5 +1,9 @@
 const { ObjectId } = require('mongodb');
 const { Configuration, OpenAIApi } = require('openai');
+const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios'); // You'll need to install axios: npm install axios
 
 
 // Initialize OpenAI with your API key
@@ -71,4 +75,83 @@ async function translateText(text,lang) {
   return gptResponse.data.choices[0].text.trim();
 }
 
-module.exports = { formatDateToDDMMYYHHMMSS, findElementIndex, saveData ,translateText }
+async function fetchMediaUrls(url) {
+  const browser = await puppeteer.launch({
+    headless: false,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+  });
+  const page = await browser.newPage();
+
+  const images = [];
+  const videos = [];
+
+  // Listen to all requests
+  page.on('request', request => {
+      const resourceType = request.resourceType();
+      const requestUrl = request.url();
+
+      if (resourceType === 'image') {
+          images.push(requestUrl);
+      } else if (resourceType === 'media') {
+          videos.push(requestUrl);
+      }
+  });
+
+  await page.goto(url, { waitUntil: 'networkidle2' });
+
+  // Scroll to the bottom of the page
+  let previousHeight;
+  let maxScrollAttempts = 10; // Adjust this value based on your needs
+  let attempts = 0;
+  
+  while (attempts < maxScrollAttempts) {
+      previousHeight = await page.evaluate('document.body.scrollHeight');
+      await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
+      
+      try {
+          await page.waitForFunction(`document.body.scrollHeight > ${previousHeight}`, { timeout: 3000 }); // 3 seconds timeout
+      } catch (error) {
+          // If waitForFunction times out, break out of the loop
+          break;
+      }
+  
+      const newHeight = await page.evaluate('document.body.scrollHeight');
+      if (newHeight === previousHeight) {
+          break;
+      }
+  
+      attempts++;
+  }
+  
+
+  await browser.close();
+
+  // Check if 'downloaded_images' directory exists, if not, create it
+  const dirPath = path.join(__dirname, '..', 'public', 'downloads', 'downloaded_images');
+
+  if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath);
+  }
+
+  // Download images and save them locally
+  const imagePaths = await Promise.all(images.map(async (imageUrl) => {
+      const imageBuffer = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const imageName = path.basename(new URL(imageUrl).pathname) || 'defaultImageName.jpg'; // Provide a default name if imageName is empty
+
+      const localImagePath = path.join(dirPath, imageName);
+      
+      // Check if localImagePath is a directory
+      if (fs.existsSync(localImagePath) && fs.statSync(localImagePath).isDirectory()) {
+          console.error(`Cannot write to ${localImagePath} because it's a directory.`);
+          return;
+      }
+      
+      fs.writeFileSync(localImagePath, imageBuffer.data);
+            return {link:localImagePath.replace(/.*public/, ''),source:imageUrl};
+  }));
+
+console.log(imagePaths[0])
+  return imagePaths;
+}
+
+module.exports = { formatDateToDDMMYYHHMMSS, findElementIndex, saveData ,translateText , fetchMediaUrls}

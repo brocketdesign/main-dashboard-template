@@ -6,10 +6,10 @@ block content
       include sidebar
       .row.justify-content-center.m-0.p-0
         .container.py-4.bg-light.h-100
-          main.col-md-9.ms-sm-auto.col-lg-10.px-md-4
+          main.col-md-8.ms-sm-auto.col-lg-9.px-md-4
             .container.my-4
               .row.position-relative
-                .col-12.col-sm-3.order-2.order-sm-1
+                .col-12.col-sm-4.order-2.order-sm-1
                   h2 モデルを選択
                   .d-flex.m-2.align-items-center(style="min-height: 30px;")
                       span(data-bs-toggle="tooltip" data-bs-placement="top" title="プロンプト")
@@ -55,6 +55,6 @@ block content
                                         .card.h-100.tags.rounded-0(style=`cursor: pointer;` data-id=`${categoryID}-${subcategoryID}-${tagID}` class=`${selected ? 'selected' : ''}`)
                                           .card-body.py-1(style=`cursor: pointer;`)
                                             span.card-title(data-id=`${categoryID}-${subcategoryID}-${tagID}` data-name=tag.name)=tag.name_JP!=undefined?tag.name_JP:tag.name 
-                .col-12.col-sm-9.order-1.order-sm-2
+                .col-12.col-sm-8.order-1.order-sm-2
                   #diffused-image-gallery.mt-2.row(style="width:100%")
   script(src="/js/stable-diffusion-script.js")
