@@ -145,6 +145,19 @@ if (page <= currentPage) {
 
   return userScrapedDataWithCurrentPage;
 }
+async function filterElement(scrapedData) {
+  // Extract all sources from scrapedData
+  const sources = scrapedData.map(item => item.source);
+
+  // Find sources that exist in the "medias" collection with hide: true
+  const hiddenSources = await global.db.collection('medias').find({ 
+    source: { $in: sources },
+  }).toArray();
+  const hiddenSourceSet = new Set(hiddenSources.map(item => item.source));
+
+  // Filter out items from scrapedData that have hide: true in the "medias" collection
+  return scrapedData.filter(item => !hiddenSourceSet.has(item.source));
+}
 async function filterHiddenElement(scrapedData) {
   // Extract all sources from scrapedData
   const sources = scrapedData.map(item => item.source);

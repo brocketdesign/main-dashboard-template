@@ -2,32 +2,52 @@ extends default
 
 block content
     //- Background image
-    div#intro.bg-image.vh-100.shadow-1-strong
-        div.mask(style="background: linear-gradient(45deg, rgba(29, 236, 197, 0.7), rgba(91, 14, 214, 0.7) 100%);")
-            div.container.d-flex.align-items-center.justify-content-center.text-center.h-100
-                div.text-white
-                    h1.mb-3 電子契約サービスです
-                    h5.mb-4 契約作業をオンラインだけで完結させます。 
-                    a.btn.btn-outline-light.btn-lg.m-2(href="/user/login" role="button" rel="nofollow" ) ログイン
-                    a.btn.btn-outline-light.btn-lg.m-2(href="/user/signup" role="button") アカウントを作成
-                    .text-white
+    div#intro.bg-image.shadow-1-strong
+        div(style="background:linear-gradient(45deg, rgba(23, 88, 213, 0.7), rgba(14, 167, 214, 0.7) 100%);")
+            div.container.d-flex.align-items-center.h-100(style="min-height:70vh;")
+                div.text-white.col-6
+                    h1.mb-3.fw-bold(style="font-size:4em;") 
+                        span コンテンツ制作を
+                        p 10倍速に
+                    h5 高品質な記事やSNS・広告文を数秒で作成
+                    h5.mb-4 AIライティングアシスタント
+                    a.btn.btn-warning.btn-lg.m-2(href="/user/signup", role="button", style="font-size:1em;") まずは無料で使ってみる
+                    .px-2
                         if ngrok 
-                            a(href=ngrok) NGROK is available !
+                            a.text-white(href=ngrok) NGROK is available !
     //- Main layout
-    main.mt-5
-        div.container
+    main.bg-light
+        div.container.pt-5
             //- Section: Content
             section
                 div.row
                     div.col-md-6.gx-5.mb-4
                         div.bg-image.hover-overlay.ripple.shadow-2-strong.rounded-5(data-mdb-ripple-color="light")
-                            img.img-fluid(src="https://mdbootstrap.com/img/new/slides/031.jpg")
+                            img.img-fluid(src="https://storage.googleapis.com/studio-design-asset-files/projects/VGOKDzGlqn/s-2400x1925_v-frms_webp_5dc7a9f1-627e-4515-a6ab-6b5b6dc66218_middle.webp")
                             a(href="#!")
                                 div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
                     div.col-md-6.gx-5.mb-4
-                        h4.strong 簡単に利用できます
+                        h4.fw-bold(style="font-size:5em;")  ChatGPTよりも効率よく
+                        h4.fw-bold(style="font-size:2em;")  コンテンツ作成を進めましょう
                         p.text-muted
-                            | クラウドサインは、契約作業をオンライン上で完結させることができる便利な電子契約サービスです。煩わしい手続きや用紙の準備は必要ありません。素早く効率的に契約を行いましょう。
+                            | ブログ記事や広告文など100種類以上の効果的な日本語テンプレートを備えており、必要なジャンルのコンテンツをすぐに作成することが可能です。
+                        p.strong セキュアで信頼性があります
+                        p.text-muted
+                            | 当社のサービスはセキュリティに優れており、個人情報や機密データは厳重に保護されます。安心してご利用いただけます。
+            hr.my-5
+            //- Section: Content
+            section
+                div.row
+                    div.col-md-6.gx-5.mb-4.order-md-2
+                        div.bg-image.hover-overlay.ripple.shadow-2-strong.rounded-5(data-mdb-ripple-color="light")
+                            img.img-fluid(src="https://storage.googleapis.com/studio-design-asset-files/projects/VGOKDzGlqn/s-2400x1610_v-frms_webp_918879e4-e6ce-4e95-92d6-37688b3bde50_middle.webp")
+                            a(href="#!")
+                                div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
+                    div.col-md-6.gx-5.mb-4
+                        h4.fw-bold(style="font-size:5em;")  AIエディターで
+                        h4.fw-bold(style="font-size:2em;")  長文コンテンツを作成
+                        p.text-muted
+                            | ブログ記事や広告文など100種類以上の効果的な日本語テンプレートを備えており、必要なジャンルのコンテンツをすぐに作成することが可能です。
                         p.strong セキュアで信頼性があります
                         p.text-muted
                             | 当社のサービスはセキュリティに優れており、個人情報や機密データは厳重に保護されます。安心してご利用いただけます。
@@ -71,3 +91,50 @@ block content
                                 p.card-text
                                     | クラウドサインでは個人情報の保護に力を入れています。安心して大切な契約を行いましょう。
                                 a.btn.btn-primary 詳細を見る
+            hr.my-5
+            //- Section: Content
+            section.text-center
+                .pricing-header.p-3.pb-md-4.mx-auto.text-center
+                    h1.display-4.fw-normal Pricing
+                    p.fs-5.text-muted Quickly build an effective pricing table for your potential customers with this Bootstrap example. It’s built with default Bootstrap components and utilities with little customization.
+
+                .row.row-cols-1.row-cols-md-3.mb-3.text-center
+                    .col
+                        .card.mb-4.rounded-3.shadow-sm
+                            .card-header.py-3
+                                h4.my-0.fw-normal Free
+                            .card-body
+                                h1.card-title.pricing-card-title $0
+                                small.text-muted.fw-light /mo
+                                ul.list-unstyled.mt-3.mb-4
+                                    li 10 users included
+                                    li 2 GB of storage
+                                    li Email support
+                                    li Help center access
+                                button.w-100.btn.btn-lg.btn-outline-primary Sign up for free
+                    .col
+                        .card.mb-4.rounded-3.shadow-sm
+                            .card-header.py-3
+                                h4.my-0.fw-normal Pro
+                            .card-body
+                                h1.card-title.pricing-card-title $15
+                                small.text-muted.fw-light /mo
+                                ul.list-unstyled.mt-3.mb-4
+                                    li 20 users included
+                                    li 10 GB of storage
+                                    li Priority email support
+                                    li Help center access
+                                button.w-100.btn.btn-lg.btn-primary Get started
+                    .col
+                        .card.mb-4.rounded-3.shadow-sm.border-primary
+                            .card-header.py-3.text-white.bg-primary.border-primary
+                                h4.my-0.fw-normal Enterprise
+                            .card-body
+                                h1.card-title.pricing-card-title $29
+                                small.text-muted.fw-light /mo
+                                ul.list-unstyled.mt-3.mb-4
+                                    li 30 users included
+                                    li 15 GB of storage
+                                    li Phone and email support
+                                    li Help center access
+                                button.w-100.btn.btn-lg.btn-primary Contact us
