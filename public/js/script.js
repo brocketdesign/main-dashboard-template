@@ -1034,10 +1034,10 @@ function toggleSidebarMenu() {
 
     if (isSidebarMenuVisible) {
         $('#sidebarMenu').hide();
-        $('main').removeClass('ms-sm-auto col-md-8 col-lg-9').addClass('col-12');
+        $('main#dashboard').removeClass('ms-sm-auto col-md-8 col-lg-9').addClass('col-12');
     } else {
         $('#sidebarMenu').show();
-        $('main').addClass('ms-sm-auto col-md-8 col-lg-9').removeClass('col-12');
+        $('main#dashboard').addClass('ms-sm-auto col-md-8 col-lg-9').removeClass('col-12');
     }
 }
 function handleSideBar() {
@@ -1046,12 +1046,12 @@ function handleSideBar() {
 
     if (isSidebarMenuVisible) {
         $('#sidebarMenu').hide();
-        $('main').removeClass('ms-sm-auto col-md-8 col-lg-9').addClass('col-12');
+        $('main#dashboard').removeClass('ms-sm-auto col-md-8 col-lg-9').addClass('col-12');
     } else {
         $('#sidebarMenu').show();
-        $('main').addClass('ms-sm-auto col-md-8 col-lg-9').removeClass('col-12');
+        $('main#dashboard').addClass('ms-sm-auto col-md-8 col-lg-9').removeClass('col-12');
     }
-    $('main').show();
+    $('main#dashboard').show();
 
     // Assign the event handler to the button. Note: Don't call the function here, just reference it.
     $('#sidebarMenuToggle').on('click', toggleSidebarMenu);

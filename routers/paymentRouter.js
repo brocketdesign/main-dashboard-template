@@ -55,7 +55,7 @@ router.get('/subscription',ensureAuthenticated, async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    res.render('error');
+    res.render('error',{user:req.user});
   }
 });
 

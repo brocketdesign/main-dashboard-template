@@ -1,201 +1,195 @@
-extends default
+extends dashboard-base
 
-block content
-  .container-fluid.h-100
-    .row.h-100
-        include sidebar
-        .row.justify-content-center.m-0.p-0
-            .container.py-4.bg-light.h-100
-                main.col-md-8.ms-sm-auto.col-lg-9.px-md-4
-                    ul.nav.nav-tabs
-                        li.nav-item
-                            a.nav-link(href='#personalInfo' data-bs-toggle='tab') 個人情報
-                        li.nav-item
-                            a.nav-link(href='#personalGallery' data-bs-toggle='tab') 個人ギャラリー
-                        li.nav-item
-                            a.nav-link(href='#legal' data-bs-toggle='tab') 法的事項
-                        li.nav-item
-                            a.nav-link(href='#corporate' data-bs-toggle='tab') 法人
-                        li.nav-item
-                            a.nav-link(href='#wordpressAuth' data-bs-toggle='tab') WordPress認証
-                        li.nav-item
-                            a.nav-link(href='#passwordUpdate' data-bs-toggle='tab') パスワード更新
-                        li.nav-item
-                            a.nav-link(href='#reset' data-bs-toggle='tab') Reset
-                    .tab-content.pb-5#updateProfile(style="display:none")
-                        #personalInfo.tab-pane.fade
-                            .header
-                                .banner-image(style="cursor:pointer")
-                                    img(src=user.bannerImage || 'https://placehold.co/51x76',, alt='Banner Image' style="height: 40vh; width: 100%; object-fit: cover; object-position: center;cursor:pointer")
-                                .profile-image.text-center(style="transform: translateY(-50%);cursor:pointer")
-                                    img.shadow.border.border-dark(src=user.profileImage || 'https://placehold.co/51x76', alt='User Profile Image' style="object-fit: contain; width: 150px; height: 150px; border-radius: 50%; object-fit: cover;")
-                            form.row.mt-3
-                                .form-group.col-12.col-sm-6
-                                    label(for='profileImage') プロフィール画像
-                                    .input-group
-                                        input#profileImage.form-control(type='file', name="profileImage", value=user.profileImage)
-                                .form-group.col-12.col-sm-6
-                                    label(for='bannerImage') バナー画像
-                                    .input-group
-                                        input#bannerImage.form-control(type='file', name="bannerImage", value=user.bannerImage)
-                                hr.my-3
-                                .form-group.col-12
-                                    label(for='username') ニックネーム
-                                    input#username.form-control(name="username", type='text', placeholder='Enter Nickname' value=user.username)
-                                .form-group.col-12.col-sm-6
-                                    label(for='lastName') 姓
-                                    input#lastName.form-control(name="lastName", type='text', placeholder='Enter Last Name' value=user.lastName)
-                                .form-group.col-12.col-sm-6
-                                    label(for='firstName') 名
-                                    input#firstName.form-control(name="firstName", type='text', placeholder='Enter First Name' value=user.firstName)
-                                hr.my-3
-                                .form-group.col-12.col-sm-6
-                                    label(for='email') メールアドレス
-                                    input#email.form-control(name="email", type='email', placeholder='Enter Email' value=user.email)
-                                .form-group.col-12.col-sm-6
-                                    label(for='phoneNumber') 電話番号
-                                    input#phoneNumber.form-control(name="phoneNumber", type='tel', placeholder='Enter Phone Number' value=user.phoneNumber)
-                                .form-group.col-12.col-sm-6
-                                    label(for='birthDate') 生年月日
-                                    input#birthDate.form-control(name="birthDate", type='date' value=user.birthDate)
-                                hr.my-3
-                                .form-group.col-12.col-sm-6
-                                    label(for='address') 住所
-                                    input#address.form-control(name="address", type='text', placeholder='Enter Address' value=user.address)
-                                .form-group.col-12.col-sm-6
-                                    label(for='city') 市町村
-                                    input#city.form-control(name="city", type='text', placeholder='Enter City' value=user.city)
-                                .form-group.col-12.col-sm-6
-                                    label(for='state') 都道府県
-                                    input#state.form-control(name="state", type='text', placeholder='Enter State' value=user.state)
-                                .form-group.col-12.col-sm-6
-                                    label(for='zip') 郵便番号
-                                    input#zip.form-control(name="zip", type='text', placeholder='Enter Zip Code' value=user.zip)
-                                .form-group.col-12.col-sm-6
-                                    label(for='country') 国
-                                    select#country.form-control(name="country")
-                                    option(value=user.country) 国を選択
-                                button.btn.btn-primary.my-4(type='submit') 送信
-                        #personalGallery.tab-pane.fade
-                            form.row.mt-3
-                                .col-12
-                                    if(user.galleryImages)
-                                        .container.my-5
-                                            .row.g-3.justify-content-center
-                                                each image in user.galleryImages
-                                                    img(src=image || '/img/placeholder.png', alt='User Image' style="object-fit: contain; width: 30%; height: auto; object-fit: cover; border-radius: 5px; margin-bottom: 10px;")
-                                                img#image-upload-holder(src='https://placehold.co/51x76', alt='User Image' style="display:none;object-fit: contain; width: 30%; height: auto; object-fit: cover; border-radius: 5px; margin-bottom: 10px;")
-                                                button#upload-btn.m-3(type='button', style="width: 60px;height: 40px;", class='btn btn-outline-primary ') 
-                                                    i.fas.fa-plus
-                                    else
-                                        img#image-upload-holder(src='https://placehold.co/51x76', alt='User Image' style="display:none;object-fit: contain; width: 30%; height: auto; object-fit: cover; border-radius: 5px; margin-bottom: 10px;")
-                                        button#upload-btn.m-3(type='button', style="width: 60px;height: 40px;", class='btn btn-outline-primary ') 
-                                            i.fas.fa-plus
-                                    input#image-upload( type='file', accept='image/*', name='imageUpload', style='display: none;')
-                                .col-12
-                                    button.btn.btn-primary.my-4.w-100(type='submit') 送信
-                        #legal.tab-pane.fade
-                            form.row.mt-3
-                                .form-group.col-12
-                                    label(for='legalID') 法的ID
-                                .input-group
-                                    input#legalID.form-control(name="legalID", type='text', placeholder='Enter Legal ID', value=user.legalID)
-                                hr.my-3
-                                .form-group.col-12.col-sm-6
-                                    label(for='IDtype') 法的IDを入力してください
-                                    select#IDtype.form-control(name="IDtype")
-                                    option(value='') IDタイプ
-                                    // Populate with ID Type options...
-                                .form-group.col-12.col-sm-6
-                                    label(for='IDcountry') 発行国
-                                    select#IDcountry.form-control(name="IDcountry")
-                                    option(value='') 国を選択
-                                    // Populate with country options...
-                                hr.my-3
-                                .form-group.col-12
-                                    label(for='IDScan') IDのスキャン
-                                .input-group
-                                    input#IDScan.form-control(name="IDScan", type='file', value=user.IDScan)
-                                hr.my-3
-                                .form-group.col-12
-                                    label(for='proofOfAddress') 住所の証明
-                                .input-group
-                                    input#proofOfAddress.form-control(name="proofOfAddress", type='file', value=user.proofOfAddress)
-                                hr.my-3
-                                .form-group.col-12
-                                    label(for='termsConditions') 利用規約に同意する
-                                .form-check
-                                    input#termsConditions.form-check-input(name="termsConditions", type='checkbox')
-                                    label.form-check-label(for='termsConditions') I agree to the Terms and Conditions
-                                button.btn.btn-primary.my-4(type='submit') 送信
-                        #corporate.tab-pane.fade
-                            form.row.mt-3
-                                .form-group.col-12
-                                    label(for='corporateName') 法人名
-                                .input-group
-                                    input#corporateName.form-control(name="corporateName", type='text', placeholder='Enter Corporate Name', value=user.corporateName)
-                                hr.my-3
-                                .form-group.col-12.col-sm-6
-                                    label(for='corporateID') 法人ID
-                                    input#corporateID.form-control(name="corporateID", type='text', placeholder='Enter Corporate ID', value=user.corporateID)
-                                .form-group.col-12.col-sm-6
-                                    label(for='industry') 業界
-                                    input#industry.form-control(name="industry", type='text', placeholder='Enter Industry', value=user.industry)
-                                hr.my-3
-                                .form-group.col-12.col-sm-6
-                                    label(for='corporateAddress') 法人の住所
-                                    input#corporateAddress.form-control(name="corporateAddress", type='text', placeholder='Enter Corporate Address', value=user.corporateAddress)
-                                .form-group.col-12.col-sm-6
-                                    label(for='corporateCity') 法人の市町村
-                                    input#corporateCity.form-control(name="corporateCity", type='text', placeholder='Enter City', value=user.corporateCity)
-                                .form-group.col-12.col-sm-6
-                                    label(for='corporateState') 法人の都道府県
-                                    input#corporateState.form-control(name="corporateState", type='text', placeholder='Enter State', value=user.corporateState)
-                                .form-group.col-12.col-sm-6
-                                    label(for='corporateZip') 法人の郵便番号
-                                    input#corporateZip.form-control(name="corporateZip", type='text', placeholder='Enter Zip Code', value=user.corporateZip)
-                                .form-group.col-12.col-sm-6
-                                    label(for='corporateCountry') 法人の国
-                                    select#corporateCountry.form-control(name="corporateCountry")
-                                    option(value='') 国を選択
-                                    // Populate with country options...
-                                hr.my-3
-                                .form-group.col-12
-                                    label(for='corporateProfile') 法人のプロフィール
-                                    textarea#corporateProfile.form-control(rows='3')
-                                button.btn.btn-primary.my-4(type='submit') 送信
-                        #wordpressAuth.tab-pane.fade
-                            form.row.mt-3
-                                .form-group.col-12
-                                    label(for='wpURL') WordPressウェブサイトのURL
-                                    .input-group
-                                        input#wpURL.form-control(name="wpURL", type='url', placeholder='Enter WordPress URL', value=user.wpURL)
-                                hr.my-3
-                                // wpPostStatus acheckbox to choose the status of the new posts
-                                .form-group.col-12.col-sm-6
-                                    label(for='wpUsername') WordPressのユーザー名
-                                    input#wpUsername.form-control(name="wpUsername", type='text', placeholder='Enter WordPress Username', value=user.wpUsername)
-                                .form-group.col-12.col-sm-6
-                                    label(for='wpPassword') WordPressのパスワード
-                                    input#wpPassword.form-control(name="wpPassword", type='password', placeholder='Enter WordPress Password', value=user.wpPassword)
-                                button.btn.btn-primary.my-4(type='submit') 送信
-                        #passwordUpdate.tab-pane.fade
-                            form.row.mt-3
-                                .form-group.col-12.col-sm-6
-                                    label(for='userOldPassword') 古いパスワード
-                                    input#userOldPassword.form-control(name="userOldPassword", type='password', placeholder='古いパスワードを入力してください', required)
-                                hr.my-3
-                                .form-group.col-12.col-sm-6
-                                    label(for='userPassword') 新しいパスワード
-                                    input#userPassword.form-control(name="userPassword", type='password', placeholder='新しいパスワードを入力してください', required)
-                                .form-group.col-12.col-sm-6
-                                    label(for='userPasswordVerification') 新しいパスワードの確認
-                                    input#userPasswordVerification.form-control(name="userPasswordVerification", type='password', placeholder='新しいパスワードを確認するために入力してください', required)
-                                button.btn.btn-primary.my-4(type='submit') 送信
-                        #reset.tab-pane.fade
-                            form#reset-form.row.mt-3
-                                .form-group.col-12.col-sm-6
-                                    label(for='mode') App
-                                    select#mode.form-control(name="mode")
-                                    option(value='') App
-                                button.btn.btn-danger.my-4(type='submit') Reset data
+block mainContent
+    ul.nav.nav-tabs
+        li.nav-item
+            a.nav-link(href='#personalInfo' data-bs-toggle='tab') 個人情報
+        li.nav-item
+            a.nav-link(href='#personalGallery' data-bs-toggle='tab') 個人ギャラリー
+        li.nav-item
+            a.nav-link(href='#legal' data-bs-toggle='tab') 法的事項
+        li.nav-item
+            a.nav-link(href='#corporate' data-bs-toggle='tab') 法人
+        li.nav-item
+            a.nav-link(href='#wordpressAuth' data-bs-toggle='tab') WordPress認証
+        li.nav-item
+            a.nav-link(href='#passwordUpdate' data-bs-toggle='tab') パスワード更新
+        li.nav-item
+            a.nav-link(href='#reset' data-bs-toggle='tab') Reset
+    .tab-content.pb-5#updateProfile(style="display:none")
+        #personalInfo.tab-pane.fade
+            .header
+                .banner-image(style="cursor:pointer")
+                    img(src=user.bannerImage || 'https://placehold.co/51x76',, alt='Banner Image' style="height: 40vh; width: 100%; object-fit: cover; object-position: center;cursor:pointer")
+                .profile-image.text-center(style="transform: translateY(-50%);cursor:pointer")
+                    img.shadow.border.border-dark(src=user.profileImage || 'https://placehold.co/51x76', alt='User Profile Image' style="object-fit: contain; width: 150px; height: 150px; border-radius: 50%; object-fit: cover;")
+            form.row.mt-3
+                .form-group.col-12.col-sm-6
+                    label(for='profileImage') プロフィール画像
+                    .input-group
+                        input#profileImage.form-control(type='file', name="profileImage", value=user.profileImage)
+                .form-group.col-12.col-sm-6
+                    label(for='bannerImage') バナー画像
+                    .input-group
+                        input#bannerImage.form-control(type='file', name="bannerImage", value=user.bannerImage)
+                hr.my-3
+                .form-group.col-12
+                    label(for='username') ニックネーム
+                    input#username.form-control(name="username", type='text', placeholder='Enter Nickname' value=user.username)
+                .form-group.col-12.col-sm-6
+                    label(for='lastName') 姓
+                    input#lastName.form-control(name="lastName", type='text', placeholder='Enter Last Name' value=user.lastName)
+                .form-group.col-12.col-sm-6
+                    label(for='firstName') 名
+                    input#firstName.form-control(name="firstName", type='text', placeholder='Enter First Name' value=user.firstName)
+                hr.my-3
+                .form-group.col-12.col-sm-6
+                    label(for='email') メールアドレス
+                    input#email.form-control(name="email", type='email', placeholder='Enter Email' value=user.email)
+                .form-group.col-12.col-sm-6
+                    label(for='phoneNumber') 電話番号
+                    input#phoneNumber.form-control(name="phoneNumber", type='tel', placeholder='Enter Phone Number' value=user.phoneNumber)
+                .form-group.col-12.col-sm-6
+                    label(for='birthDate') 生年月日
+                    input#birthDate.form-control(name="birthDate", type='date' value=user.birthDate)
+                hr.my-3
+                .form-group.col-12.col-sm-6
+                    label(for='address') 住所
+                    input#address.form-control(name="address", type='text', placeholder='Enter Address' value=user.address)
+                .form-group.col-12.col-sm-6
+                    label(for='city') 市町村
+                    input#city.form-control(name="city", type='text', placeholder='Enter City' value=user.city)
+                .form-group.col-12.col-sm-6
+                    label(for='state') 都道府県
+                    input#state.form-control(name="state", type='text', placeholder='Enter State' value=user.state)
+                .form-group.col-12.col-sm-6
+                    label(for='zip') 郵便番号
+                    input#zip.form-control(name="zip", type='text', placeholder='Enter Zip Code' value=user.zip)
+                .form-group.col-12.col-sm-6
+                    label(for='country') 国
+                    select#country.form-control(name="country")
+                    option(value=user.country) 国を選択
+                button.btn.btn-primary.my-4(type='submit') 送信
+        #personalGallery.tab-pane.fade
+            form.row.mt-3
+                .col-12
+                    if(user.galleryImages)
+                        .container.my-5
+                            .row.g-3.justify-content-center
+                                each image in user.galleryImages
+                                    img(src=image || '/img/placeholder.png', alt='User Image' style="object-fit: contain; width: 30%; height: auto; object-fit: cover; border-radius: 5px; margin-bottom: 10px;")
+                                img#image-upload-holder(src='https://placehold.co/51x76', alt='User Image' style="display:none;object-fit: contain; width: 30%; height: auto; object-fit: cover; border-radius: 5px; margin-bottom: 10px;")
+                                button#upload-btn.m-3(type='button', style="width: 60px;height: 40px;", class='btn btn-outline-primary ') 
+                                    i.fas.fa-plus
+                    else
+                        img#image-upload-holder(src='https://placehold.co/51x76', alt='User Image' style="display:none;object-fit: contain; width: 30%; height: auto; object-fit: cover; border-radius: 5px; margin-bottom: 10px;")
+                        button#upload-btn.m-3(type='button', style="width: 60px;height: 40px;", class='btn btn-outline-primary ') 
+                            i.fas.fa-plus
+                    input#image-upload( type='file', accept='image/*', name='imageUpload', style='display: none;')
+                .col-12
+                    button.btn.btn-primary.my-4.w-100(type='submit') 送信
+        #legal.tab-pane.fade
+            form.row.mt-3
+                .form-group.col-12
+                    label(for='legalID') 法的ID
+                .input-group
+                    input#legalID.form-control(name="legalID", type='text', placeholder='Enter Legal ID', value=user.legalID)
+                hr.my-3
+                .form-group.col-12.col-sm-6
+                    label(for='IDtype') 法的IDを入力してください
+                    select#IDtype.form-control(name="IDtype")
+                    option(value='') IDタイプ
+                    // Populate with ID Type options...
+                .form-group.col-12.col-sm-6
+                    label(for='IDcountry') 発行国
+                    select#IDcountry.form-control(name="IDcountry")
+                    option(value='') 国を選択
+                    // Populate with country options...
+                hr.my-3
+                .form-group.col-12
+                    label(for='IDScan') IDのスキャン
+                .input-group
+                    input#IDScan.form-control(name="IDScan", type='file', value=user.IDScan)
+                hr.my-3
+                .form-group.col-12
+                    label(for='proofOfAddress') 住所の証明
+                .input-group
+                    input#proofOfAddress.form-control(name="proofOfAddress", type='file', value=user.proofOfAddress)
+                hr.my-3
+                .form-group.col-12
+                    label(for='termsConditions') 利用規約に同意する
+                .form-check
+                    input#termsConditions.form-check-input(name="termsConditions", type='checkbox')
+                    label.form-check-label(for='termsConditions') I agree to the Terms and Conditions
+                button.btn.btn-primary.my-4(type='submit') 送信
+        #corporate.tab-pane.fade
+            form.row.mt-3
+                .form-group.col-12
+                    label(for='corporateName') 法人名
+                .input-group
+                    input#corporateName.form-control(name="corporateName", type='text', placeholder='Enter Corporate Name', value=user.corporateName)
+                hr.my-3
+                .form-group.col-12.col-sm-6
+                    label(for='corporateID') 法人ID
+                    input#corporateID.form-control(name="corporateID", type='text', placeholder='Enter Corporate ID', value=user.corporateID)
+                .form-group.col-12.col-sm-6
+                    label(for='industry') 業界
+                    input#industry.form-control(name="industry", type='text', placeholder='Enter Industry', value=user.industry)
+                hr.my-3
+                .form-group.col-12.col-sm-6
+                    label(for='corporateAddress') 法人の住所
+                    input#corporateAddress.form-control(name="corporateAddress", type='text', placeholder='Enter Corporate Address', value=user.corporateAddress)
+                .form-group.col-12.col-sm-6
+                    label(for='corporateCity') 法人の市町村
+                    input#corporateCity.form-control(name="corporateCity", type='text', placeholder='Enter City', value=user.corporateCity)
+                .form-group.col-12.col-sm-6
+                    label(for='corporateState') 法人の都道府県
+                    input#corporateState.form-control(name="corporateState", type='text', placeholder='Enter State', value=user.corporateState)
+                .form-group.col-12.col-sm-6
+                    label(for='corporateZip') 法人の郵便番号
+                    input#corporateZip.form-control(name="corporateZip", type='text', placeholder='Enter Zip Code', value=user.corporateZip)
+                .form-group.col-12.col-sm-6
+                    label(for='corporateCountry') 法人の国
+                    select#corporateCountry.form-control(name="corporateCountry")
+                    option(value='') 国を選択
+                    // Populate with country options...
+                hr.my-3
+                .form-group.col-12
+                    label(for='corporateProfile') 法人のプロフィール
+                    textarea#corporateProfile.form-control(rows='3')
+                button.btn.btn-primary.my-4(type='submit') 送信
+        #wordpressAuth.tab-pane.fade
+            form.row.mt-3
+                .form-group.col-12
+                    label(for='wpURL') WordPressウェブサイトのURL
+                    .input-group
+                        input#wpURL.form-control(name="wpURL", type='url', placeholder='Enter WordPress URL', value=user.wpURL)
+                hr.my-3
+                // wpPostStatus acheckbox to choose the status of the new posts
+                .form-group.col-12.col-sm-6
+                    label(for='wpUsername') WordPressのユーザー名
+                    input#wpUsername.form-control(name="wpUsername", type='text', placeholder='Enter WordPress Username', value=user.wpUsername)
+                .form-group.col-12.col-sm-6
+                    label(for='wpPassword') WordPressのパスワード
+                    input#wpPassword.form-control(name="wpPassword", type='password', placeholder='Enter WordPress Password', value=user.wpPassword)
+                button.btn.btn-primary.my-4(type='submit') 送信
+        #passwordUpdate.tab-pane.fade
+            form.row.mt-3
+                .form-group.col-12.col-sm-6
+                    label(for='userOldPassword') 古いパスワード
+                    input#userOldPassword.form-control(name="userOldPassword", type='password', placeholder='古いパスワードを入力してください', required)
+                hr.my-3
+                .form-group.col-12.col-sm-6
+                    label(for='userPassword') 新しいパスワード
+                    input#userPassword.form-control(name="userPassword", type='password', placeholder='新しいパスワードを入力してください', required)
+                .form-group.col-12.col-sm-6
+                    label(for='userPasswordVerification') 新しいパスワードの確認
+                    input#userPasswordVerification.form-control(name="userPasswordVerification", type='password', placeholder='新しいパスワードを確認するために入力してください', required)
+                button.btn.btn-primary.my-4(type='submit') 送信
+        #reset.tab-pane.fade
+            form#reset-form.row.mt-3
+                .form-group.col-12.col-sm-6
+                    label(for='mode') App
+                    select#mode.form-control(name="mode")
+                    option(value='') App
+                button.btn.btn-danger.my-4(type='submit') Reset data

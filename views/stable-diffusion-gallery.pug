@@ -1,26 +1,20 @@
-extends default
+extends dashboard-base
 
-block content
-  .container-fluid.h-100
-    .row.h-100
-      include sidebar
-      .row.justify-content-center.m-0.p-0
-        .container.py-4.bg-light.h-100
-          main.col-md-8.ms-sm-auto.col-lg-9.px-md-4
-            .container.my-4
-              h1.gallery-header 画廊
+block mainContent
+  .container.my-4
+    h1.gallery-header 画廊
 
-              section
-                .row.my-4.p-0.mx-0
-                  each image in images.reverse()
-                    .col-6.col-md-6.col-lg-4.my-2.position-relative
-                      img.gallery-image(style="width: 100%;", src=`data:image/png;base64,${image.image}`, alt=`${image.prompt}`)
-                      .gallery-prompt.bg-dark.text-white.position-absolute.card(style="display:none;bottom:10px;right:20px;left:20px")
-                        .card-body.py-3
-                          h6 プロンプト
-                          span.gallery-prompt-text #{image.prompt}
-                      span.gallery-prompt-toggle.position-absolute(type='button' style='bottom:20px;right:20px' data-feather='info' color="white" onclick="togglePrompt(this)") プロンプトの表示を切り替える
-          
-              if images.length === 0
-                p まだ画像が生成されていません。
+    section
+      .row.my-4.p-0.mx-0
+        each image in images.reverse()
+          .col-6.col-md-6.col-lg-4.my-2.position-relative
+            img.gallery-image(style="width: 100%;", src=`data:image/png;base64,${image.image}`, alt=`${image.prompt}`)
+            .gallery-prompt.bg-dark.text-white.position-absolute.card(style="display:none;bottom:10px;right:20px;left:20px")
+              .card-body.py-3
+                h6 プロンプト
+                span.gallery-prompt-text #{image.prompt}
+            span.gallery-prompt-toggle.position-absolute(type='button' style='bottom:20px;right:20px' data-feather='info' color="white" onclick="togglePrompt(this)") プロンプトの表示を切り替える
+
+    if images.length === 0
+      p まだ画像が生成されていません。
   script(src="/js/stable-diffusion-script.js")

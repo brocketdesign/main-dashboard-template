@@ -1,119 +1,113 @@
-extends default
+extends dashboard-base
 
-block content
-  .container-fluid.h-100
-    .row.h-100
-      include sidebar
-      .row.justify-content-center.m-0.p-0
-        .container.py-4.bg-light.h-100
-          main.col-md-8.ms-sm-auto.col-lg-9.px-md-4
-            if !bookId
-              form.row#ebook.default(method="POST", action="/api/openai/ebook")
-                .row
-                  .form-group.col-12.col-sm-6
-                    label(for='topic') e-Book topic
-                    input#topic.form-control(type='text',name="topic" placeholder='Write a book')
-                  .form-group.col-12.col-sm-6
-                    label(for='language') Language
-                    select#language.form-control(name='language')
-                      option(value='japanese')
-                        i.faw.faw-flag-jp
-                        |  Japanese
-                      option(value='english')
-                        i.faw.faw-flag-us
-                        |  English
-                .my-3.px-3
-                  button.btn.btn-primary(type='submit') 
-                    i.fas.fa-paper-plane
-                if books.length > 0
-                  each book in books 
-                    a(href=`/dashboard/app/openai/ebook/${book._id}`)
-                      .card.mb-4
-                        .card-body
-                          h3=book.title
-                          p=book.author.name 
-                else 
-                  p Write a book
-            else 
-              #edit-book(data-id=book._id)
-                .position-fixed.tools.m-auto.p-3(style="bottom:0;z-index:2")
-                  .card.p-0.shadow.rounded.border 
-                    .card-body.py-2
-                      button.btn.shadow-0#regen(type="button")
-                        span Re-generate
-                        i.ms-3.fas.fa-sync-alt
-                textarea.display-4(data-key='title')=book.title
-                h2.lead(style="display: block ruby;")
-                    | Written by 
-                    input(type='text' value=book.author.name data-key='author.name')
+block mainContent
+  if !bookId
+    form.row#ebook.default(method="POST", action="/api/openai/ebook")
+      .row
+        .form-group.col-12.col-sm-6
+          label(for='topic') e-Book topic
+          input#topic.form-control(type='text',name="topic" placeholder='Write a book')
+        .form-group.col-12.col-sm-6
+          label(for='language') Language
+          select#language.form-control(name='language')
+            option(value='japanese')
+              i.faw.faw-flag-jp
+              |  Japanese
+            option(value='english')
+              i.faw.faw-flag-us
+              |  English
+      .my-3.px-3
+        button.btn.btn-primary(type='submit') 
+          i.fas.fa-paper-plane
+      if books.length > 0
+        each book in books 
+          a(href=`/dashboard/app/openai/ebook/${book._id}`)
+            .card.mb-4
+              .card-body
+                h3=book.title
+                p=book.author.name 
+      else 
+        p Write a book
+  else 
+    #edit-book(data-id=book._id)
+      .position-fixed.tools.m-auto.p-3(style="bottom:0;z-index:2")
+        .card.p-0.shadow.rounded.border 
+          .card-body.py-2
+            button.btn.shadow-0#regen(type="button")
+              span Re-generate
+              i.ms-3.fas.fa-sync-alt
+      textarea.display-4(data-key='title')=book.title
+      h2.lead(style="display: block ruby;")
+          | Written by 
+          input(type='text' value=book.author.name data-key='author.name')
 
-                .card.mb-4
-                    .card-body
-                        p 
-                            b Genre: 
-                            input(type='text' value=book.genre data-key='genre')
-                        p 
-                            b Description: 
-                            textarea(data-key='description')= book.description
-                        p 
-                            b Author's Bio: 
-                            textarea(data-key='author.bio')= book.author.bio
-                        p 
-                            b Author's Nationality: 
-                            input(type='text' value=book.author.nationality data-key='author.nationality')
-                        p 
-                            b Writing Tone: 
-                            input(type='text' value=book.tone data-key='tone')
+      .card.mb-4
+          .card-body
+              p 
+                  b Genre: 
+                  input(type='text' value=book.genre data-key='genre')
+              p 
+                  b Description: 
+                  textarea(data-key='description')= book.description
+              p 
+                  b Author's Bio: 
+                  textarea(data-key='author.bio')= book.author.bio
+              p 
+                  b Author's Nationality: 
+                  input(type='text' value=book.author.nationality data-key='author.nationality')
+              p 
+                  b Writing Tone: 
+                  input(type='text' value=book.tone data-key='tone')
 
-                if book.book_content
-                    each chapter, index in book.book_content
-                        h1 
-                            input(type='text' value=`${index + 1 }.${chapter.title}` data-key=`book_content[${index}].title`)
-                        p.card-text 
-                            textarea(data-key=`book_content[${index}].content`)= chapter.content
+      if book.book_content
+          each chapter, index in book.book_content
+              h1 
+                  input(type='text' value=`${index + 1 }.${chapter.title}` data-key=`book_content[${index}].title`)
+              p.card-text 
+                  textarea(data-key=`book_content[${index}].content`)= chapter.content
 
-                        if chapter.sub_chapters_content
-                            each subChapter, subIndex in chapter.sub_chapters_content
-                                h2 
-                                    input(type='text' value=`${index + 1 }.${subIndex + 1 }.${subChapter.title}` data-key=`book_content[${index}].sub_chapters_content[${subIndex}].title`)
-                                p.fw-bold 
-                                    | Key points
-                                ul
-                                    each keyPoint in book.chapters[index].sub_chapters[subIndex].key_points
-                                        li 
-                                            input(type='text' value=keyPoint data-key=`book_content[${index}].sub_chapters_content[${subIndex}].key_points[]`)
-                                p 
-                                    textarea(data-key=`book_content[${index}].sub_chapters_content[${subIndex}].content`)= subChapter.content
-              #preview-book.d-none
-                h1.display-4 #{book.title}
-                h2.lead Written by #{book.author.name}
+              if chapter.sub_chapters_content
+                  each subChapter, subIndex in chapter.sub_chapters_content
+                      h2 
+                          input(type='text' value=`${index + 1 }.${subIndex + 1 }.${subChapter.title}` data-key=`book_content[${index}].sub_chapters_content[${subIndex}].title`)
+                      p.fw-bold 
+                          | Key points
+                      ul
+                          each keyPoint in book.chapters[index].sub_chapters[subIndex].key_points
+                              li 
+                                  input(type='text' value=keyPoint data-key=`book_content[${index}].sub_chapters_content[${subIndex}].key_points[]`)
+                      p 
+                          textarea(data-key=`book_content[${index}].sub_chapters_content[${subIndex}].content`)= subChapter.content
+    #preview-book.d-none
+      h1.display-4 #{book.title}
+      h2.lead Written by #{book.author.name}
 
-                .card.mb-4
-                  .card-body
-                    p 
-                      b Genre: 
-                      | #{book.genre}
-                    p 
-                      b Description: 
-                      | #{book.description}
-                    p 
-                      b Author's Bio: 
-                      | #{book.author.bio}
-                    p 
-                      b Author's Nationality: 
-                      | #{book.author.nationality}
-                    p 
-                      b Writing Tone: 
-                      | #{book.tone}
-                if book.book_content
-                  each chapter,index in book.book_content
-                      h1= `${index + 1 }.${chapter.title}`
-                      p.card-text= chapter.content
-                      if chapter.sub_chapters_content
-                        each subChapter, subIndex in chapter.sub_chapters_content
-                          h2=  `${index + 1 }.${subIndex + 1 }.${subChapter.title}`
-                          p.fw-bold Key points
-                          ul
-                            each keyPoint in book.chapters[index].sub_chapters[subIndex].key_points
-                              li= keyPoint
-                          p= subChapter.content
+      .card.mb-4
+        .card-body
+          p 
+            b Genre: 
+            | #{book.genre}
+          p 
+            b Description: 
+            | #{book.description}
+          p 
+            b Author's Bio: 
+            | #{book.author.bio}
+          p 
+            b Author's Nationality: 
+            | #{book.author.nationality}
+          p 
+            b Writing Tone: 
+            | #{book.tone}
+      if book.book_content
+        each chapter,index in book.book_content
+            h1= `${index + 1 }.${chapter.title}`
+            p.card-text= chapter.content
+            if chapter.sub_chapters_content
+              each subChapter, subIndex in chapter.sub_chapters_content
+                h2=  `${index + 1 }.${subIndex + 1 }.${subChapter.title}`
+                p.fw-bold Key points
+                ul
+                  each keyPoint in book.chapters[index].sub_chapters[subIndex].key_points
+                    li= keyPoint
+                p= subChapter.content

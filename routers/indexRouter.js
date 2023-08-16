@@ -14,7 +14,6 @@ router.get('/',async(req, res, next) => {
 
   let ngrok = process.env.NGROK 
 
-  console.log('Top page requested');
   res.render('index',{ngrok}); // Render the top page template
 });
 module.exports = router;

@@ -57,7 +57,7 @@ router.post('/openai/send-prompt', async (req, res) => {
 
     res.json({ success: true, dataUpdate});
   } catch (error) {
-    console.error(error);
+    console.log(error);
     res.status(500).send('Internal server error');
   }
 });
@@ -175,9 +175,9 @@ router.post('/openai/ebook', async (req, res) => {
     const { topic, language } = req.body;
     console.log(`Write an ebook about "${topic}" in ${language}`);
 
-    const bookId = await createBookChapters(req.user,topic,language);
+    const bookId = createBookChapters(req.user,topic,language);
   
-    res.redirect(`/dashboard/app/openai/ebook/${bookId}`);
+    res.redirect(`/dashboard/app/openai/ebook/`);
 
   } catch (err) {
     console.error('Error encountered:', err);

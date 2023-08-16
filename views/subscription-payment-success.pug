@@ -1,22 +1,16 @@
-extends default
+extends dashboard-base
 
-block content
-  .container-fluid.h-100
-    .row.h-100
-      include sidebar
-      .row.justify-content-center.m-0.p-0
-        .container.py-4.bg-light.h-100
-          main.col-md-8.ms-sm-auto.col-lg-9.px-md-4
-            h1 支払い完了
-            .d-flex.justify-content-between.mb-4
-              p お支払いが成功しました。ご加入ありがとうございます！
-              a.btn.btn-primary(type="button" href="/payment/subscription/bought-products") マイメンバーシップ
-            p サブスクリプションID: #{subscription.id}
-            p 金額: ¥#{subscription.plan.amount}
-            p 説明: #{subscription.plan.product}
-            if subscription.latest_invoice && subscription.latest_invoice.payment_method_details && subscription.latest_invoice.payment_method_details.card
-                p 支払い方法: #{subscription.latest_invoice.payment_method_details.card.brand}、末尾4桁: #{subscription.latest_invoice.payment_method_details.card.last4}
-            else 
-                p カード情報はありません。
-            p サブスクリプション開始日: #{new Date(subscription.created * 1000).toLocaleDateString()}
-            p 次回の支払い期限: #{new Date(subscription.current_period_end * 1000).toLocaleDateString()}
+block mainContent
+  h1 支払い完了
+  .d-flex.justify-content-between.mb-4
+    p お支払いが成功しました。ご加入ありがとうございます！
+    a.btn.btn-primary(type="button" href="/payment/subscription/bought-products") マイメンバーシップ
+  p サブスクリプションID: #{subscription.id}
+  p 金額: ¥#{subscription.plan.amount}
+  p 説明: #{subscription.plan.product}
+  if subscription.latest_invoice && subscription.latest_invoice.payment_method_details && subscription.latest_invoice.payment_method_details.card
+      p 支払い方法: #{subscription.latest_invoice.payment_method_details.card.brand}、末尾4桁: #{subscription.latest_invoice.payment_method_details.card.last4}
+  else 
+      p カード情報はありません。
+  p サブスクリプション開始日: #{new Date(subscription.created * 1000).toLocaleDateString()}
+  p 次回の支払い期限: #{new Date(subscription.current_period_end * 1000).toLocaleDateString()}

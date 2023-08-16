@@ -1,60 +1,54 @@
-extends default
+extends dashboard-base
 
-block content
-  .container-fluid.h-100
-    .row.h-100
-      include sidebar
-      .row.justify-content-center.m-0.p-0
-        .container.py-4.bg-light.h-100
-          main.col-md-8.ms-sm-auto.col-lg-9.px-md-4
-            .container.my-4
-              .row.position-relative
-                .col-12.col-sm-4.order-2.order-sm-1
-                  h2 モデルを選択
-                  .d-flex.m-2.align-items-center(style="min-height: 30px;")
-                      span(data-bs-toggle="tooltip" data-bs-placement="top" title="プロンプト")
-                          span.me-2#generate-prompt-btn(type="button" data-feather='file-plus' onclick="updatePrompt()") 
-                      span(data-bs-toggle="tooltip" data-bs-placement="top" title="ダウンロード")
-                          span.mx-2(type="button" data-feather='arrow-down-circle') ダウンロード
-                      span(data-bs-toggle="tooltip" data-bs-placement="top" title="プロンプトをリセット")
-                          span.mx-2#reset-prompt-button(type="button" data-feather="refresh-ccw" onclick="promptreload()") プロンプトをリセット
-                      .mx-2.d-flex.justify-content-center.align-items-center
-                          input#prompt-input.form-control.rounded.d-none(type='text', placeholder='プロンプトを入力', aria-label='プロンプト入力', value=user.latesr_generated_prompt ? user.latesr_generated_prompt : '')
-                          span(data-bs-toggle="tooltip" data-bs-placement="top" title="生成")
-                              #generate-button(type="button", onclick="generateDiffusedImage()")
-                                  span(data-feather='play-circle') 生成
-                          #prompt-loader.loader(style='display:none;')
-                              .spinner-border.spinner-border-sm(role="status") 
-                              span.visually-hidden ローディング...
-                  .dropdown
-                    button.btn.btn-secondary.dropdown-toggle.w-100(type="button", id="modelDropdown", data-bs-toggle="dropdown", aria-expanded="false", style='overflow:hidden')
-                      | モデルを選択
-                    ul.dropdown-menu(aria-labelledby="modelDropdown")
-                      each model in models
-                        li
-                          a.dropdown-item(href="#", data-id=`model-${model.hash}`, onclick=`changeModel('${model.hash}')`) #{model.title}
-                  each category in categories
-                    .col-12
-                      .categories.card.h-100.rounded-0(data-id=`category-${category.id}` style=`cursor: pointer;`)
-                        .card-body(style=`cursor: pointer;`)
-                          h6.d-inline.card-title.mx-2(data-name=category.name) #{category.name_JP}
-                          span.tag(data-id=`category-${category.id}`)
-                        .subcategories.row.row-cols-1.row-cols-md-2.g-4.mt-1(data-id=`subcategory-${category.id}` style=`display:none;`)
-                          each subcategory in category.subcategories
+block mainContent
+  .container.my-4
+    .row.position-relative
+      .col-12.col-sm-4.order-2.order-sm-1
+        h2 モデルを選択
+        .d-flex.m-2.align-items-center(style="min-height: 30px;")
+            span(data-bs-toggle="tooltip" data-bs-placement="top" title="プロンプト")
+                span.me-2#generate-prompt-btn(type="button" data-feather='file-plus' onclick="updatePrompt()") 
+            span(data-bs-toggle="tooltip" data-bs-placement="top" title="ダウンロード")
+                span.mx-2(type="button" data-feather='arrow-down-circle') ダウンロード
+            span(data-bs-toggle="tooltip" data-bs-placement="top" title="プロンプトをリセット")
+                span.mx-2#reset-prompt-button(type="button" data-feather="refresh-ccw" onclick="promptreload()") プロンプトをリセット
+            .mx-2.d-flex.justify-content-center.align-items-center
+                input#prompt-input.form-control.rounded.d-none(type='text', placeholder='プロンプトを入力', aria-label='プロンプト入力', value=user.latesr_generated_prompt ? user.latesr_generated_prompt : '')
+                span(data-bs-toggle="tooltip" data-bs-placement="top" title="生成")
+                    #generate-button(type="button", onclick="generateDiffusedImage()")
+                        span(data-feather='play-circle') 生成
+                #prompt-loader.loader(style='display:none;')
+                    .spinner-border.spinner-border-sm(role="status") 
+                    span.visually-hidden ローディング...
+        .dropdown
+          button.btn.btn-secondary.dropdown-toggle.w-100(type="button", id="modelDropdown", data-bs-toggle="dropdown", aria-expanded="false", style='overflow:hidden')
+            | モデルを選択
+          ul.dropdown-menu(aria-labelledby="modelDropdown")
+            each model in models
+              li
+                a.dropdown-item(href="#", data-id=`model-${model.hash}`, onclick=`changeModel('${model.hash}')`) #{model.title}
+        each category in categories
+          .col-12
+            .categories.card.h-100.rounded-0(data-id=`category-${category.id}` style=`cursor: pointer;`)
+              .card-body(style=`cursor: pointer;`)
+                h6.d-inline.card-title.mx-2(data-name=category.name) #{category.name_JP}
+                span.tag(data-id=`category-${category.id}`)
+              .subcategories.row.row-cols-1.row-cols-md-2.g-4.mt-1(data-id=`subcategory-${category.id}` style=`display:none;`)
+                each subcategory in category.subcategories
+                  .col-12.m-0.w-100
+                    .card.h-100.rounded-0(style=`cursor: pointer;`)
+                      .card-body.py-1(data-id=`subcategory-${category.id}-${subcategory.id}` style=`cursor: pointer;`)
+                        span.card-title(data-name=subcategory.name) #{subcategory.name_JP}
+                        .row.row-cols-1.row-cols-md-2.g-4.mt-1(data-id=`tag-${category.id}-${subcategory.id}` style=`display:none;`)
+                          each tag in subcategory.tags
+                            - const categoryID = category.id;
+                            - const subcategoryID = subcategory.id;
+                            - const tagID = tag.id;
+                            - const selected = user.tags && user.tags[categoryID] && user.tags[categoryID][subcategoryID] == tagID;
                             .col-12.m-0.w-100
-                              .card.h-100.rounded-0(style=`cursor: pointer;`)
-                                .card-body.py-1(data-id=`subcategory-${category.id}-${subcategory.id}` style=`cursor: pointer;`)
-                                  span.card-title(data-name=subcategory.name) #{subcategory.name_JP}
-                                  .row.row-cols-1.row-cols-md-2.g-4.mt-1(data-id=`tag-${category.id}-${subcategory.id}` style=`display:none;`)
-                                    each tag in subcategory.tags
-                                      - const categoryID = category.id;
-                                      - const subcategoryID = subcategory.id;
-                                      - const tagID = tag.id;
-                                      - const selected = user.tags && user.tags[categoryID] && user.tags[categoryID][subcategoryID] == tagID;
-                                      .col-12.m-0.w-100
-                                        .card.h-100.tags.rounded-0(style=`cursor: pointer;` data-id=`${categoryID}-${subcategoryID}-${tagID}` class=`${selected ? 'selected' : ''}`)
-                                          .card-body.py-1(style=`cursor: pointer;`)
-                                            span.card-title(data-id=`${categoryID}-${subcategoryID}-${tagID}` data-name=tag.name)=tag.name_JP!=undefined?tag.name_JP:tag.name 
-                .col-12.col-sm-8.order-1.order-sm-2
-                  #diffused-image-gallery.mt-2.row(style="width:100%")
-  script(src="/js/stable-diffusion-script.js")
+                              .card.h-100.tags.rounded-0(style=`cursor: pointer;` data-id=`${categoryID}-${subcategoryID}-${tagID}` class=`${selected ? 'selected' : ''}`)
+                                .card-body.py-1(style=`cursor: pointer;`)
+                                  span.card-title(data-id=`${categoryID}-${subcategoryID}-${tagID}` data-name=tag.name)=tag.name_JP!=undefined?tag.name_JP:tag.name 
+      .col-12.col-sm-8.order-1.order-sm-2
+        #diffused-image-gallery.mt-2.row(style="width:100%")
+script(src="/js/stable-diffusion-script.js")

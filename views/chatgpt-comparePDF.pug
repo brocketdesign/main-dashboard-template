@@ -1,22 +1,16 @@
-extends default
+extends dashboard-base
 
-block content
-  .container-fluid.h-100
-    .row.h-100
-      include sidebar
-      .row.justify-content-center.m-0.p-0
-        .container.py-4.bg-light.h-100
-          main.col-md-8.ms-sm-auto.col-lg-9.px-md-4
-            form#comparePDF.row.default(method='POST' action='/compare' enctype='multipart/form-data')
-              .form-group.col-12.col-sm-6
-                label(for='pdf1') PDF 1
-                input#pdf1.form-control(type='file', name='pdf1', accept='.pdf')
-              .form-group.col-12.col-sm-6
-                label(for='pdf2') PDF 2
-                input#pdf2.form-control(type='file', name='pdf2', accept='.pdf')
-              .my-3.px-3
-                button.btn.btn-primary(type='submit') 
-                  i.fas.fa-paper-plane
-            .response
-              h3 Result
-              p#result
+block mainContent
+  form#comparePDF.row.default(method='POST' action='/compare' enctype='multipart/form-data')
+    .form-group.col-12.col-sm-6
+      label(for='pdf1') PDF 1
+      input#pdf1.form-control(type='file', name='pdf1', accept='.pdf')
+    .form-group.col-12.col-sm-6
+      label(for='pdf2') PDF 2
+      input#pdf2.form-control(type='file', name='pdf2', accept='.pdf')
+    .my-3.px-3
+      button.btn.btn-primary(type='submit') 
+        i.fas.fa-paper-plane
+  .response
+    h3 Result
+    p#result

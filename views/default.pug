@@ -4,7 +4,7 @@ html
     meta(charset='UTF-8')
     meta(name='viewport', content='width=device-width, initial-scale=1.0')
     link(rel='icon', type='image/png', href='/img/logo.png')
-    title #{title?title:'Saas Template 1'} 
+    title #{title?title:'RAKUBUN（楽文） | 高性能AIライティングツール'} 
     link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous")
     link(rel='stylesheet', href='/css/style.css')
     link(rel='stylesheet', href='/css/mdb.min.css')
@@ -20,25 +20,25 @@ html
     .top-nav
       nav.navbar.navbar-expand-md.navbar-white.bg-white
         .container-fluid
+          if user
+            button#sidebarMenuToggle.btn.btn-primary.shadow-0
+              i.fas.fa-bars
           a.navbar-brand(href='/')
             img.logo.mx-2(src='/img/logo.png', alt='ロゴ' style="max-width: 50px;")
-            | SAKUBUN
-          if user
-            button#sidebarMenuToggle.btn.text-white.shadow-0(type="button")
-              i.fas.fa-bars
+            | RAKUBUN
           #navbarCollapse.collapse.navbar-collapse
             ul.navbar-nav.ms-auto.mb-2.mb-md-0
               li.nav-item
                 if user
-                  a.nav-link.btn(href="/user/setting") 設定
+                  a.nav-link.btn.shadow-0(href="/user/setting") 設定
                 if user
                   li.nav-item
-                      button.nav-link.btn(type='button', onclick='logout()') ログアウト
+                      button.nav-link.btn.shadow-0(type='button', onclick='logout()') ログアウト
                 else
                   li.nav-item
-                      a.nav-link(href='/user/login') ログイン
+                      a.nav-link.shadow-0(href='/user/login') ログイン
                   li.nav-item
-                      a.btn.btn-outline-warning.btn-lg(href="/user/signup" role="button") まずは無料で使ってみる
+                      a.btn.btn-outline-warning.btn-lg.shadow-0(href="/user/signup" role="button") まずは無料で使ってみる
       #back-alert.alert-container.container.position-relative(style="cursor:pointer")
         if messages.error
           .alert.alert-danger.position-absolute.top-0.border.border-danger.shadow(style="z-index: 1;")

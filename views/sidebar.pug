@@ -1,10 +1,45 @@
-#sidebarMenu.collapse.sidebar.collapse.bg-white.position-fixed.h-100.col-md-3.col-lg-3.p-0.shadow(style="z-index:10;display:none")
+#sidebarMenu.bg-white.position-fixed.h-100.col-md-3.col-lg-3.p-0.shadow(style="z-index:10; overflow-y: auto; max-height: 100vh;")
   .position-sticky
     .list-group.list-group-flush
-      li.list-group-item.list-group-item-action.py-2
-        a.ripple.btn.text-white.d-flex.align-items-center.w-100.p-3(href='/payment/subscription' , class=user.subscriptionId?"bg-success":"bg-dark")
-          i.fas.fa-dollar-sign.me-3
-          | サブスクリプション
+      li.list-group-item.list-group-item-action.py-2.ripple
+        a(href="/dashboard/") 
+          i.fas.fa-home.me-3
+          | Home
+      li.list-group-item.list-group-item-action.py-2.ripple
+        a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse5', aria-controls='contents-collapse4') 
+          i.fas.fa-newspaper.me-3
+          | 文章生成
+        ul.list-unstyled.collapse#contents-collapse5.pt-3(class=`${mode == 'openai' ? "show":"hide"}`)
+          li
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/ebook/') Ebook、本
+          li
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/article/') 記事、ブログ
+          li
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/sns/') SNS投稿
+      li.list-group-item.list-group-item-action.py-2.ripple
+        a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse8', aria-controls='contents-collapse4') 
+          i.fas.fa-comments.me-3
+          | チャットGPT
+        ul.list-unstyled.collapse#contents-collapse8.pt-3(class=`${mode == 'openai' ? "show":"hide"}`)
+          li
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/chat/') チャット
+          li
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/compare/') テキスト比較
+          li
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/comparePDF/') PDF比較
+      li.list-group-item
+        a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse4', aria-controls='contents-collapse4') 
+          i.fas.fa-mixcloud.me-3
+          | 画像生成
+        ul.list-unstyled.collapse#contents-collapse4.pt-3(class=`${mode == 'stable-diffusion' ? "show":"hide"}`)
+          li
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/stable-diffusion') 
+              i.fas.fa-image.me-3
+              | 生成する
+          li
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/stable-diffusion/gallery') 
+              i.fas.fa-images.me-3
+              | ギャラリー  
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="/dashboard/app/1/history") 
           i.fas.fa-video.me-3
@@ -35,32 +70,14 @@
             a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/news/') 
               i.fas.fa-history.me-3
               | パラメータ
-      li.list-group-item
-        a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse4', aria-controls='contents-collapse4') 
-          i.fas.fa-mixcloud.me-3
-          | 画像生成
-        ul.list-unstyled.collapse#contents-collapse4.pt-3(class=`${mode == 'stable-diffusion' ? "show":"hide"}`)
-          li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/stable-diffusion') 
-              i.fas.fa-image.me-3
-              | 生成する
-          li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/stable-diffusion/gallery') 
-              i.fas.fa-images.me-3
-              | ギャラリー  
       li.list-group-item.list-group-item-action.py-2.ripple
-        a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse5', aria-controls='contents-collapse4') 
-          i.fas.fa-comments.me-3
-          | チャットGPT
-        ul.list-unstyled.collapse#contents-collapse5.pt-3(class=`${mode == 'openai' ? "show":"hide"}`)
-          li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/chat/') チャット
-          li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/compare/') テキスト比較
-          li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/comparePDF/') PDF比較
-          li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/ebook/') eBook
+        a(href="#") 
+          i.fas.fa-question.me-3
+          | お問い合わせ
+      li.list-group-item.list-group-item-action.py-2
+        a.ripple.btn.text-white.d-flex.align-items-center.w-100.p-3(href='/payment/subscription' , class=user.subscriptionId?"bg-success":"bg-primary")
+          i.fas.fa-arrow-up.me-3
+          | アップグレード
       li.list-group-item.list-group-item-action.py-2.d-lg-none
         if user
           a(href="/user/setting") 

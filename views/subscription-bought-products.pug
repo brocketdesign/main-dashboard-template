@@ -1,28 +1,22 @@
-extends default
+extends dashboard-base
 
-block content
-  .container-fluid.h-100
-    .row.h-100
-      include sidebar
-      .row.justify-content-center.m-0.p-0
-        .container.py-4.bg-light.h-100
-          main.col-md-8.ms-sm-auto.col-lg-9.px-md-4
-            h1 いらっしゃいませ、#{user.username}さん！
-            p メンバーシップ
-            if !subscriptions.length
-              p アクティブなメンバーシップはありません。
-            else
-              h3 マイメンバーシップ
-              each subscription in subscriptions
-                .card.mt-3
-                  .card-body
-                    h5.card-title #{subscription.productName}
-                    p.card-text #{subscription.id}
-                    ul.list-group.list-group-flush
-                      li.list-group-item サブスクリプションID: #{subscription.id}
-                      li.list-group-item ステータス: #{subscription.isActive}
-                      li.list-group-item 開始日: #{subscription.startDate}
-                      li.list-group-item 次回支払い日: #{subscription.nextPaymentDate}
-                    if subscription.isActive === true
-                      form(action="/payment/subscription/cancel/" + subscription.id, method="POST")
-                        button.btn.btn-danger(type="submit") キャンセル
+block mainContent
+  h1 いらっしゃいませ、#{user.username}さん！
+  p メンバーシップ
+  if !subscriptions.length
+    p アクティブなメンバーシップはありません。
+  else
+    h3 マイメンバーシップ
+    each subscription in subscriptions
+      .card.mt-3
+        .card-body
+          h5.card-title #{subscription.productName}
+          p.card-text #{subscription.id}
+          ul.list-group.list-group-flush
+            li.list-group-item サブスクリプションID: #{subscription.id}
+            li.list-group-item ステータス: #{subscription.isActive}
+            li.list-group-item 開始日: #{subscription.startDate}
+            li.list-group-item 次回支払い日: #{subscription.nextPaymentDate}
+          if subscription.isActive === true
+            form(action="/payment/subscription/cancel/" + subscription.id, method="POST")
+              button.btn.btn-danger(type="submit") キャンセル

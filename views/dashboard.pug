@@ -1,39 +1,33 @@
-extends default
+extends dashboard-base
 
-block content
-  .container-fluid.h-100
-    .row.h-100
-      include sidebar
-      .row.justify-content-center.m-0.p-0
-        .container.pb-4.bg-light.h-100
-          main.col-md-8.ms-sm-auto.col-lg-9.px-md-4
-            #video-holder.px-0.mb-4.w-100.bg-white
-            #relatedd-flex.flex-nowrap.overflow-auto
-            form#search(action=`/dashboard/app/${mode}`, method="GET")
-              .input-group.mb-3
-                input(type="hidden" name="page" id="page" value=page)
-                if mode == 4
-                  select#category(type="text", name="category", class="form-control")
-                input#searchTerm(onfocus=mode==2?'searchSubreddits(this)':undefined ,type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
-                button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") 
-                  i.fas.fa-search
-              .d-flex.mb-3
-                .form-check.form-switch.input-group-text.rounded-0.position-relative.border-0.p-0
-                  label.form-check-label.badge.me-3.bg-danger.p-2(for="nsfw")
-                    | NSFW
-                    i.fas.fa-times.ms-2
-                  input.form-check-input.position-absolute(type="checkbox", role="switch", id="nsfw", name="nsfw", style="z-index: 1;opacity:0;")
-                if searchTerm
-                  a.badge.bg-dark.d-flex.align-items-center.text-white(href=`/dashboard/app/${mode}/fav?searchTerm=${searchTerm}`)
-                    | Favorites
-                    i.fas.fa-heart.ms-2
-              ul.list-group#subRedditSearchRes.bg-white.w-100.position-absolute.border.shadow(style="max-height: 50vh;overflow: auto;z-index: 3;display: contents;")
-            if uniqueCurrentPages
-              if uniqueCurrentPages.length
-                ul
-                  each page in uniqueCurrentPages
-                    li
-                      a(href=page.currentPage)= page.currentPage
-              else
-                p No unique pages found.
-            block dynamicContent
+block mainContent
+  #video-holder.px-0.mb-4.w-100.bg-white
+  #relatedd-flex.flex-nowrap.overflow-auto
+  form#search(action=`/dashboard/app/${mode}`, method="GET")
+    .input-group.mb-3
+      input(type="hidden" name="page" id="page" value=page)
+      if mode == 4
+        select#category(type="text", name="category", class="form-control")
+      input#searchTerm(onfocus=mode==2?'searchSubreddits(this)':undefined ,type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
+      button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") 
+        i.fas.fa-search
+    .d-flex.mb-3
+      .form-check.form-switch.input-group-text.rounded-0.position-relative.border-0.p-0
+        label.form-check-label.badge.me-3.bg-danger.p-2(for="nsfw")
+          | NSFW
+          i.fas.fa-times.ms-2
+        input.form-check-input.position-absolute(type="checkbox", role="switch", id="nsfw", name="nsfw", style="z-index: 1;opacity:0;")
+      if searchTerm
+        a.badge.bg-dark.d-flex.align-items-center.text-white(href=`/dashboard/app/${mode}/fav?searchTerm=${searchTerm}`)
+          | Favorites
+          i.fas.fa-heart.ms-2
+    ul.list-group#subRedditSearchRes.bg-white.w-100.position-absolute.border.shadow(style="max-height: 50vh;overflow: auto;z-index: 3;display: contents;")
+  if uniqueCurrentPages
+    if uniqueCurrentPages.length
+      ul
+        each page in uniqueCurrentPages
+          li
+            a(href=page.currentPage)= page.currentPage
+    else
+      p No unique pages found.
+  block dynamicContent
