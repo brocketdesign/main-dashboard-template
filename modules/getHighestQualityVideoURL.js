@@ -85,12 +85,30 @@ async function saveData(AllData, videoDocument, format, user){
     AllData[elementIndex] = Object.assign({}, AllData[elementIndex], format);
     AllData[elementIndex].last_scraped = Date.now();
 
-    await global.db.collection('users').updateOne(
+    const result = await global.db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
-      { $set: { scrapedData: AllData } }
+      { $set: { scrapedData: AllData } },
+      { upsert: true }
     );
+    
+    if (result.modifiedCount > 0) {
+        console.log('Existing document was successfully updated.');
+    } else if (result.upsertedId) {
+        console.log('New document was created with ID:', result.upsertedId._id);
+    } else {
+        console.log('No changes were made to the database.');
+    }
 
     console.log('Element updated in the database.');
+
+    const itemWithSameLink = await global.db.collection('medias').find({source:foundElement.source}).toArray();
+    console.log(`Found ${itemWithSameLink.length} item(s) with the same source`)
+
+    for(let item of itemWithSameLink){
+      await global.db.collection('medias').updateOne({_id:new ObjectId(item._id)},{$set:{isdl:true}})
+    }
+
+    
   } catch (error) {
     console.log('Error while updating element:', error);
   }

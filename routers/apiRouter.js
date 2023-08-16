@@ -436,7 +436,8 @@ router.post('/dl', async (req, res) => {
     }
     // Get file name from the URL
     let extension = getFileExtension(url);
-    let fileName = `${title}_${Date.now()}${extension}`;
+    let sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, ''); // This will keep only alphanumeric characters
+    let fileName = `${sanitizedTitle}_${Date.now()}${extension}`;
     let filePath = path.join(download_directory, fileName);
 
     // Create download folder if it doesn't exist
@@ -444,8 +445,10 @@ router.post('/dl', async (req, res) => {
 
     if (url.includes('youtube.com')) {
       const info = await ytdl.getInfo(video_id);
+      //console.log(info.formats);
+
       const videoFormat = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
-      const audioFormat = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
+      const audioFormat = ytdl.chooseFormat(info.formats.filter(format => !format.videoCodec), { quality: 'highestaudio' });
       
       // Define temporary file paths
       let videoFilePath = path.join(download_directory, `video_${Date.now()}.mp4`);
@@ -460,22 +463,27 @@ router.post('/dl', async (req, res) => {
       audioDownload.pipe(fs.createWriteStream(audioFilePath));
 
       // Wait for both downloads to finish
-      await new Promise((resolve, reject) => {
-        videoDownload.on('end', resolve);
-        videoDownload.on('error', reject);
-        audioDownload.on('end', resolve);
-        audioDownload.on('error', reject);
-      });
+      await Promise.all([
+        new Promise((resolve, reject) => {
+          videoDownload.on('end', resolve);
+          videoDownload.on('error', reject);
+        }),
+        new Promise((resolve, reject) => {
+          audioDownload.on('end', resolve);
+          audioDownload.on('error', reject);
+        })
+      ]);
+
 
       // Merge video and audio files
       await new Promise((resolve, reject) => {
         ffmpeg()
-          .input(videoFilePath)
-          .input(audioFilePath)
-          .outputOptions('-map', '0:v', '-map', '1:a')
-          .saveToFile(filePath)
-          .on('end', resolve)
-          .on('error', reject);
+        .input(videoFilePath)
+        .input(audioFilePath).audioCodec('copy').noVideo()  // Extract only the audio stream
+        .outputOptions('-map', '0:v', '-map', '1:a')
+        .saveToFile(filePath)
+        .on('end', resolve)
+        .on('error', reject);
       });
 
       // Delete temporary files
@@ -504,13 +512,14 @@ router.post('/dl', async (req, res) => {
 
     const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
     const AllData = userInfo.scrapedData;
-    console.log(video_id)
     const foundElement = AllData.find(item => item.video_id === video_id);
     // Find the index of the element with the desired video_id in the scrapedData array
     const elementIndex = AllData.findIndex(item => item.video_id === video_id);
 
     if(elementIndex !== -1){
       AllData[elementIndex].filePath = filePath.replace('public','');
+      AllData[elementIndex].isdl = true;
+      AllData[elementIndex].isdl_data = new Date();
       
       // Update the user document in the 'users' collection with the modified scrapedData array
       await global.db.collection('users').updateOne(
@@ -522,6 +531,13 @@ router.post('/dl', async (req, res) => {
           }
         }
       );
+      const itemWithSameLink = await global.db.collection('medias').find({source:foundElement.source}).toArray();
+      console.log(`Found ${itemWithSameLink.length} item(s) with the same source`)
+  
+      for(let item of itemWithSameLink){
+        await global.db.collection('medias').updateOne({_id:new ObjectId(item._id)},{$set:{isdl:true,isdl_data:new Date()}})
+      }
+
     }else{
       console.log('Element not founded')
     }
@@ -656,6 +672,7 @@ router.post('/image', async (req, res) => {
 
 router.post('/hide', async (req, res) => {
   const element_id = req.body.id;
+  console.log('Request hide for ',element_id)
   try {
     const statusUpdate = await saveData(req.user, element_id, {hide:true})
     if(!statusUpdate){

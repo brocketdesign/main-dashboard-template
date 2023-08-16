@@ -12,7 +12,8 @@ async function findAndUpdateUser(userId, newScrapedData = null) {
     userScrapedData.push(...newScrapedData);
     await global.db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
-      { $set: { scrapedData: userScrapedData } }
+      { $set: { scrapedData: userScrapedData } },
+      { upsert: true }
     );
     console.log(`Scraped data saved for user ${userId}.`);
   }
@@ -32,7 +33,8 @@ function getUserScrapedData(user, url, mode, nsfw, page) {
        item.nsfw == nsfw && 
        !item.hide && 
        item.page == page &&
-       !item.filePath
+       !item.filePath &&
+       !item.isdl
       );
   }else{
     userScrapedDataWithCurrentPage = userScrapedData.filter(item => 
@@ -40,7 +42,8 @@ function getUserScrapedData(user, url, mode, nsfw, page) {
         item.nsfw == nsfw && 
         !item.hide && 
         item.page == page &&
-        !item.filePath
+        !item.filePath &&
+        !item.isdl
     ); 
   }
   return userScrapedDataWithCurrentPage.slice(0,50);
@@ -64,7 +67,7 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     try{
       currentPage = user.scrapInfo[url].page
     }catch(err){
-      console.log('NO page data founded')
+      console.log('No page data founded')
     }
   }
 
@@ -82,7 +85,18 @@ if (page <= currentPage) {
     }
 }
 
-  var scrapedData = await scrapeMode(url, mode, nsfw, url, page);
+  var scrapedData = await global.db.collection('medias').find({
+    query:url,page,
+    hide:{$exists:false},
+    isdl:{$exists:false},
+    link:{$exists:true}
+  }).toArray()
+
+  if(scrapedData.length >0 ){
+    scrapedData = await filterHiddenElement(scrapedData)
+    return scrapedData
+  }
+  scrapedData = await scrapeMode(url, mode, nsfw, page);
 
   if(scrapedData.length == 0) {
     const userScrapedDataWithCurrentPage = getUserScrapedData(userInfo, url, mode, nsfw).slice(0, 50);
@@ -99,8 +113,23 @@ if (page <= currentPage) {
     page: page
   })); 
 
+  //check for object with the same source and keep only one
+  let uniqueData = [];
+  let seenSources = new Set();
+  
+  for (let item of scrapedData) {
+      if (!seenSources.has(item.source)) {
+          seenSources.add(item.source);
+          uniqueData.push(item);
+      }
+  }
+  
+  scrapedData = uniqueData; // Now, scrapedData contains unique items based on the source property.
+  scrapedData = await filterElement(scrapedData)
+
   await findAndUpdateUser(userId, scrapedData);
   console.log('Scraped data saved.');
+
   url = url ? url : process.env.DEFAULT_URL
   await global.db.collection('users').updateOne(
     { _id: new ObjectId(userId) },
@@ -115,6 +144,20 @@ if (page <= currentPage) {
   console.log('x userScrapedDataWithCurrentPage: ', userScrapedDataWithCurrentPage[0]);
 
   return userScrapedDataWithCurrentPage;
+}
+async function filterHiddenElement(scrapedData) {
+  // Extract all sources from scrapedData
+  const sources = scrapedData.map(item => item.source);
+
+  // Find sources that exist in the "medias" collection with hide: true
+  const hiddenSources = await global.db.collection('medias').find({ 
+    source: { $in: sources },
+    hide: true
+  }).toArray();
+  const hiddenSourceSet = new Set(hiddenSources.map(item => item.source));
+
+  // Filter out items from scrapedData that have hide: true in the "medias" collection
+  return scrapedData.filter(item => !hiddenSourceSet.has(item.source));
 }
 
 module.exports = ManageScraper;

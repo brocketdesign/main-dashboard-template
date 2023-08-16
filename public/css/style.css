@@ -59,6 +59,9 @@ main {
   resize: none;        /* Disable textarea resizing */
 }
 
+#video-holder video {
+  max-height: 40vh;
+}
 @media (min-width: 992px) {
   .top-nav {
       position: sticky;
@@ -97,9 +100,6 @@ main {
       width: 106.8% !important;
       max-height: 40vh;;
       
-    }
-    #video-holder video {
-      max-height: 40vh;;
     }
   }
   

@@ -161,7 +161,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
 
   let scrapedData = await ManageScraper(searchTerm,nsfw,mode,req.user, page);
 
-  res.render(`search`, { user: req.user, searchTerm, scrapedData, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+  res.render(`search`, { user: req.user, searchTerm, scrapedData, mode, page, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
 });
 
 // Route for handling '/dashboard/:mode'
@@ -181,8 +181,20 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
   const currentMode = mode || req.session.mode || '1';
 
   let scrapedData = await getUserScrapedData(req.user, searchTerm, mode, nsfw, page) ;
-
-  res.render(`search`, { user: req.user, searchTerm, scrapedData, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+  //check for object with the same source and keep only one
+  let uniqueData = [];
+  let seenSources = new Set();
+  
+  for (let item of scrapedData) {
+      if (!seenSources.has(item.source)) {
+          seenSources.add(item.source);
+          uniqueData.push(item);
+      }
+  }
+  
+  scrapedData = uniqueData; // Now, scrapedData contains unique items based on the source property.
+  
+  res.render(`search`, { user: req.user, searchTerm, scrapedData:scrapedData.reverse(), mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 });
 // Helper function to get user's scraped data based on criteria
 function getUserScrapedData(user, url, mode, nsfw, page) {
@@ -195,7 +207,7 @@ function getUserScrapedData(user, url, mode, nsfw, page) {
        item.mode == mode && 
        item.nsfw == nsfw && 
        !item.hide && 
-       item.page == page &&
+       //item.page == page &&
        item.filePath
       );
   }else{
@@ -203,7 +215,7 @@ function getUserScrapedData(user, url, mode, nsfw, page) {
         item.mode == mode && 
         item.nsfw == nsfw && 
         !item.hide && 
-        item.page == page &&
+        //item.page == page &&
         item.filePath
     ); 
   }
@@ -232,24 +244,33 @@ if (userInfo) {
     const filteredData = scrapedData.filter(item => item.mode === mode && item.nsfw === nsfw && item.hide_query != true);
     // Create an object where the key is the 'query' and the value is an array of up to four items matching that 'query'.
     const queryMap = filteredData.reduce((acc, item) => {
-      if(!item.query){
+      if (!item.query) {
         // If item.query is not defined or is falsy, skip to the next item.
         return acc;
       }
-  
-      if(!acc[item.query]) {
-        acc[item.query] = []; // If this 'query' is not already a key in the object, add it with an empty array as the value.
+    
+      const key = `${item.query}${item.page}`; // Combine query and page to create the key
+    
+      if (!acc[key]) {
+        acc[key] = []; // If this combined key is not already in the object, add it with an empty array as the value.
       }
-      
-      if(acc[item.query].length < 4) { 
-        // If the array for this 'query' has less than four items, add the current item.
-        if(item.hide != true){
-          acc[item.query].push(item);
+    
+      if (acc[key].length < 4) {
+        // If the array for this combined key has less than four items, add the current item.
+        if (item.hide !== true) {
+          acc[key].push(item);
         }
       }
+    
       return acc;
     }, {});
-    data = queryMap
+    
+    // Sort the items in each array by the 'page' property
+    for (const key in queryMap) {
+      queryMap[key].sort((a, b) => a.page - b.page);
+    }
+    
+    data = queryMap;
   } catch (error) {
     console.log(error)
   }

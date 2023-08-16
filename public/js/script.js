@@ -110,7 +110,7 @@ $(document).ready(function() {
         handleHidingHistory($(this).closest('.card').data('query'))  
     });
 
-    $('.summarize-button').click(function(event) { 
+    $(document).on('click','.summarize-button', function(event) { 
         event.preventDefault(); // Prevents the default click behavior
         const confirmation = confirm("Are you sure you post this video summary ?");
 
@@ -169,6 +169,17 @@ $(document).ready(function() {
         $(`.card[data-id=${videoId}]`).remove()
         handleMasonry()
     });
+    
+    $('.card img').on('load', function() { 
+        var videoId = $(this).data('id');
+        
+        // Check image size and remove if smaller than 500x500
+        if (this.naturalWidth < 500 || this.naturalHeight < 500) {
+            $(`.card[data-id=${videoId}]`).remove();
+            handleMasonry();
+        }
+    });    
+    
     $('.card img').on('load', function() { 
         handleMasonry()
     });
@@ -221,7 +232,7 @@ const handleScrollDownButton = () => {
 
 
 const handleCardButton = () => {
-    $('.info-button').on('click',function(){
+    $(document).on('click','.info-button',function(){
         $(this).closest('.card-body').find('.card-title').toggle()
     })
 }
@@ -372,12 +383,11 @@ const handleCardClickable = () => {
                   src: response.url,
                   autoplay: true,
                   controls: true,
-                  width: "100%",
                   playsinline: true
               }).on('loadeddata', function() {
                 // Code to be executed when the video is ready to play
                 console.log('Video ready to play');
-                handleMasonry()
+                //handleMasonry()
             });;
 
               console.log('Video element created:', $video);
@@ -387,7 +397,16 @@ const handleCardClickable = () => {
               //$thisCard.prepend($video);
               $('#video-holder').html('')
               $('#video-holder').append($video)//.append($thisCard.find('.tool-bar').clone()).append($thisCard.find('.card-title').clone().show())
-
+              scrollToTop();
+              const cardClone = $thisCard.clone()
+              cardClone.find('.card-top').hide()
+              cardClone.find('img').hide()
+              cardClone.find('.card-title').show()
+              cardClone.find('.card-body-over').hide()
+              cardClone.find('.card-body').removeClass('position-absolute px-3')
+              $('#video-holder').append(cardClone)
+              $thisCard.hide()
+              handleMasonry()
               console.log('Video added to card body.');
 
               //Add related
@@ -1036,4 +1055,10 @@ function handleSideBar() {
 
     // Assign the event handler to the button. Note: Don't call the function here, just reference it.
     $('#sidebarMenuToggle').on('click', toggleSidebarMenu);
+}
+
+function scrollToTop() {
+    $('html, body').animate({
+        scrollTop: 0
+    }, 800); // 800 is the duration in milliseconds. You can adjust this value as needed.
 }
