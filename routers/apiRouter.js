@@ -19,6 +19,68 @@ const fs = require('fs');
 const url = require('url');
 const { ObjectId } = require('mongodb');
 
+
+router.post('/user/:elementCreated', async (req, res) => {
+  try {
+      const userID = new ObjectId(req.user._id);
+      const elementCreated = req.params.elementCreated;
+      const content = req.body.content;
+
+      console.log(`Request for ${elementCreated} by ${userID}. Data: ${content}`);
+
+      // 1. Create a new document in the elementCreated collection
+      const creationResult = await global.db.collection(elementCreated).insertOne({ content: content });
+
+      // 2. Get the _id of the newly created document
+      const newElementId = creationResult.insertedId;
+
+      // 3. Push this _id into the user's elementCreated + "Ids" array
+      const fieldToUpdate = elementCreated + "Ids";
+      console.log(fieldToUpdate)
+      const updateUserResult = await global.db.collection('users').updateOne(
+          { _id: userID },
+          { $push: { [fieldToUpdate]: newElementId } }
+      );
+
+      if (updateUserResult.modifiedCount === 1) {
+          res.status(200).send({ message: 'Data added successfully', newElementId: newElementId });
+      } else {
+          res.status(400).send({ message: 'Failed to add data' });
+      }
+  } catch (error) {
+      console.error('Error updating user data:', error);
+      res.status(500).send({ message: 'Internal server error' });
+  }
+});
+
+router.delete('/user/:elementRemoved/:elementId', async (req, res) => {
+    try {
+        const userID = new ObjectId(req.user._id);
+        const elementRemoved = req.params.elementRemoved; // This should be "memo" in your use case
+        const elementIdToRemove = new ObjectId(req.params.elementId); // The ID of the memo to be removed
+
+        console.log(`Request to remove ${elementRemoved} with ID ${elementIdToRemove} for user ${userID}`);
+
+        // Construct the field name by appending "Ids" to the elementRemoved value
+        const fieldToUpdate = elementRemoved + "Ids";
+
+        // Remove the specified ID from the user's elementRemoved + "Ids" array
+        const updateUserResult = await global.db.collection('users').updateOne(
+            { _id: userID },
+            { $pull: { [fieldToUpdate]: elementIdToRemove } }
+        );
+
+        if (updateUserResult.modifiedCount === 1) {
+            res.status(200).send({ message: 'Data removed successfully' });
+        } else {
+            res.status(400).send({ message: 'Failed to remove data' });
+        }
+    } catch (error) {
+        console.error('Error updating user data:', error);
+        res.status(500).send({ message: 'Internal server error' });
+    }
+});
+
 // API router for openAI
 router.post('/openai/send-prompt', async (req, res) => {
   const { Configuration, OpenAIApi } = require('openai');

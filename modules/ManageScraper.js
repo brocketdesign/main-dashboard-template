@@ -85,17 +85,11 @@ if (page <= currentPage) {
     }
 }
 
-  var scrapedData = await global.db.collection('medias').find({
-    query:url,page,
-    hide:{$exists:false},
-    isdl:{$exists:false},
-    link:{$exists:true}
-  }).toArray()
-
-  if(scrapedData.length >0 ){
-    scrapedData = await filterHiddenElement(scrapedData)
+  scrapedData = await findDataInMedias()
+  if(scrapedData){
     return scrapedData
   }
+
   scrapedData = await scrapeMode(url, mode, nsfw, page);
 
   if(scrapedData.length == 0) {
@@ -140,7 +134,13 @@ if (page <= currentPage) {
   const updatedUserInfo = await findAndUpdateUser(userId);
   // Pass updated user info to the function
   const userScrapedDataWithCurrentPage = getUserScrapedData(updatedUserInfo, url, mode, nsfw, page);
-  
+
+  scrapedData = await findDataInMedias()
+  if(scrapedData){
+    console.log('Found data in the medias collection: ',scrapedData)
+    return scrapedData
+  }
+
   console.log('x userScrapedDataWithCurrentPage: ', userScrapedDataWithCurrentPage[0]);
 
   return userScrapedDataWithCurrentPage;
@@ -172,5 +172,18 @@ async function filterHiddenElement(scrapedData) {
   // Filter out items from scrapedData that have hide: true in the "medias" collection
   return scrapedData.filter(item => !hiddenSourceSet.has(item.source));
 }
+async function findDataInMedias(){
+  var scrapedData = await global.db.collection('medias').find({
+    query:url,page,
+    hide:{$exists:false},
+    isdl:{$exists:false},
+    link:{$exists:true}
+  }).toArray()
 
+  if(scrapedData.length >0 ){
+    scrapedData = await filterHiddenElement(scrapedData)
+    return scrapedData
+  }
+  return false
+}
 module.exports = ManageScraper;

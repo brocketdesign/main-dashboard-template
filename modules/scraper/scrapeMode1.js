@@ -77,7 +77,8 @@ const scrapeWebsite = (query, mode, nsfw, url, pageNum) => {
   });
 }
 
-async function scrapeMode1(query, mode, nsfw, url, page) {
+async function scrapeMode1(url, mode, nsfw, page) {
+  query = url 
   try {
     if(!nsfw){
       console.log('Operating a safe search');

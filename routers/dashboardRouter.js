@@ -22,8 +22,34 @@ const ManageScraper = require('../modules/ManageScraper');
 
 // Route for handling '/dashboard/'
 router.get('/', ensureAuthenticated,ensureMembership, async (req, res) => {
-    // Redirect to 'mode 1'
-    res.redirect('/dashboard/app/1');
+  const userId = req.user._id;
+
+  const latestNews = await global.db.collection('latestNews').find().limit(2).toArray();
+
+  // Fetch all book IDs associated with the user
+  const userBooks = await global.db.collection('users').findOne({ _id: new ObjectId(userId) }, { projection: { bookIds: 1 } });
+
+  let books = [];
+
+  if (userBooks && userBooks.bookIds && userBooks.bookIds.length > 0) {
+      // Fetch all books' details associated with the user using the bookIds
+      books = await global.db.collection('books').find({ _id: { $in: userBooks.bookIds.map(id => new ObjectId(id)) } }).sort({_id:-1}).toArray();
+  }
+  books = books.slice(0,3)
+
+
+  // Fetch all memo IDs associated with the user
+  const userMemos = await global.db.collection('users').findOne({ _id: new ObjectId(userId) }, { projection: { memoIds: 1 } });
+
+  let memos = [];
+
+  if (userMemos && userMemos.memoIds && userMemos.memoIds.length > 0) {
+      // Fetch all memos' details associated with the user using the memoIds
+      memos = await global.db.collection('memo').find({ _id: { $in: userMemos.memoIds.map(id => new ObjectId(id)) } }).sort({_id:-1}).toArray();
+  }
+  memos = memos;
+
+  res.render('dashboard-top',{user:req.user,latestNews,books,memos,title:"Dashboadr"});
 });
 // ChatGPT
 router.get('/app/openai/ebook/:bookId', ensureAuthenticated, ensureMembership, async (req, res) => {
@@ -49,7 +75,7 @@ router.get('/app/openai/ebook', ensureAuthenticated, ensureMembership, async (re
 
   if (user && user.bookIds && user.bookIds.length > 0) {
       // Fetch all books' details associated with the user using the bookIds
-      books = await global.db.collection('books').find({ _id: { $in: user.bookIds.map(id => new ObjectId(id)) } }).toArray();
+      books = await global.db.collection('books').find({ _id: { $in: user.bookIds.map(id => new ObjectId(id)) } }).sort({_id:-1}).toArray();
   }
 
   res.render('chatgpt-ebook.pug', { user: req.user, books, title: 'User Books' });
@@ -181,18 +207,21 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
   const currentMode = mode || req.session.mode || '1';
 
   let scrapedData = await getUserScrapedData(req.user, searchTerm, mode, nsfw, page) ;
-  //check for object with the same source and keep only one
-  let uniqueData = [];
-  let seenSources = new Set();
-  
-  for (let item of scrapedData) {
-      if (!seenSources.has(item.source)) {
-          seenSources.add(item.source);
-          uniqueData.push(item);
-      }
+
+  if (mode == 4) {
+    //check for object with the same source and keep only one
+    let uniqueData = [];
+    let seenSources = new Set();
+    
+    for (let item of scrapedData) {
+        if (!seenSources.has(item.source)) {
+            seenSources.add(item.source);
+            uniqueData.push(item);
+        }
+    }
+    
+    scrapedData = uniqueData; // Now, scrapedData contains unique items based on the source property.
   }
-  
-  scrapedData = uniqueData; // Now, scrapedData contains unique items based on the source property.
   
   res.render(`search`, { user: req.user, searchTerm, scrapedData:scrapedData.reverse(), mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 });

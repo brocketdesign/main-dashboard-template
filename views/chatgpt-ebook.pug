@@ -20,12 +20,16 @@ block mainContent
         button.btn.btn-primary(type='submit') 
           i.fas.fa-paper-plane
       if books.length > 0
-        each book in books 
-          a(href=`/dashboard/app/openai/ebook/${book._id}`)
-            .card.mb-4
-              .card-body
-                h3=book.title
-                p=book.author.name 
+        .row.row-cols-1.row-cols-md-3.my-3
+          each book in books 
+            .col
+              a.text-dark(href=`/dashboard/app/openai/ebook/${book._id}`)
+                .card.btn.bg-white.mb-4
+                  .card-body
+                      h3.fw-normal.fs-6.text-capitalize=book.title
+                      if book.book_content
+                        p.text-capitalize=book.book_content[0].content.slice(0,50)
+                            | ... 
       else 
         p Write a book
   else 

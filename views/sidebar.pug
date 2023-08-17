@@ -1,14 +1,20 @@
-#sidebarMenu.bg-white.position-fixed.h-100.col-md-3.col-lg-3.p-0.shadow(style="z-index:10; overflow-y: auto; max-height: 100vh;")
+#sidebarMenu.bg-white.position-fixed.h-100.col-md-2.p-0.shadow(style="z-index:10;width:auto; overflow-y: auto; max-height: 100vh;display:none")
   .position-sticky
     .list-group.list-group-flush
+      li.list-group-item.list-group-item-action.py-2.ripple.toggler
+        #sidebarMenuToggle.text-primary.shadow-0.text-start.d-flex.align-items-center(type="button")
+          i.fas.fa-bars
+          .hide-text
+            img.logo.mx-2(src='/img/logo.png', alt='ロゴ' style="max-width: 20px;")
+            | RAKUBUN
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="/dashboard/") 
-          i.fas.fa-home.me-3
-          | Home
+          i.fas.fa-home
+          span.hide-text.ms-3 ホーム
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse5', aria-controls='contents-collapse4') 
-          i.fas.fa-newspaper.me-3
-          | 文章生成
+          i.fas.fa-newspaper
+          span.hide-text.ms-3 文章生成
         ul.list-unstyled.collapse#contents-collapse5.pt-3(class=`${mode == 'openai' ? "show":"hide"}`)
           li
             a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/ebook/') Ebook、本
@@ -18,79 +24,84 @@
             a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/sns/') SNS投稿
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse8', aria-controls='contents-collapse4') 
-          i.fas.fa-comments.me-3
-          | チャットGPT
+          i.fas.fa-comments
+          span.hide-text.ms-3 チャットGPT
         ul.list-unstyled.collapse#contents-collapse8.pt-3(class=`${mode == 'openai' ? "show":"hide"}`)
           li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/chat/') チャット
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/chat/') 
+              span.hide-text.ms-3 チャット
           li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/compare/') テキスト比較
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/compare/') 
+              span.hide-text.ms-3 テキスト比較
           li
-            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/comparePDF/') PDF比較
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/openai/comparePDF/') 
+              span.hide-text.ms-3 PDF比較
       li.list-group-item
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse4', aria-controls='contents-collapse4') 
-          i.fas.fa-mixcloud.me-3
-          | 画像生成
+          i.fas.fa-mixcloud
+          span.hide-text.ms-3 画像生成
         ul.list-unstyled.collapse#contents-collapse4.pt-3(class=`${mode == 'stable-diffusion' ? "show":"hide"}`)
           li
             a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/stable-diffusion') 
-              i.fas.fa-image.me-3
-              | 生成する
+              i.fas.fa-image
+              span.hide-text.ms-3 生成する
           li
             a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/stable-diffusion/gallery') 
-              i.fas.fa-images.me-3
-              | ギャラリー  
+              i.fas.fa-images
+              span.hide-text.ms-3 ギャラリー  
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="/dashboard/app/1/history") 
-          i.fas.fa-video.me-3
-          | ビデオ
+          i.fas.fa-video
+          span.hide-text.ms-3 ビデオ
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="/dashboard/app/3/history", data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse7', aria-controls='contents-collapse7') 
-          i.fas.fa-image.me-3
-          | 画像
+          i.fas.fa-image
+          span.hide-text.ms-3 画像
         ul.list-unstyled.collapse#contents-collapse7.pt-3(class=`${mode == "news" ? "show":"hide"}`)
           li
+            a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/3/history') 
+              i.fas.fa-search
+              span.hide-text.ms-3 Search
+          li
             a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/4/history') 
-              i.fas.fa-search.me-3
-              | Scraper
+              i.fas.fa-search
+              span.hide-text.ms-3 Scraper
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="/dashboard/app/2") 
-          i.fas.fa-reddit.me-3
-          | Reddit
+          i.fas.fa-reddit
+          span.hide-text.ms-3 Reddit
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse6', aria-controls='contents-collapse6') 
-          i.fas.fa-reddit.me-3
-          | ニュース
+          i.fas.fa-reddit
+          span.hide-text.ms-3 ニュース
         ul.list-unstyled.collapse#contents-collapse6.pt-3(class=`${mode == "news" ? "show":"hide"}`)
           li
             a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/news') 
-              i.fas.fa-search.me-3
-              | 最新の情報
+              i.fas.fa-search
+              span.hide-text.ms-3 最新の情報
           li
             a.list-group-item.list-group-item-action.py-2.ps-5.ripple(href='/dashboard/app/news/') 
-              i.fas.fa-history.me-3
-              | パラメータ
+              i.fas.fa-history
+              span.hide-text.ms-3 パラメータ
       li.list-group-item.list-group-item-action.py-2.ripple
         a(href="#") 
-          i.fas.fa-question.me-3
-          | お問い合わせ
-      li.list-group-item.list-group-item-action.py-2
-        a.ripple.btn.text-white.d-flex.align-items-center.w-100.p-3(href='/payment/subscription' , class=user.subscriptionId?"bg-success":"bg-primary")
-          i.fas.fa-arrow-up.me-3
-          | アップグレード
+          i.fas.fa-question
+          span.hide-text.ms-3 お問い合わせ
+      li.list-group-item.list-group-item-action.py-2(class=user.subscriptionId?"bg-success":"bg-primary")
+        a.ripple.text-white.d-flex.align-items-center.w-100(href='/payment/subscription')
+          i.fas.fa-arrow-up
+          span.hide-text.ms-3 アップグレード
       li.list-group-item.list-group-item-action.py-2.d-lg-none
         if user
           a(href="/user/setting") 
-            i.fas.fa-cog.me-3
-            | 設定
+            i.fas.fa-cog
+            span.hide-text.ms-3 設定
       li.list-group-item.list-group-item-action.py-2.d-lg-none
         if user
           a(href='#', onclick='logout()') 
-            i.fas.fa-sign-out-alt.me-3
-            | ログアウト
+            i.fas.fa-sign-out-alt
+            span.hide-text.ms-3 ログアウト
         else
           a(href='/user/login') 
-            i.fas.fa-sign-in-alt.me-3
-            | ログイン
-
-    include footer
+            i.fas.fa-sign-in-alt
+            span.hide-text.ms-3 ログイン

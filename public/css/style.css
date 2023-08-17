@@ -62,15 +62,21 @@ main#dashboard {
 #video-holder video {
   max-height: 40vh;
 }
-@media (min-width: 992px) {
-  .top-nav {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index:1000;
+}
+@media (max-width: 992px) {
+  .top-nav .navbar {
+    padding: 0 !important;
+  }
+  .top-nav img{
+    width: 20px;
   }
 }
 @media (max-width: 768px) {  /* assuming 768px is the breakpoint for mobile view */
-    #positionElement {
+    #positionElement { 
       position: absolute !important;
       top: auto !important;
       left: 0 !important;

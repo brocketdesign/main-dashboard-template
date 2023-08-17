@@ -193,10 +193,8 @@ $(document).ready(function() {
 
     $('input#searchTerm').on('change',function(){$('#page').val(1)})
 
-
-
-
-    handleSideBar();
+    handleMemo();
+    handleSideBar() 
     handleBookEditing();
     handleScrollDownButton();
     handleCardClickable();
@@ -1021,44 +1019,114 @@ function handleBookEditing(){
   return queries;
 }
 
-// Function to handle toggle click event
-function toggleSidebarMenu() {
-    // Initialize the variable. Parse the value to a boolean using the double negation trick.
-    var isSidebarMenuVisible = JSON.parse(localStorage.getItem('isSidebarMenuVisible') || 'false');
-
-    // Toggle the variable
-    isSidebarMenuVisible = !isSidebarMenuVisible;
-
-    // Update the local storage
-    localStorage.setItem('isSidebarMenuVisible', JSON.stringify(isSidebarMenuVisible));
-
-    if (isSidebarMenuVisible) {
-        $('#sidebarMenu').hide();
-        $('main#dashboard').removeClass('ms-sm-auto col-md-8 col-lg-9').addClass('col-12');
-    } else {
-        $('#sidebarMenu').show();
-        $('main#dashboard').addClass('ms-sm-auto col-md-8 col-lg-9').removeClass('col-12');
-    }
-}
-function handleSideBar() {
-    // Initialize the variable. Parse the value to a boolean using the double negation trick.
-    var isSidebarMenuVisible = JSON.parse(localStorage.getItem('isSidebarMenuVisible') || 'false');
-
-    if (isSidebarMenuVisible) {
-        $('#sidebarMenu').hide();
-        $('main#dashboard').removeClass('ms-sm-auto col-md-8 col-lg-9').addClass('col-12');
-    } else {
-        $('#sidebarMenu').show();
-        $('main#dashboard').addClass('ms-sm-auto col-md-8 col-lg-9').removeClass('col-12');
-    }
-    $('main#dashboard').show();
-
-    // Assign the event handler to the button. Note: Don't call the function here, just reference it.
-    $('#sidebarMenuToggle').on('click', toggleSidebarMenu);
-}
-
 function scrollToTop() {
     $('html, body').animate({
         scrollTop: 0
     }, 800); // 800 is the duration in milliseconds. You can adjust this value as needed.
+}
+
+// Function to handle the appearance of the sidebar menu based on the isSidebarMenuVisible value
+function adjustSidebarAppearance(isVisible) {
+    // Start observing the #sidebarMenu element for attribute changes
+    observer.observe($('#sidebarMenu')[0], {
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+        subtree: true
+    });    
+    if (isVisible) {
+        $('#sidebarMenu').find('.hide-text').hide();
+        $('#sidebarMenu').find('.collapse').removeClass('show')
+        $('#sidebarMenu').find('.list-group-item').addClass('px-2');
+    } else {
+        $('#sidebarMenu').find('.hide-text').show();
+        $('#sidebarMenu').find('.list-group-item').removeClass('px-2');
+    }
+
+}
+
+// Function to handle toggle click event
+function toggleSidebarMenu() {
+    var isSidebarMenuVisible = JSON.parse(localStorage.getItem('isSidebarMenuVisible') || 'false');
+    isSidebarMenuVisible = !isSidebarMenuVisible;
+    localStorage.setItem('isSidebarMenuVisible', JSON.stringify(isSidebarMenuVisible));
+    adjustSidebarAppearance(isSidebarMenuVisible);
+}
+
+function handleSideBar() {
+    var isSidebarMenuVisible = JSON.parse(localStorage.getItem('isSidebarMenuVisible') || 'false');
+
+    $('#sidebarMenu').find('li.list-group-item').not('.toggler').on('click', function() {
+        if($(this).find('ul').length){
+            adjustSidebarAppearance(false);
+        }
+    });
+    $('#sidebarMenuToggle').on('click', toggleSidebarMenu);
+    adjustSidebarAppearance(true);
+    $('#sidebarMenu').show()
+    $('main#dashboard').show();
+}
+
+// Create a MutationObserver to watch for changes in the #sidebarMenu element
+const observer = new MutationObserver((mutationsList, observer) => {
+    for(let mutation of mutationsList) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            $('#sidebarMenu').show()
+            observer.disconnect(); // Stop observing once the width has been adjusted
+        }
+    }
+});
+
+function handleMemo(){
+$('button#memo').on('click', function() {
+    let memo = $('[name="memo"]').val();
+    if(memo.length == 0){
+        alert('保存する前にメモを書いてください。')
+        return
+    }
+    // Make the AJAX request
+    $.ajax({
+        url: '/api/user/memo',
+        type: 'POST',
+        data: {
+            content: memo
+        },
+        success: function(response) {
+            console.log('Memo saved successfully');
+            location.reload()
+            // Additional code to handle the response
+        },
+        error: function(error) {
+            console.log('Error saving memo:', error);
+            // Additional code to handle the error
+        }
+    });
+});
+// Listen for click events on buttons with the class .remove-memo
+$('.remove-memo').on('click', function(e) {
+    e.preventDefault()
+    const confirmation = confirm("削除してもよろしいでしょうか？");
+
+    if (!confirmation) {
+        return
+    }
+    // Extract the memo ID from the data-id attribute of the clicked button
+    const $cardContainer = $(this).closest('.card')
+    let memoId = $cardContainer.data('id');
+
+    // Make the AJAX DELETE request
+    $.ajax({
+        url: '/api/user/memo/' + memoId, // Construct the URL with the memo ID
+        type: 'DELETE',
+        success: function(response) {
+            console.log('Memo removed successfully');
+            $cardContainer .remove()
+            // Additional code to handle the response, e.g., remove the memo from the UI
+        },
+        error: function(error) {
+            console.log('Error removing memo:', error);
+            // Additional code to handle the error
+        }
+    });
+});
+
 }
