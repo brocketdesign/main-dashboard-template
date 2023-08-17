@@ -1,5 +1,6 @@
 // Utility functions
 const logout = () => window.location.href = '/user/logout';
+const YOUR_LARGE_SCREEN_BREAKPOINT = 992
 
 const checkFormChange = (initialData, form) => {
     return Array.from(form.entries()).some(([name, value]) => value !== initialData.get(name));
@@ -193,9 +194,11 @@ $(document).ready(function() {
 
     $('input#searchTerm').on('change',function(){$('#page').val(1)})
 
+    trackScroll();
     handleOpenaiForm();
     handleMemo();
-    handleSideBar() 
+    onLargeScreen(handleSideBar())
+    onSmallScreen(handleSideBar2())
     handleBookEditing();
     handleScrollDownButton();
     handleCardClickable();
@@ -381,6 +384,7 @@ const handleCardClickable = () => {
               var $video = $('<video>').attr({
                   src: response.url,
                   autoplay: true,
+                  width:"100%",
                   controls: true,
                   playsinline: true
               }).on('loadeddata', function() {
@@ -488,7 +492,7 @@ const handleDownloadButton = () => {
           $buttonContainer.append(DLicon)
         }
         console.log('download successful.');
-        handleFormResult(true, 'ダウンロードされました')    
+        handleFormResult(true, response.message)    
         
       }).fail(function() {
 
@@ -1028,19 +1032,20 @@ function scrollToTop() {
 
 // Function to handle the appearance of the sidebar menu based on the isSidebarMenuVisible value
 function adjustSidebarAppearance(isVisible) {
-    // Start observing the #sidebarMenu element for attribute changes
-    observer.observe($('#sidebarMenu')[0], {
-        attributes: true,
-        attributeFilter: ['style', 'class'],
-        subtree: true
-    });    
+
     if (isVisible) {
-        $('#sidebarMenu').find('.hide-text').hide();
-        $('#sidebarMenu').find('.collapse').removeClass('show')
-        $('#sidebarMenu').find('.list-group-item').addClass('px-2');
+        $('#sidebarMenu').find('.hide-text').hide()
+        $('#sidebarMenu').find('.collapse').removeClass('show').end()
+        $('#sidebarMenu').animate({ width: '50px' }, 500, function() {
+            $('#sidebarMenu').find('.list-group-item').addClass('text-center');
+        });
+        
+
     } else {
-        $('#sidebarMenu').find('.hide-text').show();
-        $('#sidebarMenu').find('.list-group-item').removeClass('px-2');
+        $('#sidebarMenu').find('.list-group-item').removeClass('text-center').end()
+        $('#sidebarMenu').animate({ width: '250px' }, 500, function() {
+            $('#sidebarMenu').find('.hide-text').fadeIn();
+        });
     }
 
 }
@@ -1067,16 +1072,27 @@ function handleSideBar() {
     $('main#dashboard').show();
 }
 
-// Create a MutationObserver to watch for changes in the #sidebarMenu element
-const observer = new MutationObserver((mutationsList, observer) => {
-    for(let mutation of mutationsList) {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-            $('#sidebarMenu').show()
-            observer.disconnect(); // Stop observing once the width has been adjusted
-        }
-    }
-});
+function adjustSidebarAppearance2(){
 
+    if ($('#sidebarMenu').is(':visible')) {
+        $('#sidebarMenu').find('.hide-text').hide()
+        $('#sidebarMenu').find('.collapse').removeClass('show').end()
+        $('#sidebarMenu').animate({ width: '60px' }, 500, function() {
+            $('#sidebarMenu').find('.list-group-item').addClass('text-center');
+            $('#sidebarMenu').fadeOut()
+        });
+    } else {
+        $('#sidebarMenu').fadeIn()
+        $('#sidebarMenu').find('.list-group-item').removeClass('text-center').end()
+        $('#sidebarMenu').animate({ width: '250px' }, 500, function() {
+            $('#sidebarMenu').find('.hide-text').fadeIn();
+        });
+    }
+}
+function handleSideBar2(){
+    $('#sidebarMenu').hide()
+    $('#sidebarMenuToggleSmall').on('click', adjustSidebarAppearance2);
+}
 function handleMemo(){
 $('button#memo').on('click', function() {
     let memo = $('[name="memo"]').val();
@@ -1134,66 +1150,13 @@ $('.remove-memo').on('click', function(e) {
 
 function handleOpenaiForm(){
 
-    let keywordCounter = 1;
-
-    $('.add-keyword').click(function() {
-        let keywordVal = $(`#keyword-${keywordCounter}`).val();
-        if(keywordVal.length == 0){
-            alert('キーワードを書いてください。')
-            return
-        }
-        keywordCounter++; // increment the counter
-
-        const newInput = $(`
-            <div class="col p-1">
-                <input type="text" class="form-control" name="keywords[]" id="keyword-${keywordCounter}" placeholder='20代,営業職,転職' >
-            </div>
-        `);
-
-        // Append the new input to the container
-        $('.keywords-inputs').prepend(newInput);
-    });
-
-    let chaptersCounter = 1
-
-    $('.add-chapters').click(function() {
-        let chaptersVal = $(`#chapters-${chaptersCounter}`).val();
-        if(chaptersVal.length == 0){
-            alert('目次を書いてください。')
-            return
-        }
-        chaptersCounter++; // increment the counter
-
-        const newInput = $(`
-            <div class="col p-1">
-                <input type="text" class="form-control" name="chapters[]" id="chapters-${chaptersCounter}" placeholder='20代,営業職,転職' >
-            </div>
-        `);
-
-        // Append the new input to the container
-        $('.chapters-inputs').prepend(newInput);
-    });
-
+    handleCounterAndAddForm()
+    // Check and set the initial state on page load
+    handleCheckboxState();
+    
     // On checkbox state change
-    $('#aiCheckbox').change(function() {
-        // Check if the checkbox is checked
-        if ($(this).prop('checked')) {
-            // If checked, disable all inputs inside .chapters-inputs
-            $('.chapters-inputs input').prop('disabled', true);
-        } else {
-            // If unchecked, enable all inputs inside .chapters-inputs
-            $('.chapters-inputs input').prop('disabled', false);
-        }
-    });
-
-    // Check if the checkbox is checked
-    if ($('#aiCheckbox').prop('checked')) {
-        // If checked, disable all inputs inside .chapters-inputs
-        $('.chapters-inputs input').prop('disabled', true);
-    } else {
-        // If unchecked, enable all inputs inside .chapters-inputs
-        $('.chapters-inputs input').prop('disabled', false);
-    }
+    $('#aiCheckbox').change(handleCheckboxState);
+    
     let initialFormData = new FormData($('form#ebook')[0]);
 
     // On form submission
@@ -1251,7 +1214,7 @@ function handleOpenaiForm(){
                 topic, 
                 language,
                 keywords:keywordsArray, 
-                chapters:chaptersArray,
+                userChapters:chaptersArray,
                 aiCheckbox
             },
             success: function(response) {
@@ -1263,5 +1226,114 @@ function handleOpenaiForm(){
               console.error(error);
             }
           });
+    });
+}
+
+function handleCheckboxState() {
+    var isChecked = $('#aiCheckbox').prop('checked');
+    
+    $('.chapters-inputs input').prop('disabled', isChecked);
+
+    if (isChecked) {
+        $('.add-chapters').hide();
+    } else {
+        $('.add-chapters').show();
+    }
+}
+
+function handleCounterAndAddForm(){
+    // Create an empty object to store the counters for each item type
+let counters = {};
+
+// Use a more generalized class for the event listener
+$('.add-item').click(function() {
+    // Get the type and label from data attributes
+    const type = $(this).data('name');
+    const label = $(this).data('label');
+
+    // Check if counter for this type exists, if not initialize it
+    if(!counters[type]) counters[type] = 1;
+
+    if(counters[type] >= 5) {
+        alert(`${label}の最大数に達しました。`);
+        return;
+    }
+
+    let itemVal = $(`#${type}-${counters[type]}`).val();
+
+    if(itemVal.length == 0){
+        alert(`${label}を書いてください。`);
+        return;
+    }
+
+    counters[type]++; // increment the counter
+
+    const newInput = $(`
+        <div class="col p-1">
+            <input type="text" class="form-control" name="${type}[]" id="${type}-${counters[type]}" placeholder='20代' >
+        </div>
+    `);
+
+    // Use a more generalized class for the container
+    $(`.${type}-inputs`).append(newInput);
+});
+
+}
+
+function onLargeScreen(callback){
+
+    if (typeof callback !== 'function') {
+        console.error("Provided argument is not a function.");
+        return;
+    }
+
+    window.addEventListener('resize', function() {
+        if (window.innerWidth >= YOUR_LARGE_SCREEN_BREAKPOINT) {
+            callback();
+        }
+    });
+    
+    // Initial check
+    if (window.innerWidth >= YOUR_LARGE_SCREEN_BREAKPOINT) {
+        callback();
+    }
+    
+}
+function onSmallScreen(callback){
+
+    if (typeof callback !== 'function') {
+        console.error("Provided argument is not a function.");
+        return;
+    }
+    
+    window.addEventListener('resize', function() {
+        if (window.innerWidth < YOUR_LARGE_SCREEN_BREAKPOINT) {
+            callback();
+        }
+    });
+    
+    // Initial check
+    if (window.innerWidth < YOUR_LARGE_SCREEN_BREAKPOINT) {
+        callback();
+    }
+    
+}
+
+function trackScroll() {
+    let lastScrollTop = 0;
+    const threshold = 50; // Adjust this value based on how much more you want to scroll before the behavior is triggered
+
+    $(window).on("scroll", function() {
+        let currentScrollTop = $(this).scrollTop();
+        let scrollDifference = Math.abs(currentScrollTop - lastScrollTop);
+
+        if (scrollDifference >= threshold) {
+            if (currentScrollTop > lastScrollTop) { // Scrolling down
+                $(".auto-hide").fadeOut();
+            } else { // Scrolling up
+                $(".auto-hide").fadeIn();
+            }
+            lastScrollTop = currentScrollTop;
+        }
     });
 }

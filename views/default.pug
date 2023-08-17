@@ -37,6 +37,15 @@ html
                           a.nav-link.shadow-0(href='/user/login') ログイン
                       li.nav-item
                           a.btn.btn-outline-warning.btn-lg.shadow-0(href="/user/signup" role="button") まずは無料で使ってみる
+      else 
+        .top-nav.d-blovk.d-md-none.auto-hide
+            nav.navbar.navbar-expand-md.navbar-white.bg-white
+              .container-fluid.text-start.p-0
+                #sidebarMenuToggleSmall.btn.btn-dark.rounded-0.shadow-0.py-3(type="button")
+                  i.fas.fa-bars
+                a.navbar-brand(href='/')
+                  img.logo.mx-2(src='/img/logo.png', alt='ロゴ' style="max-width: 50px;")
+                  | RAKUBUN
       #back-alert.alert-container.container.position-relative(style="cursor:pointer")
         if messages.error
           .alert.alert-danger.position-fixed.top-0.border.border-danger.shadow(style="z-index: 1000;")

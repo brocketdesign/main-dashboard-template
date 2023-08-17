@@ -5,9 +5,9 @@ block mainContent
     h1.gallery-header 画廊
 
     section
-      .row.my-4.p-0.mx-0
+      .row.row-cols-1.row-cols-md-4.my-4.p-0.mx-0
         each image in images.reverse()
-          .col-6.col-md-6.col-lg-4.my-2.position-relative
+          .col.my-2.position-relative
             img.gallery-image(style="width: 100%;", src=`data:image/png;base64,${image.image}`, alt=`${image.prompt}`)
             .gallery-prompt.bg-dark.text-white.position-absolute.card(style="display:none;bottom:10px;right:20px;left:20px")
               .card-body.py-3

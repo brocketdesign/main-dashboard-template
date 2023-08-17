@@ -17,6 +17,7 @@ const PremiumPlan = {
 
 const ensureAuthenticated = require('../middleware/authMiddleware');
 const ensureMembership = require('../middleware/ensureMembership');
+const { findDataInMedias, filterHiddenElement } = require('../services/tools')
 
 const ManageScraper = require('../modules/ManageScraper');
 
@@ -61,7 +62,7 @@ router.get('/app/openai/ebook/:bookId', ensureAuthenticated, ensureMembership, a
   if (!bookDetails) {
       return res.redirect('/dashboard/app/openai/ebook');
   }
-  
+  console.log(bookDetails)
   res.render('chatgpt-ebook.pug', { user: req.user, bookId, book:bookDetails, title: 'ChatGPT ' + bookDetails.title});
 });
 
@@ -172,11 +173,13 @@ router.get('/app/news', ensureAuthenticated, ensureMembership, async (req, res) 
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) => {
 
-  console.log('Dashboard page requested');
   const { mode } = req.params; // Get the 'mode' parameter from the route URL
   let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
   nsfw = req.user.nsfw === 'true'?true:false
   page = parseInt(page) || 1
+  
+  console.log('Dashboard page requested');
+  console.log(req.query);
 
   if(!searchTerm){
     res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
@@ -207,7 +210,19 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
   const currentMode = mode || req.session.mode || '1';
 
   let scrapedData = await getUserScrapedData(req.user, searchTerm, mode, nsfw, page) ;
-
+  try{
+    const medias =  await findDataInMedias({
+      query:searchTerm,
+      mode:mode,
+      nsfw:nsfw,
+      isdl:true,
+      hide_query:{$exists:false},
+      hide:{$exists:false},
+    })
+    scrapedData = scrapedData.concat(medias)
+  }catch(err){
+    console.log(err)
+  }
   if (mode == 4) {
     //check for object with the same source and keep only one
     let uniqueData = [];
@@ -235,9 +250,9 @@ function getUserScrapedData(user, url, mode, nsfw, page) {
        item.query == url && 
        item.mode == mode && 
        item.nsfw == nsfw && 
-       !item.hide && 
+       !item.hide &&
        //item.page == page &&
-       item.filePath
+       item.isdl
       );
   }else{
     userScrapedDataWithCurrentPage = userScrapedData.filter(item => 
@@ -245,10 +260,10 @@ function getUserScrapedData(user, url, mode, nsfw, page) {
         item.nsfw == nsfw && 
         !item.hide && 
         //item.page == page &&
-        item.filePath
+        item.isdl
     ); 
   }
-  return userScrapedDataWithCurrentPage.slice(0,50);
+  return userScrapedDataWithCurrentPage
 }
 
 // Route for handling '/dashboard/:mode'
@@ -265,12 +280,24 @@ try {
 const userInfo = await global.db.collection('users').findOne({ _id: userId });
 
 if (userInfo) {
-  const scrapedData = userInfo.scrapedData || []; // Get the scrapedData array from userInfo
+  let scrapedData = userInfo.scrapedData || []; // Get the scrapedData array from userInfo
   const nsfw = req.user.nsfw === 'true'
   let data = []
-  try {
+  try{
+    const medias =  await findDataInMedias({
+      mode:mode,
+      nsfw:nsfw,
+      hide_query:{$exists:false},
+      hide:{$exists:false},
+    })
+    scrapedData = scrapedData.concat(medias)
+  }catch(err){
+    console.log(err)
+  }
+  try { 
     // Filter the scrapedData array based on the 'mode'
-    const filteredData = scrapedData.filter(item => item.mode === mode && item.nsfw === nsfw && item.hide_query != true);
+    let filteredData = scrapedData.filter(item => item.mode === mode && item.nsfw === nsfw && item.hide_query != true);
+    filteredData = await filterHiddenElement(filteredData)
     // Create an object where the key is the 'query' and the value is an array of up to four items matching that 'query'.
     const queryMap = filteredData.reduce((acc, item) => {
       if (!item.query) {
@@ -279,7 +306,7 @@ if (userInfo) {
       }
     
       const key = `${item.query}${item.page}`; // Combine query and page to create the key
-    
+
       if (!acc[key]) {
         acc[key] = []; // If this combined key is not already in the object, add it with an empty array as the value.
       }

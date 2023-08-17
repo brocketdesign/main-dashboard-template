@@ -1,0 +1,54 @@
+extends dashboard-base
+
+block mainContent
+  h1.display-5.mb-4.fw-bold SNS投稿生成
+  if !contentId
+    form.row#snsContent.default
+      .row.row-cols-1.row-cols-md-2.pe-0
+        .col
+          h6 入力
+          hr.mb-4
+          .form-group.col.my-3
+            label.fw-bold.my-2(for='snsChoice') SNS選択
+            select#snsChoice.form-control(name='snsChoice', required)
+              option(value='twitter')
+                |  Twitter
+              option(value='instagram')
+                |  Instagram
+              option(value='facebook')
+                |  Facebook
+              option(value='linkedin')
+                |  LinkedIn
+          .form-group.col.my-3
+            label.fw-bold.my-2(for='theme') テーマ
+            input#theme.form-control(type='text', name="theme", placeholder='エンジニアリング', required)
+            .form-group.col.my-3
+              label.fw-bold.my-2(for='link') リンク
+              input#link.form-control(type='url', name="link", placeholder='https://...')
+          .form-group.col.my-3
+            div.keywords-container
+                label.fw-bold.my-2.d-flex.justify-content-between(for='keyword-1') 
+                  | キーワード
+                  button.badge.bg-primary.add-item(type="button" data-name="keyword" data-label="キーワード")   
+                    i.fas.fa-plus
+                div.input-group.mb-3
+                    div.keyword-inputs.row.row-cols-1.row-cols-md-3
+                      .col.p-1
+                        input.form-control(type='text', name="keyword[]", placeholder='プログラミング', id='keyword-1', required)
+          .form-group.col.my-3
+            div.hashtags-container
+                label.fw-bold.my-2.d-flex.justify-content-between(for='hashtag-1') 
+                  | ハッシュタグ
+                  button.badge.bg-primary.add-item(type="button" data-name="hashtag" data-label="ハッシュタグ")   
+                    i.fas.fa-plus
+                div.input-group.mb-3
+                    div.hashtag-inputs.row.row-cols-1.row-cols-md-3
+                      .col.p-1
+                        input.form-control(type='text', name="hashtag[]", placeholder='#エンジニア', id='hashtag-1', required)
+          .form-group.col.my-3
+            label.fw-bold.my-2(for='message') メッセージ
+            textarea#message.form-control(name='message', placeholder='今日のコードリビューで学んだこと...', required).rows
+          .my-3
+            button.btn.btn-primary.w-100(type='submit') 
+              i.fas.fa-paper-plane.me-3
+              | 投稿する

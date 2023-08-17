@@ -1,7 +1,7 @@
 const { ObjectId } = require('mongodb');
 const puppeteer = require('puppeteer');
 const ytdl = require('ytdl-core');
-
+const { saveData, updateSameElements } = require('../services/tools')
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 async function getHighestQualityVideoURL(video_id, user, stream = true) {
@@ -9,23 +9,33 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     const userId = user._id;
     const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
     const AllData = userInfo.scrapedData;
-    const { elementIndex, foundElement } = await findElementIndex(AllData, video_id);
+    let { foundElement } = await findElementIndex(AllData, video_id);
 
     if (!foundElement) {
-      console.log('Element with video_id not found.');
-      return null;
+      console.log('Element with video_id not found in user data.');
+      foundElement = await global.db.collection('medias').findOne({ _id: new ObjectId(video_id) });
+      if (foundElement) {
+        console.log('Element founded in medias', foundElement)
+      }else{
+        return null
+      }
     }
-    
+
+    if(foundElement.filePath){
+      console.log('The element has already been downloaded', foundElement)
+      updateSameElements(foundElement,{isdl:true,isdl_data:new Date()})
+      return foundElement.filePath
+    }
+
     if (hasBeenScrapedRecently(foundElement)) {
       return getVideoFilePathOrHighestQualityURL(foundElement, stream);
     }
 
     if (foundElement.mode == "3") {
-      await saveData(AllData, foundElement,{filePath:foundElement.url}, user)
+      await saveData(user, foundElement,{filePath:foundElement.url})
       return foundElement.url; 
     }
     if (foundElement.mode == "2" || foundElement.mode == "4") {
-      await saveData(AllData, foundElement,{filePath:foundElement.link}, user)
       return foundElement.link; 
     }
 
@@ -73,48 +83,8 @@ async function findElementIndex(AllData, video_id){
   return {elementIndex,foundElement};
 }
 
-async function saveData(AllData, videoDocument, format, user){
-  try {
-    const { elementIndex, foundElement } = await findElementIndex(AllData, videoDocument.video_id);
-    const userId = user._id
-    if (elementIndex === -1) {
-      console.log('Element with video_id not found.');
-      return;
-    }
-
-    AllData[elementIndex] = Object.assign({}, AllData[elementIndex], format);
-    AllData[elementIndex].last_scraped = Date.now();
-
-    const result = await global.db.collection('users').updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { scrapedData: AllData } },
-      { upsert: true }
-    );
-    
-    if (result.modifiedCount > 0) {
-        console.log('Existing document was successfully updated.');
-    } else if (result.upsertedId) {
-        console.log('New document was created with ID:', result.upsertedId._id);
-    } else {
-        console.log('No changes were made to the database.');
-    }
-
-    console.log('Element updated in the database.');
-
-    const itemWithSameLink = await global.db.collection('medias').find({source:foundElement.source}).toArray();
-    console.log(`Found ${itemWithSameLink.length} item(s) with the same source`)
-
-    for(let item of itemWithSameLink){
-      await global.db.collection('medias').updateOne({_id:new ObjectId(item._id)},{$set:{isdl:true}})
-    }
-
-    
-  } catch (error) {
-    console.log('Error while updating element:', error);
-  }
-}
-
 async function searchVideoUrl(AllData, videoDocument, user) {
+
   videoURL = videoDocument.link
   if(!videoDocument.link.includes('http')){
     videoURL = `${process.env.DEFAULT_URL}${videoDocument.link}`;
@@ -140,8 +110,9 @@ async function searchVideoUrl(AllData, videoDocument, user) {
   await browser.close();
 
   const highestQualityURL = mp4Urls[0] || null;
-  await saveData(AllData, videoDocument, {highestQualityURL}, user);
 
+  await saveData(user, videoDocument.video_id, {highestQualityURL:highestQualityURL});
+  
   console.log('Highest Quality URL:', highestQualityURL);
   return highestQualityURL;
 }

@@ -83,7 +83,7 @@ async function scrapeMode4(site, mode, nsfw, page) {
                     $set: {
                         link: item.link,
                         source: item.source,
-                        video_id: item.video_id
+                        video_id: item.video_id,
                     }
                 }
             );

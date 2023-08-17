@@ -7,34 +7,35 @@ block dynamicContent
   if scrapedData.length > 0 
     .masonry-container.row.custom-carousel-container
       each data in scrapedData
-        .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode, data-id=data.video_id, data-isdl=(data.filePath?"true":"false"))
-          .card.info-container(class=`card-clickable-${mode}`, data-id=data.video_id, data-title=data.title)
-            .card-body-over.position-absolute(style="inset:0;display: none;")
-            .card-top.py-2.px-3.position-absolute
-              .d-flex.justify-content-between
-                  .delete-button.btn.btn-dark.border-white.border.hover.shadow(type="button", style="display:none")
-                      i.fas.fa-trash-alt
-            if mode == 2
-              if data.link.includes('redgif')
-               div(style='position:relative; padding-bottom:55.90%')
-                iframe(src=`${data.link.replace('watch','ifr')}` frameBorder='0' scrolling='no' width='100%' height='100%' style='position:absolute; top:0; left:0;' allowFullScreen)
-                img.card-img-top(type="button", style="object-fit:cover;height: 100%;min-height:200px;display:none", src=data.thumb, alt=data.title )
-              else 
-                img.card-img-top(type="button", style="object-fit:cover;height: 100%;min-height:200px", src=data.link, alt=data.title )
-            else
-              img.card-img-top(type="button", style="object-fit:cover;height: 100%;min-height:200px", src=data.url || data.imageUrl || data.link, alt=data.title,  data.imageUrl=data.imageUrl?data.imageUrl:undefined )
-            .card-body.py-1.px-3.w-100.position-absolute.hover(style="bottom: 0;display:none")
-              .d-flex.justify-content-between.tool-bar.py-2
-                .download-button.btn.btn-dark.border-white.border(type="button")
-                  i.fas.fa-heart
-                a.source.btn.btn-dark.border-white.border(target="_blank", href=data.source||data.link||data.webm||data.url)
-                  i.fas.fa-link
-                .info-button.btn.btn-dark.border-white.border(type="button")
-                  i.fas.fa-info
-                if mode == 1
-                  .summarize-button.btn.btn-dark.border-white.border(type="button")
-                    i.fas.fa-plane
-              p.card-title.text-white.bg-dark.border-white.border.p-3(style="display:none")= data.title
+        if data.video_id
+          .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode, data-id=data.video_id, data-isdl=(data.filePath?"true":"false"))
+            .card.info-container(class=`card-clickable-${mode}`, data-id=data.video_id, data-title=data.title)
+              .card-body-over.position-absolute(style="inset:0;display: none;")
+              .card-top.py-2.px-3.position-absolute
+                .d-flex.justify-content-between
+                    .delete-button.btn.btn-dark.border-white.border.hover.shadow(type="button", style="display:none")
+                        i.fas.fa-trash-alt
+              if mode == 2
+                if data.link.includes('redgif')
+                  div(style='position:relative; padding-bottom:55.90%')
+                      iframe(src=`${data.link.replace('watch','ifr')}` frameBorder='0' scrolling='no' width='100%' height='100%' style='position:absolute; top:0; left:0;' allowFullScreen)
+                      img.card-img-top(type="button", style="object-fit:cover;height: 100%;min-height:200px;display:none", src=data.thumb, alt=data.title )
+                else 
+                    img.card-img-top(type="button", style="object-fit:cover;height: 100%;min-height:200px", src=data.link, alt=data.title )
+              else
+                  img.card-img-top(type="button", style="object-fit:cover;height: 100%;min-height:200px", src=data.url || data.imageUrl || data.link, alt=data.title,  data.imageUrl=data.imageUrl?data.imageUrl:undefined )
+              .card-body.py-1.px-3.w-100.position-absolute.hover(style="bottom: 0;display:none")
+                .d-flex.justify-content-between.tool-bar.py-2
+                  .download-button.btn.btn-dark.border-white.border(type="button")
+                    i.fas.fa-heart
+                  a.source.btn.btn-dark.border-white.border(target="_blank", href=data.source||data.link||data.webm||data.url)
+                    i.fas.fa-link
+                  .info-button.btn.btn-dark.border-white.border(type="button")
+                    i.fas.fa-info
+                  if mode == 1
+                    .summarize-button.btn.btn-dark.border-white.border(type="button")
+                      i.fas.fa-plane
+                p.card-title.text-white.bg-dark.border-white.border.p-3(style="display:none")= data.title
   else
     p ここには何もありません！
   if scrapedData.length > 0 

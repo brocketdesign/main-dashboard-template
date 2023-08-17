@@ -1,6 +1,7 @@
 extends dashboard-base
 
 block mainContent
+  h1.display-5.mb-4.fw-bold Ebook生成
   if !bookId
     form.row#ebook.default
       .row.row-cols-1.row-cols-md-2
@@ -9,14 +10,14 @@ block mainContent
           hr.mb-4
           .form-group.col.my-3
             div.keywords-container
-                label.fw-bold.my-2.d-flex.justify-content-between(for='keyword-1') 
-                  | キーワード
-                  button.btn.btn-primary.add-keyword(type="button")   
-                          i.fas.fa-plus
-                div.input-group.mb-3
-                    div.keywords-inputs.row.row-cols-1.row-cols-md-3
-                      .col.p-1
-                        input.form-control(type='text', name="keywords[]", placeholder='20代,営業職,転職', id='keyword-1', required)                        
+              label.fw-bold.my-2.d-flex.justify-content-between(for='keyword-1') 
+                | キーワード
+                button.badge.bg-primary.add-item(type="button" data-name="keyword" data-label="キーワード")   
+                        i.fas.fa-plus
+              div.input-group.mb-3
+                  div.keyword-inputs.row.row-cols-1.row-cols-md-3
+                    .col.p-1
+                      input.form-control(type='text', name="keyword[]", placeholder='20代', id='keyword-1', required)                        
           .form-group.col.my-3
             label.fw-bold.my-2(for='topic') タイトル
             input#topic.form-control(type='text',name="topic" placeholder='20代でエンジニアに転職する方法とは？手順やおすすめ企業を解説', required)
@@ -33,11 +34,11 @@ block mainContent
             div.chapters-container
                 label.fw-bold.my-2.d-flex.justify-content-between(for='chapters-1') 
                   | 目次
-                  button.btn.btn-primary.add-chapters(type="button")   
+                  button.badge.bg-primary.add-item(type="button" data-name="chapters" data-label="目次")   
                     i.fas.fa-plus
                 .form-check
                     input#aiCheckbox.form-check-input(type="checkbox", name="aiCheckbox")
-                    label.form-check-label(for="aiCheckbox") AIで生成しますか？
+                    label.form-check-label(for="aiCheckbox") 目次をAIで生成しますか？
                 div.input-group.mb-3
                     div.chapters-inputs.row.row-cols-1.row-cols-md-2
                       .col.p-1
@@ -54,7 +55,7 @@ block mainContent
                 .card.btn.bg-white.mb-4
                   .card-body
                       h3.fw-normal.fs-6.text-capitalize=book.title
-                      if book.book_content
+                      if book.book_content && book.book_content[0] && book.book_content[0].content
                         p.text-capitalize=book.book_content[0].content.slice(0,50)
                             | ... 
       else 
@@ -104,11 +105,11 @@ block mainContent
                       p.fw-bold 
                           | Key points
                       ul
-                          each keyPoint in book.chapters[index].sub_chapters[subIndex].key_points
-                              li 
-                                  input(type='text' value=keyPoint data-key=`book_content[${index}].sub_chapters_content[${subIndex}].key_points[]`)
+                        each keyPoint in book.chapters[index].sub_chapters[subIndex].key_points
+                            li 
+                                input(type='text' value=keyPoint data-key=`book_content[${index}].sub_chapters_content[${subIndex}].key_points[]`)
                       p 
-                          textarea(data-key=`book_content[${index}].sub_chapters_content[${subIndex}].content`)= subChapter.content
+                        textarea(data-key=`book_content[${index}].sub_chapters_content[${subIndex}].content`)= subChapter.content
     #preview-book.d-none
       h1.display-4 #{book.title}
       h2.lead Written by #{book.author.name}

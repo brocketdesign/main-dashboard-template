@@ -3,7 +3,7 @@ const router = express.Router();
 
 const getHighestQualityVideoURL = require("../modules/getHighestQualityVideoURL")
 const ensureAuthenticated = require('../middleware/authMiddleware');
-const {formatDateToDDMMYYHHMMSS,findElementIndex,saveData, translateText} = require('../services/tools')
+const {formatDateToDDMMYYHHMMSS,findElementIndex,saveData, translateText, updateSameElements} = require('../services/tools')
 const pdfToChunks = require('../modules/pdf-parse')
 const multer = require('multer');
 const searchSubreddits = require('../modules/search.subreddits')
@@ -234,14 +234,15 @@ router.post('/openai/ebook', async (req, res) => {
   console.log('Received request to /openai/ebook');
 
   try {
-    const { topic, language, keywords, chapters , aiCheckbox} = req.body;
+    const { topic, language, keywords, userChapters , aiCheckbox} = req.body;
 
     console.log(`Write an ebook about "${topic}" in ${language}`);
-    console.log({ topic, language, keywords, chapters, aiCheckbox })
+    console.log({ topic, language, keywords, userChapters, aiCheckbox })
 
-    res.status(200).json({ message: 'This is a test' });
-    return 
-    const bookId = createBookChapters(req.user,topic,language);
+    //res.status(200).json({ message: 'This is a test' });
+    //return 
+    
+    const bookId = createBookChapters(req.user,req.body);
   
     res.redirect(`/dashboard/app/openai/ebook/`);
 
@@ -326,7 +327,9 @@ router.post('/openai/regen-ebook', async (req, res) => {
         model: "text-davinci-003",
         prompt: chapterPrompt,
         max_tokens: newValue.length + 50,
-        temperature: 0,
+        temperature: 0.6,
+        "presence_penalty": 0.0,
+        "frequency_penalty": 0.5
     });
     /*
     try {
@@ -457,14 +460,14 @@ router.get('/video', async (req, res) => {
     
     // Call the function to get the highest quality video URL for the provided id
     const url = await getHighestQualityVideoURL(id,req.user);
-    const related = await scrapeMode1GetRelatedVideo(id,req.user,req.user.mode, req.user.nsfw)
+    //const related = await scrapeMode1GetRelatedVideo(id,req.user,req.user.mode, req.user.nsfw)
 
     if (!url) {
       return res.status(404).json({ error: 'Video not found or no valid URL available.' });
     }
 
     // Respond with the highest quality video URL
-    return res.json({ url, related });
+    return res.json({ url });
   } catch (error) {
     console.error('Error occurred while processing the request:', error);
     return res.status(500).json({ error: 'An error occurred while processing the request.' });
@@ -490,7 +493,8 @@ router.post('/dl', async (req, res) => {
     }
 
     if(!url.includes('http')){
-      res.status(200).json({ message: 'File already downloaded.' });
+      saveData(req.user, video_id, {isdl:true})
+      res.status(200).json({ message: 'ダウンロードされました' });
       return;
     }
 
@@ -583,12 +587,13 @@ router.post('/dl', async (req, res) => {
     const elementIndex = AllData.findIndex(item => item.video_id === video_id);
 
     if(elementIndex !== -1){
+      console.log('Element founded in the user data')
       AllData[elementIndex].filePath = filePath.replace('public','');
       AllData[elementIndex].isdl = true;
       AllData[elementIndex].isdl_data = new Date();
       
       // Update the user document in the 'users' collection with the modified scrapedData array
-      await global.db.collection('users').updateOne(
+      const result = await global.db.collection('users').updateOne(
         { _id: new ObjectId(req.user._id) },
         { $set: { scrapedData: AllData } },
         (err) => {
@@ -597,11 +602,11 @@ router.post('/dl', async (req, res) => {
           }
         }
       );
-      const itemWithSameLink = await global.db.collection('medias').find({source:foundElement.source}).toArray();
-      console.log(`Found ${itemWithSameLink.length} item(s) with the same source`)
-  
-      for(let item of itemWithSameLink){
-        await global.db.collection('medias').updateOne({_id:new ObjectId(item._id)},{$set:{isdl:true,isdl_data:new Date()}})
+      // Check if the document was updated
+      if (result.matchedCount > 0) {
+        updateSameElements(foundElement,{isdl:true,isdl_data:new Date()})
+      } else {
+        console.log("Failed to update the document.");
       }
 
     }else{
@@ -609,7 +614,7 @@ router.post('/dl', async (req, res) => {
     }
 
     // Send a success status response after the file is downloaded
-    res.status(200).json({ message: 'File downloaded successfully.' });
+    res.status(200).json({ message: 'アイテムが成功的に保存されました。' });
 
   } catch (err) {
     console.log('Error occurred while downloading file:', err.message);
@@ -745,7 +750,7 @@ router.post('/hide', async (req, res) => {
       res.status(500).json({ message:'An error occured' });
       return
     }
-    res.status(200).json({ message:'This element wont be displayed anymore' });
+    res.status(200).json({ message:'この要素はもう表示されません' });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message:'An error occured' });

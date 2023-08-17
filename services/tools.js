@@ -27,6 +27,7 @@ function formatDateToDDMMYYHHMMSS() {
 
 async function findElementIndex(user,video_id){
   const userId = user._id;
+  console.log({userId,video_id})
   const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
   const AllData = userInfo.scrapedData || [] ;
   const foundElement = AllData.find(item => item.video_id === video_id);
@@ -37,34 +38,60 @@ async function findElementIndex(user,video_id){
 
 async function saveData(user, documentId, update){
   try {
-    const { elementIndex, foundElement } = await findElementIndex(user, documentId);
-
-    if (elementIndex === -1) {
-      console.log('Element with video_id not found.');
-      return;
-    }
-
-    const userId = user._id;
-    const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-    const AllData = userInfo.scrapedData || [];
-    AllData[elementIndex] = Object.assign({}, AllData[elementIndex], update);
-
-    await global.db.collection('users').updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { scrapedData: AllData } }
-    );
     
-    const itemWithSameLink = await global.db.collection('medias').find({source:foundElement.source}).toArray();
-    console.log(`Found ${itemWithSameLink.length} item(s) with the same source`)
-
-    for(let item of itemWithSameLink){
-      await global.db.collection('medias').updateOne({_id:new ObjectId(item._id)},{$set:update})
+    // Step 1: Fetch the document based on the _id
+    const resultElement = await global.db.collection('medias').findOne({ _id: new ObjectId(documentId) });
+    
+    if (resultElement) {
+       // Step 2: Update that document
+       const result = await global.db.collection('medias').updateOne(
+        { _id: new ObjectId(documentId) },
+        { $set: update }
+      );
+      
+      // Check if the document was updated
+      if (result.matchedCount > 0) {
+        updateSameElements(resultElement,update)
+        return true;
+      } else {
+          console.log("Failed to update the document.");
+          return false;
+      }
     }
-    return true
   } catch (error) {
-    console.log('Error while updating element:', error);
-    return false
+    console.log('Element not founded in medias collections');
   }
+  
+   try {
+     const { elementIndex, foundElement } = await findElementIndex(user, documentId);
+ 
+     if (elementIndex === -1) {
+       console.log('Element with video_id not found.');
+       return;
+     }
+ 
+     const userId = user._id;
+     const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+     const AllData = userInfo.scrapedData || [];
+     AllData[elementIndex] = Object.assign({}, AllData[elementIndex], update);
+ 
+     const result = await global.db.collection('users').updateOne(
+       { _id: new ObjectId(userId) },
+       { $set: { scrapedData: AllData } }
+     );
+
+     if(result.matchedCount > 0){
+      console.log(`Updated the database `,update)
+     }else{
+      console.log('Could not update the database')
+     }
+
+     return true
+   } catch (error) {
+      console.log(error)
+      console.log('Could not save the data in the user data')
+   }
+   return false
 }
 
 async function translateText(text,lang) {
@@ -129,6 +156,78 @@ async function fetchMediaUrls(url) {
 
   return images;
 }
+async function findDataInMedias(query){
+  console.log(`Looking in collection medias`,query)
+  var scrapedData = await global.db.collection('medias').find(query).toArray()
 
+  if(scrapedData.length >0 ){
+    return scrapedData
+  }
+  return false
+}
+async function filterHiddenElement(scrapedData) {
+  // Extract all sources from scrapedData
+  const sources = scrapedData.reduce((acc, item) => {
+    if (item && typeof item.source !== 'undefined') {
+      acc.push(item.source);
+    }
+    return acc;
+  }, []);
+    if(sources.length ==0 ){
+    return scrapedData
+  }
+  // Find sources that exist in the "medias" collection with hide: true
+  const hiddenSources = await global.db.collection('medias').find({ 
+    source: { $in: sources },
+    hide: true
+  }).toArray();
 
-module.exports = { formatDateToDDMMYYHHMMSS, findElementIndex, saveData ,translateText , fetchMediaUrls}
+  const hiddenSourceSet = new Set(hiddenSources.map(item => item.source));
+
+  // Filter out items from scrapedData that have hide: true in the "medias" collection
+  return scrapedData.filter(item => !hiddenSourceSet.has(item.source));
+}
+function sanitizeData(scrapedData,query) {
+  //check for object with the same source and keep only one
+  let uniqueData = [];
+  let seenSources = new Set();
+  
+  for (let item of scrapedData) {
+      if (!seenSources.has(item[query])) {
+          seenSources.add(item[query]);
+          uniqueData.push(item);
+      }
+  }
+
+  return uniqueData
+}
+
+async function updateItemsByField(fieldName, fieldValue, query) {
+  const itemsWithSameLink = await global.db.collection('medias').find({ [fieldName]: fieldValue }).toArray();
+  console.log(`Found ${itemsWithSameLink.length} item(s) with the same ${fieldName} `, fieldValue);
+
+  for (let item of itemsWithSameLink) {
+      await global.db.collection('medias').updateOne({ _id: new ObjectId(item._id) }, { $set: query });
+  }
+}
+
+async function updateSameElements(foundElement, query) {
+  if (foundElement.source) {
+      await updateItemsByField('source', foundElement.source, query);
+  }
+  if (foundElement.url) {
+      await updateItemsByField('url', foundElement.url, query);
+  }
+}
+
+module.exports = { 
+  formatDateToDDMMYYHHMMSS, 
+  findElementIndex, 
+  saveData ,
+  translateText ,
+  fetchMediaUrls, 
+  findDataInMedias,
+  filterHiddenElement,
+  sanitizeData,
+  updateSameElements
+}

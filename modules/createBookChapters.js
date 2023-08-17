@@ -12,10 +12,16 @@ const userCollection = global.db.collection('users');
 
 const MAX_TOKENS = 2500
 
-async function fetchBookDetails(user, topic, language) {
+async function fetchBookDetails(user, data) {
+
+    const { topic, language, keywords, userChapters , aiCheckbox} = data;
+
     const promptTemplate = `
-    write the details for a book about "${topic}". The book content and details must be in ${language}.
+    write the details for a book about "${topic}". 
+    The book content and details must be in ${language}.
+    The main keywords are : ${keywords.join(', ')}.
     Make a charismatic and authentic author name.
+    ${aiCheckbox=='true'?'':`Use those chapters for the book : ${userChapters.join('\n - ')}`}
     Respond without comment, only using this JSON template : 
     {
         "book": {
@@ -160,7 +166,9 @@ async function fetchBookDetails(user, topic, language) {
         model: "text-davinci-003",
         prompt: promptTemplate,
         max_tokens: MAX_TOKENS,
-        temperature: 0,
+        temperature: 0.6,
+        "presence_penalty": 0.0,
+        "frequency_penalty": 0.5
     });
 
     let bookDetails = gptResponse.data.choices[0].text.trim();
@@ -207,7 +215,9 @@ async function generateChapterContent(user, bookDetails, chapterIndex) {
         model: "text-davinci-003",
         prompt: chapterPrompt,
         max_tokens: MAX_TOKENS,
-        temperature: 0,
+        temperature: 0.6,
+        "presence_penalty": 0.0,
+        "frequency_penalty": 0.5
     });
 
     const chapterContent = {
@@ -250,7 +260,9 @@ async function generateSubChapterContent(user, bookDetails, chapterIndex, subCha
         model: "text-davinci-003",
         prompt: subChapterPrompt,
         max_tokens: MAX_TOKENS,
-        temperature: 0,
+        temperature: 0.6,
+        "presence_penalty": 0.0,
+        "frequency_penalty": 0.5
     });
 
     const subChapterContent = {
@@ -269,8 +281,10 @@ async function generateSubChapterContent(user, bookDetails, chapterIndex, subCha
 }
 
 
-async function createBookChapters(user, topic, language) {
-    let bookDetails = await fetchBookDetails(user, topic, language);
+async function createBookChapters(user, data) {
+    const { topic, language, keywords, userChapters , aiCheckbox} = data;
+
+    let bookDetails = await fetchBookDetails(user, data);
 
     if(!bookDetails) {
         return false
