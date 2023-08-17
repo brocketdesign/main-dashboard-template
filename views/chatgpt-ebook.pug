@@ -2,23 +2,50 @@ extends dashboard-base
 
 block mainContent
   if !bookId
-    form.row#ebook.default(method="POST", action="/api/openai/ebook")
-      .row
-        .form-group.col-12.col-sm-6
-          label(for='topic') e-Book topic
-          input#topic.form-control(type='text',name="topic" placeholder='Write a book')
-        .form-group.col-12.col-sm-6
-          label(for='language') Language
-          select#language.form-control(name='language')
-            option(value='japanese')
-              i.faw.faw-flag-jp
-              |  Japanese
-            option(value='english')
-              i.faw.faw-flag-us
-              |  English
-      .my-3.px-3
-        button.btn.btn-primary(type='submit') 
-          i.fas.fa-paper-plane
+    form.row#ebook.default
+      .row.row-cols-1.row-cols-md-2
+        .col
+          h6 入力
+          hr.mb-4
+          .form-group.col.my-3
+            div.keywords-container
+                label.fw-bold.my-2.d-flex.justify-content-between(for='keyword-1') 
+                  | キーワード
+                  button.btn.btn-primary.add-keyword(type="button")   
+                          i.fas.fa-plus
+                div.input-group.mb-3
+                    div.keywords-inputs.row.row-cols-1.row-cols-md-3
+                      .col.p-1
+                        input.form-control(type='text', name="keywords[]", placeholder='20代,営業職,転職', id='keyword-1', required)                        
+          .form-group.col.my-3
+            label.fw-bold.my-2(for='topic') タイトル
+            input#topic.form-control(type='text',name="topic" placeholder='20代でエンジニアに転職する方法とは？手順やおすすめ企業を解説', required)
+          .form-group.col.my-3
+            label.fw-bold.my-2(for='language') 言語
+            select#language.form-control(name='language',required)
+              option(value='japanese')
+                i.faw.faw-flag-jp
+                |  Japanese
+              option(value='english')
+                i.faw.faw-flag-us
+                |  English
+          .form-group.col.my-3
+            div.chapters-container
+                label.fw-bold.my-2.d-flex.justify-content-between(for='chapters-1') 
+                  | 目次
+                  button.btn.btn-primary.add-chapters(type="button")   
+                    i.fas.fa-plus
+                .form-check
+                    input#aiCheckbox.form-check-input(type="checkbox", name="aiCheckbox")
+                    label.form-check-label(for="aiCheckbox") AIで生成しますか？
+                div.input-group.mb-3
+                    div.chapters-inputs.row.row-cols-1.row-cols-md-2
+                      .col.p-1
+                        input.form-control(type='text', name="chapters[]", placeholder="20代で営業職に転職する難しさ", id='chapters-1', required)
+          .my-3
+            button.btn.btn-primary.w-100(type='submit') 
+              i.fas.fa-paper-plane.me-3
+              | 生成する
       if books.length > 0
         .row.row-cols-1.row-cols-md-3.my-3
           each book in books 

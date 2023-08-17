@@ -234,9 +234,13 @@ router.post('/openai/ebook', async (req, res) => {
   console.log('Received request to /openai/ebook');
 
   try {
-    const { topic, language } = req.body;
-    console.log(`Write an ebook about "${topic}" in ${language}`);
+    const { topic, language, keywords, chapters , aiCheckbox} = req.body;
 
+    console.log(`Write an ebook about "${topic}" in ${language}`);
+    console.log({ topic, language, keywords, chapters, aiCheckbox })
+
+    res.status(200).json({ message: 'This is a test' });
+    return 
     const bookId = createBookChapters(req.user,topic,language);
   
     res.redirect(`/dashboard/app/openai/ebook/`);

@@ -193,6 +193,7 @@ $(document).ready(function() {
 
     $('input#searchTerm').on('change',function(){$('#page').val(1)})
 
+    handleOpenaiForm();
     handleMemo();
     handleSideBar() 
     handleBookEditing();
@@ -937,7 +938,7 @@ function handleBookEditing(){
         $(this).css('height', 'auto');
         $(this).css('height', $(this).prop('scrollHeight') + 'px');
     });
-    $('textarea').each(function() {
+    $('#edit-book textarea').each(function() {
         $(this).css('height', 'auto');
         $(this).css('height', $(this).prop('scrollHeight') + 'px');
     });
@@ -1129,4 +1130,138 @@ $('.remove-memo').on('click', function(e) {
     });
 });
 
+}
+
+function handleOpenaiForm(){
+
+    let keywordCounter = 1;
+
+    $('.add-keyword').click(function() {
+        let keywordVal = $(`#keyword-${keywordCounter}`).val();
+        if(keywordVal.length == 0){
+            alert('キーワードを書いてください。')
+            return
+        }
+        keywordCounter++; // increment the counter
+
+        const newInput = $(`
+            <div class="col p-1">
+                <input type="text" class="form-control" name="keywords[]" id="keyword-${keywordCounter}" placeholder='20代,営業職,転職' >
+            </div>
+        `);
+
+        // Append the new input to the container
+        $('.keywords-inputs').prepend(newInput);
+    });
+
+    let chaptersCounter = 1
+
+    $('.add-chapters').click(function() {
+        let chaptersVal = $(`#chapters-${chaptersCounter}`).val();
+        if(chaptersVal.length == 0){
+            alert('目次を書いてください。')
+            return
+        }
+        chaptersCounter++; // increment the counter
+
+        const newInput = $(`
+            <div class="col p-1">
+                <input type="text" class="form-control" name="chapters[]" id="chapters-${chaptersCounter}" placeholder='20代,営業職,転職' >
+            </div>
+        `);
+
+        // Append the new input to the container
+        $('.chapters-inputs').prepend(newInput);
+    });
+
+    // On checkbox state change
+    $('#aiCheckbox').change(function() {
+        // Check if the checkbox is checked
+        if ($(this).prop('checked')) {
+            // If checked, disable all inputs inside .chapters-inputs
+            $('.chapters-inputs input').prop('disabled', true);
+        } else {
+            // If unchecked, enable all inputs inside .chapters-inputs
+            $('.chapters-inputs input').prop('disabled', false);
+        }
+    });
+
+    // Check if the checkbox is checked
+    if ($('#aiCheckbox').prop('checked')) {
+        // If checked, disable all inputs inside .chapters-inputs
+        $('.chapters-inputs input').prop('disabled', true);
+    } else {
+        // If unchecked, enable all inputs inside .chapters-inputs
+        $('.chapters-inputs input').prop('disabled', false);
+    }
+    let initialFormData = new FormData($('form#ebook')[0]);
+
+    // On form submission
+    $('form#ebook').submit(function(e) {
+        e.preventDefault();
+
+        let formData = new FormData(this);
+
+        console.log(formData);
+
+        if (!checkFormChange(initialFormData, formData)) {
+            alert('フォームに変更はありません。');
+            return
+        }
+        const keywordsArray = [];
+
+        // Gather all the keywords from the input fields
+        $('[name="keywords[]"]').each(function() {
+            const keyword = $(this).val().trim();
+            if (keyword) {
+                keywordsArray.push(keyword);
+            }
+        });
+
+        // Now you have an array with all keywords. You can send this array to your server.
+        // For this example, we'll just log the array.
+        console.log(keywordsArray);
+
+        const chaptersArray = [];
+
+        // Gather all the keywords from the input fields
+        $('[name="chapters[]"]').each(function() {
+            const chapters = $(this).val().trim();
+            if (chapters) {
+                chaptersArray.push(chapters);
+            }
+        });
+
+        // Now you have an array with all keywords. You can send this array to your server.
+        // For this example, we'll just log the array.
+        console.log(chaptersArray);
+
+        const topic = $('#topic').val()
+        const language = $('#language').val()
+        const aiCheckbox = $('#aiCheckbox').prop('checked')
+
+        if(keywordsArray.length==0 || chaptersArray.length==0 || !language || !topic){
+            alert('申し訳ありませんが、フォームを送信する前に全ての必須項目をご記入ください。')
+            return
+        }
+        $.ajax({
+            url: "/api/openai/ebook",
+            type: "POST",
+            data: {
+                topic, 
+                language,
+                keywords:keywordsArray, 
+                chapters:chaptersArray,
+                aiCheckbox
+            },
+            success: function(response) {
+              // Code to handle the successful response
+              console.log(response);
+            },
+            error: function(xhr, status, error) {
+              // Code to handle the error response
+              console.error(error);
+            }
+          });
+    });
 }
