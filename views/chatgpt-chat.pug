@@ -1,23 +1,23 @@
 extends dashboard-base
 
 block mainContent
-    #message-container.chat-window.overflow-auto.pb-5.mb-5.me-3.bg-light(style="bottom: 0;right:0;left:0; max-height: calc(100vh - 80px); overflow: auto;")
-      #messages.list-unstyled.m-auto(style="overflow: scroll;width:65%;")
-        li.my-4.template(style="display:none")
+    #message-container.chat-window.overflow-auto.py-5.mb-5.mt-5.pe-5.bg-light(style="bottom: 0;right:0;left:0; max-height: calc(100vh - 80px); overflow: auto;")
+      #messages.list-unstyled.w-100.pt-5.mt-5(style="overflow: scroll;")
+        li.p-4.template(style="display:none")
           p.my-2.userName(style="font-size:12px")
-            p.rounded.bg-light.p-2.border.message.p-3.d-inline-block
-          p.text-muted.mt-2.time(style="font-size:9px")
-        if user.openai_conversation
-          each item in user.openai_conversation
-            li.my-4
+          p.rounded.border.border-white.p-2.message.p-3.d-inline-block.w-100
+          p.mt-2.time(style="font-size:9px")
+        if userOpenaiDocs || userOpenaiDocs.length  > 0
+          each item in userOpenaiDocs.reverse()
+            li.p-4.bg-white
               p.mb-3.userName(style="font-size:12px") #{user.username}
-              p.rounded.bg-.p-2.border.message.chat-message.user.p-3.d-inline-block= item.message
-              p.text-muted.mt-2.time(style="font-size:9px") #{new Date(item.message_time).toLocaleDateString()+' - '+new Date(item.message_time).toLocaleTimeString()}
-            li.my-4.text-end
-              p.mb-3.userName(style="font-size:12px") Agent
-              p.rounded.bg-.p-2.border.message.chat-message.agent.p-3.d-inline-block= item.response || item.completion
-              p.text-muted.mt-2.time(style="font-size:9px") #{new Date(item.response_time).toLocaleDateString()+' - '+new Date(item.response_time).toLocaleTimeString()}
-    #chat-input-section.h-15.d-flex.align-items-center.pb-5.me-3(style="bottom: 0;right:0;left:0;")
+              p.rounded.border.border-dark.bg-.p-2.message.chat-message.user.p-3.d-inline-block.w-100= item.prompt
+              p.text-muted.mt-2.time(style="font-size:9px") #{new Date(item.prompt_time).toLocaleDateString()+' - '+new Date(item.prompt_time).toLocaleTimeString()}
+            li.p-4.text-end.bg-dark.text-white
+              p.mb-3.userName(style="font-size:12px") エージェント
+              p.text-start.rounded.bg-.p-2.border.message.chat-message.agent.p-3.d-inline-block.w-100= item.completion[0]
+              p.mt-2.time(style="font-size:9px") #{new Date(item.completion_time).toLocaleDateString()+' - '+new Date(item.completion_time).toLocaleTimeString()}
+    #chat-input-section.h-15.d-flex.align-items-center.pb-5.pe-3.bg-white(style="bottom: 0;right:0;left:0;")
       .input-group.shadow.m-auto(style="width:75%;")
         input.form-control.form-control-lg.py-4.border-0(type='text', placeholder='Type your message...')
         button.btn.btn-outline-secondary(type='submit')

@@ -3,7 +3,14 @@ const router = express.Router();
 
 const getHighestQualityVideoURL = require("../modules/getHighestQualityVideoURL")
 const ensureAuthenticated = require('../middleware/authMiddleware');
-const {formatDateToDDMMYYHHMMSS,findElementIndex,saveData, translateText, updateSameElements} = require('../services/tools')
+const {
+  formatDateToDDMMYYHHMMSS,
+  findElementIndex,
+  saveData, 
+  translateText, 
+  updateSameElements,
+  fetchOpenAICompletion
+} = require('../services/tools')
 const pdfToChunks = require('../modules/pdf-parse')
 const multer = require('multer');
 const searchSubreddits = require('../modules/search.subreddits')
@@ -18,7 +25,25 @@ const path = require('path');
 const fs = require('fs');
 const url = require('url');
 const { ObjectId } = require('mongodb');
+const { Configuration, OpenAIApi } = require('openai');
 
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const openai = new OpenAIApi(configuration);
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, process.env.UPLOAD_STORAGE_FOLDER);
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${file.fieldname}-${req.user._id}-${formatDateToDDMMYYHHMMSS()}.pdf`);
+  }
+});
+
+
+const upload = multer( {storage: storage });
 
 router.post('/user/:elementCreated', async (req, res) => {
   try {
@@ -81,69 +106,112 @@ router.delete('/user/:elementRemoved/:elementId', async (req, res) => {
     }
 });
 
-// API router for openAI
-router.post('/openai/send-prompt', async (req, res) => {
-  const { Configuration, OpenAIApi } = require('openai');
 
-  const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
+router.post('/openai/custom/:type', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }]), async (req, res) => {
+  let { prompt, time, data } = req.body;
+  const type = req.params.type;
   
-  const openai = new OpenAIApi(configuration);
+  let isPDF = false
+  let input1 = ''
+  try{
+    if(req.files && req.files.pdf1 ){
+      isPDF = true
+      input1 = await pdfToChunks(req.files.pdf1[0].path)
+    }
+    if(!input1){
+      res.status(500).send('Error with the input');
+      return
+    }
+    if(isPDF){
+      input1 = input1[0]
+    }
+    data = {pdf_content :input1}
+    data.language= req.body.language
 
-  const { prompt, time } = req.body;
-  if(!prompt){
-    res.status(500).send('Error with the prompt');
-    return
+    prompt = `
+    What is this content about ? 
+    Summarize this content in ${data.language} in a few lines : ${input1}
+    `
+  }catch(e){
+      console.log('No PDF provided')
+      console.log(e)
   }
-  console.log(`Generate response for:  ${prompt} at ${time}`)
-
-  const messages = [
-    { role: 'system', content: 'You are a powerful assistant' },
-    { role: 'user', content: prompt },
-  ];
+  
+  console.log(`Save ${type} data`)
 
   try {
-    var completion = await openai.createChatCompletion({
-      model: process.env.COMPLETIONS_MODEL,
-      messages,
-      max_tokens: 1000 // Specify the maximum token limit
+    const result = await global.db.collection('openai').insertOne({ 
+      userID:req.user._id, 
+      data:data,
+      prompt: prompt, 
+      prompt_time:time,
+      type 
     });
-    completion = completion.data.choices[0].message.content
 
-    const dataUpdate = { message: prompt, completion: completion, response_time: new Date(),message_time:time };
-    const result = await global.db.collection('users').updateOne(
-      { _id: req.user._id },
-      { $push: { openai_conversation: dataUpdate } }
+    const insertedId = result.insertedId;
+    
+    global.db.collection('users').updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $push: {[`openai_${type}`]: insertedId } }
     );
 
-    res.json({ success: true, dataUpdate});
+    res.json({
+      redirect: `/api/openai/stream/${type}?id=${insertedId}`,
+      insertedId: insertedId
+    });
+
   } catch (error) {
-    console.log(error);
-    res.status(500).send('Internal server error');
-  }
-});
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, process.env.UPLOAD_STORAGE_FOLDER);
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${file.fieldname}-${req.user._id}-${formatDateToDDMMYYHHMMSS()}.pdf`);
+  console.log(error);
+  res.status(500).send('Internal server error');
   }
 });
 
 
-const upload = multer( {storage: storage });
 
-router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }]), async (req, res) => {
-  const { Configuration, OpenAIApi } = require('openai');
+router.get('/openai/stream/:type', async (req, res) => {
+  const type = req.params.type;
+  const id = req.query.id;
 
-  const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
   
-  const openai = new OpenAIApi(configuration);
+  res.flushHeaders(); // Flush the headers to establish the SSE connection
+
+  try {
+      // Fetch the prompt from the database using the provided id
+      const record = await global.db.collection('openai').findOne({ _id: new ObjectId(id) });
+
+      if (!record) {
+          res.write('data: {"error": "Record not found"}\n\n');
+          res.end();
+          return;
+      }
+
+      const prompt = record.prompt;
+      const messages = [
+          { role: 'system', content: 'You are a powerful assistant' },
+          { role: 'user', content: prompt },
+      ];
+
+      const fullCompletion = await fetchOpenAICompletion(messages, res);
+
+      // Update the database with the full completion
+      await global.db.collection('openai').updateOne(
+          { _id: new ObjectId(id) },
+          { $push: { completion: fullCompletion,completion_time:new Date() } }
+      );
+
+      res.end();
+  } catch (error) {
+      console.log(error);
+      res.write('data: {"error": "Internal server error"}\n\n');
+      res.end();
+  }
+});
+
+router.post('/openai/pdf/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }]), async (req, res) => {
 
   let { input1, input2, time } = req.body;
   let isPDF = false
@@ -154,7 +222,6 @@ router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }
       input1 = await pdfToChunks(req.files.pdf1[0].path)
       input2 = await pdfToChunks(req.files.pdf2[0].path)
     }
-
   }catch(e){
       console.log('No PDF provided')
     }
@@ -167,6 +234,8 @@ router.post('/openai/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }
     input1 = input1[0]
     input2 = input2[0]
   }
+  res.json({ success: true, completion:JSON.parse('[{"input2":"","input2":"","difference":""}]')});
+  return 
   console.log(`Generate response for:  ${input1} and ${input2}`)
 
   const messages = [
@@ -288,14 +357,8 @@ router.post('/openai/edit-book', async (req, res) => {
 });
 router.post('/openai/regen-ebook', async (req, res) => {
   const {bookID, keyPath, newValue} = req.body;
-  const { Configuration, OpenAIApi } = require('openai');
-  const { ObjectId } = require('mongodb');
+
   console.log('Request for regen-ebook', keyPath)
-  const openAIConfig = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-  
-  const openaiClient = new OpenAIApi(openAIConfig);
 
   let bookData;
   if (keyPath.includes('.')) {
@@ -323,7 +386,7 @@ router.post('/openai/regen-ebook', async (req, res) => {
     Your response must be in ${book.language}.
     `;
     
-    const gptResponse = await openaiClient.createCompletion({
+    const gptResponse = await openai.createCompletion({
         model: "text-davinci-003",
         prompt: chapterPrompt,
         max_tokens: newValue.length + 50,
@@ -338,7 +401,7 @@ router.post('/openai/regen-ebook', async (req, res) => {
             { role: 'system', content: 'You are a powerful assistant' },
             { role: 'user', content: chapterPrompt },
           ];
-          var completion = await openaiClient.createChatCompletion({
+          var completion = await openai.createChatCompletion({
             model: process.env.COMPLETIONS_MODEL,
             messages,
             max_tokens: 1000 // Specify the maximum token limit

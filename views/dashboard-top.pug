@@ -7,25 +7,25 @@ block mainContent
         h5.fw-bold おすすめ
         .row.row-cols-1.row-cols-md-3.mt-4
             .col
-                a.card.btn.bg-white.px-2(href="/dashboard/app/openai/ebook/")
+                a.card.btn.bg-white.px-2(href="/dashboard/app/openai/article/")
                     .card-body.row.justify-start.items-start.px-2
                         div.col-2.d-flex.align-items-center
                             i.fas.fa-pencil-alt.mr-3.display-6
                         div.col-10
                             h5.card-title.fw-bold.text-start
                                 | ブログ記事 - アイディア
-                            p.card-text.text-start
+                            p.card-text.text-start.text-muted
                                 | 記事の企画アイディアを5つ出力します。
             .col
-                a.card.btn.bg-white.px-2(href="/dashboard/app/openai/article/")
+                a.card.btn.bg-white.px-2(href="/dashboard/app/openai/summarizePDF/")
                     .card-body.row.justify-start.items-start.px-2
                         div.col-2.d-flex.align-items-center
                             i.fas.fa-lightbulb.mr-3.display-6
                         div.col-10
                             h5.card-title.fw-bold.text-start
-                                | 文章を要約する
-                            p.card-text.text-start 
-                                | 文章の内容から要点を引き出します。
+                                | PDFを要約する
+                            p.card-text.text-start.text-muted
+                                | PDFの内容から要点を引き出します。
 
             .col
                 a.card.btn.bg-white.px-2(href="/dashboard/app/openai/sns/")
@@ -34,9 +34,9 @@ block mainContent
                             i.fas.fa-comments.mr-3.display-6
                         div.col-10
                             h5.card-title.fw-bold.text-start
-                                | ツイート文章
-                            p.card-text.text-start
-                                | 拡散したくなるツイート文章を作成します。
+                                | SNS投稿生成
+                            p.card-text.text-start.text-muted
+                                | 魅力的なSNS投稿文を生成します。
     section.my-5
         .row.row-cols-1.row-cols-md-2.my-5
             .col

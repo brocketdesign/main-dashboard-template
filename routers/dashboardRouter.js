@@ -17,7 +17,11 @@ const PremiumPlan = {
 
 const ensureAuthenticated = require('../middleware/authMiddleware');
 const ensureMembership = require('../middleware/ensureMembership');
-const { findDataInMedias, filterHiddenElement } = require('../services/tools')
+const { 
+  findDataInMedias, 
+  filterHiddenElement,
+  getOpenaiTypeForUser
+} = require('../services/tools')
 
 const ManageScraper = require('../modules/ManageScraper');
 
@@ -62,7 +66,7 @@ router.get('/app/openai/ebook/:bookId', ensureAuthenticated, ensureMembership, a
   if (!bookDetails) {
       return res.redirect('/dashboard/app/openai/ebook');
   }
-  console.log(bookDetails)
+
   res.render('chatgpt-ebook.pug', { user: req.user, bookId, book:bookDetails, title: 'ChatGPT ' + bookDetails.title});
 });
 
@@ -84,7 +88,9 @@ router.get('/app/openai/ebook', ensureAuthenticated, ensureMembership, async (re
 
 
 router.get('/app/openai/:app', ensureAuthenticated, ensureMembership, async (req, res) => {
-  res.render(`chatgpt-${req.params.app}.pug`, { user:req.user, title:'ChatGPT '+req.params.app });
+  //await global.db.collection('openai').deleteMany()
+  const userOpenaiDocs = await getOpenaiTypeForUser(req.user._id, req.params.app);
+  res.render(`chatgpt-${req.params.app}.pug`, { user:req.user,userOpenaiDocs, title:'ChatGPT '+req.params.app });
 });
 async function getBookById(userId, bookId) {
   // Connect to the users collection
@@ -212,7 +218,9 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
   let scrapedData = await getUserScrapedData(req.user, searchTerm, mode, nsfw, page) ;
   try{
     const medias =  await findDataInMedias({
-      query:searchTerm,
+      query: {
+        $regex: searchTerm,
+      },
       mode:mode,
       nsfw:nsfw,
       isdl:true,
@@ -247,7 +255,7 @@ function getUserScrapedData(user, url, mode, nsfw, page) {
 
   if(url){
     userScrapedDataWithCurrentPage = userScrapedData.filter(item => 
-       item.query == url && 
+       item.query.includes(url) && 
        item.mode == mode && 
        item.nsfw == nsfw && 
        !item.hide &&

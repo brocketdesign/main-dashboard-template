@@ -36,7 +36,6 @@ function textToChunks(texts, wordLength = 150, startPage = 1) {
                         chunks.push(chunk);
                     }
                 }
-                console.log(chunks)
                 resolve(chunks);
             }
         });

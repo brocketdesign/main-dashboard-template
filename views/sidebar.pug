@@ -1,17 +1,15 @@
-#sidebarMenu.bg-white.position-fixed.h-100.col-md-2.p-0.shadow(style="z-index:10;width:auto; overflow-y: auto; max-height: 100vh;display:none")
+#sidebarMenu.bg-white.position-fixed.h-100.col-md-2.p-0.shadow(style="z-index:10;width:50px; overflow-y: auto; max-height: 100vh;display:none")
   .position-sticky
     .list-group.list-group-flush
-      li#sidebarMenuToggle.list-group-item.list-group-item-action.p-3.ripple.toggler.align-items-center.d-none.d-md-flex
+      li#sidebarMenuToggle.list-group-item.list-group-item-action.p-3.ripple.toggler.align-items-center.d-none.d-md-flex(type="button")
         i.fas.fa-bars
-        .contain-text
-        .hide-text
-          img.logo.mx-2(src='/img/logo.png', alt='ロゴ' style="max-width: 20px;")
-          span(style="font-size: 12px;") RAKUBUN
-      li.list-group-item.list-group-item-action.p-3.ripple
+        .hide-text.mx-2
+          | RAKUBUN
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="ホーム")
         a(href="/dashboard/") 
           i.fas.fa-home
           span.hide-text.ms-3 ホーム
-      li.list-group-item.list-group-item-action.p-3.ripple
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="文章生成")
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse5', aria-controls='contents-collapse4') 
           i.fas.fa-newspaper
           span.hide-text.ms-3 文章生成
@@ -22,7 +20,7 @@
             a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/openai/article/') 記事、ブログ
           li
             a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/openai/sns/') SNS投稿
-      li.list-group-item.list-group-item-action.p-3.ripple
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="チャットGPT")
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse8', aria-controls='contents-collapse4') 
           i.fas.fa-comments
           span.hide-text.ms-3 チャットGPT
@@ -34,9 +32,12 @@
             a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/openai/compare/') 
               span.hide-text.ms-3 テキスト比較
           li
+            a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/openai/summarizePDF/') 
+              span.hide-text.ms-3 PDFの要約
+          li
             a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/openai/comparePDF/') 
               span.hide-text.ms-3 PDF比較
-      li.list-group-item.list-group-item-action.p-3.ripple
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="画像生成")
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse4', aria-controls='contents-collapse4') 
           i.fas.fa-image
           span.hide-text.ms-3 画像生成
@@ -49,11 +50,11 @@
             a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/stable-diffusion/gallery') 
               i.fas.fa-images
               span.hide-text.ms-3 ギャラリー  
-      li.list-group-item.list-group-item-action.p-3.ripple
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="ビデオ")
         a(href="/dashboard/app/1/history") 
           i.fas.fa-video
           span.hide-text.ms-3 ビデオ
-      li.list-group-item.list-group-item-action.p-3.ripple
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="画像")
         a(href="/dashboard/app/3/history", data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse7', aria-controls='contents-collapse7') 
           i.fas.fa-image
           span.hide-text.ms-3 画像
@@ -66,11 +67,11 @@
             a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/4/history') 
               i.fas.fa-search
               span.hide-text.ms-3 Scraper
-      li.list-group-item.list-group-item-action.p-3.ripple
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="Reddit")
         a(href="/dashboard/app/2") 
           i.fas.fa-reddit
           span.hide-text.ms-3 Reddit
-      li.list-group-item.list-group-item-action.p-3.ripple
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="ニュース")
         a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse6', aria-controls='contents-collapse6') 
           i.fas.fa-reddit
           span.hide-text.ms-3 ニュース
@@ -83,20 +84,20 @@
             a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/news/') 
               i.fas.fa-history
               span.hide-text.ms-3 パラメータ
-      li.list-group-item.list-group-item-action.p-3.ripple
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="お問い合わせ")
         a(href="#") 
           i.fas.fa-question
           span.hide-text.ms-3 お問い合わせ
-      li.list-group-item.list-group-item-action.p-3(class=user.subscriptionId?"bg-success":"bg-primary")
+      li.list-group-item.list-group-item-action.p-3(class=user.subscriptionId?"bg-success":"bg-primary",data-bs-toggle="tooltip" title="アップグレード")
         a.ripple.text-white.w-100(href='/payment/subscription')
           i.fas.fa-arrow-up
           span.hide-text.ms-3 アップグレード
-      li.list-group-item.list-group-item-action.p-3.d-lg-none
+      li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="設定")
         if user
           a(href="/user/setting") 
             i.fas.fa-cog
             span.hide-text.ms-3 設定
-      li.list-group-item.list-group-item-action.p-3.d-lg-none
+      li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="ログアウト")
         if user
           a(href='#', onclick='logout()') 
             i.fas.fa-sign-out-alt

@@ -133,19 +133,9 @@ $(document).ready(function() {
           $buttonContainer.addClass('done');
     
           const DLicon = $buttonContainer.find('i').clone();
-          $buttonContainer.html('');
-    
-          // Check if the spinner is already present, if not, create and append it to the card
-          if (!$(this).find('.spinner-border.for-summary').length) {
-              var $spinner = $('<div>').addClass('spinner-border for-summary spinner-border-sm text-white').attr('role', 'status');
-              var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
-              $spinner.append($span);
-              $buttonContainer.prepend($spinner);
-          }
-    
-          // Show the spinner while the download is in progress
-          var $spinner = $(this).find('.spinner-border');
-          $spinner.show();
+          const $spinner = showSpinner($buttonContainer,'summary')
+
+
           $.ajax({
             url: '/api/openai/summarize',
             method: 'POST',
@@ -194,11 +184,63 @@ $(document).ready(function() {
 
     $('input#searchTerm').on('change',function(){$('#page').val(1)})
 
-    trackScroll();
+    $('.custom-date').each(function(){
+        const options = {
+            year: 'numeric',
+            month: 'long',   // You can also use 'short' for abbreviated month names
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        const new_date = new Date($(this).data('value')).toLocaleString('ja-JP', options);
+        $(this).text(new_date);  // Use 'this' instead of '.custom-date' to target the current element
+    });
+
+      
+
+      
+        $(document).on('mouseenter', '.tool-button', function() {
+          $(this).tooltip('show');
+        });
+        $(document).on('mouseout', '.tool-button', function() {
+          $(this).tooltip('hide');
+        });
+      
+        $(document).on('click', '.tool-button-copy', function() {
+          let content = $(this).closest('.card').find(".card-body p").text();
+          let tempTextArea = $("<textarea></textarea>");
+          $("body").append(tempTextArea);
+          tempTextArea.val(content);
+          tempTextArea.select();
+          document.execCommand("copy");
+          tempTextArea.remove();
+      
+          // After 2 seconds, update the tooltip title to "コピーしました" and show it
+            $(this).attr('data-mdb-original-title', 'コピーしました').tooltip('show');
+      
+          // After another 2 seconds, hide the tooltip
+          setTimeout(() => {
+            // Immediately display the tooltip with title "コピー"
+            $(this).attr('data-mdb-original-title', 'コピー');
+          }, 2000);
+        });
+      
+    // Initialize the showdown converter
+    const converter = new showdown.Converter();
+
+    // Grab the text from the .convertToHTML element(s)
+    $('.convertToHTML').each(function() {
+        let markdownContent = $(this).text();
+        let htmlContent = converter.makeHtml(markdownContent);
+
+        // Replace the content of the element with the converted HTML
+        $(this).html(htmlContent);
+    });
+    enableTrackScroll();
     handleOpenaiForm();
     handleMemo();
-    onLargeScreen(handleSideBar())
-    onSmallScreen(handleSideBar2())
+    onLargeScreen(handleSideBar)
+    onSmallScreen(handleSideBar2)
     handleBookEditing();
     handleScrollDownButton();
     handleCardClickable();
@@ -213,9 +255,17 @@ $(document).ready(function() {
     handleResetFormSubmission();
     feather.replace()
 });
-
+function scrollBottomWindow(){
+    $('html, body').animate({ scrollTop: $(document).height() }, 'fast', function() {
+        // After the animation is complete, disable scrolling
+        $('body').css('overflow', 'hidden');
+    });
+}
 const handleScrollDownButton = () => {
-
+    if ($('#chat-input-section').length) {
+        scrollBottomWindow()
+    }
+    
     // Detect scroll event on the chat window
     $('.chat-window').on('scroll', function() {
         // If scrolled to bottom of the chat window, fade out the scroll down button
@@ -525,7 +575,7 @@ const handleCOmparePDF = () => {
 
         // simulate request
         $.ajax({
-            url: '/api/openai/compare', // replace with your endpoint
+            url: '/api/openai/pdf/compare', // replace with your endpoint
             method: 'POST',
             data: formData,
             processData: false, // Tell jQuery not to process data
@@ -719,9 +769,9 @@ const handleCOmpare = () => {
         const $template = $('.template').clone().removeAttr('style class');
         
         // Add user message
-        $template.addClass('my-4');
+        $template.addClass('p-4 bg-white');
         $template.find('.userName').text('ユーザー');
-        $template.find('.message').addClass('user').text(prompt);
+        $template.find('.message').addClass('user bg-white').text(prompt);
         $template.find('.time').text(new Date().toLocaleTimeString());
         $messages.append($template);
 
@@ -729,20 +779,24 @@ const handleCOmpare = () => {
 
         // simulate request
         $.ajax({
-            url: '/api/openai/send-prompt', // replace with your endpoint
+            url: '/api/openai/custom/chat', // replace with your endpoint
             method: 'POST',
             data: { prompt,time:new Date() },
             success: function(response) {
 
-                // Add agent message
+
                 const $agentTemplate = $('.template').clone().removeAttr('style class');
-                $agentTemplate.addClass('my-4 text-end');
+                $agentTemplate.addClass('p-4 text-end bg-dark text-white');
                 $agentTemplate.find('.userName').text('エージェント');
-                $agentTemplate.find('.message').addClass('agent').text(response.dataUpdate.completion);
-                $agentTemplate.find('.time').text(new Date(response.dataUpdate.response_time).toLocaleTimeString());
+                $agentTemplate.find('.time').text(new Date().toLocaleTimeString('ja-JP'));
+                $agentTemplate.find('.message').addClass('agent text-start')
                 $messages.append($agentTemplate);
 
-                console.log(response);
+                handleStream(response, function(message) {
+                    $agentTemplate.find('.message').append(message);
+                });
+     
+                scrollBottomWindow()
                 $this.find('.spinner-border').remove(); // remove spinner
                 $this.find('i').show(); // show plane icon
 
@@ -920,7 +974,6 @@ function searchSubreddits(el) {
                 </li>
               `;
             }).join('');
-  console.log(content)
             // Removing the loading indicator and appending the content
             $('#subRedditSearchRes').append(content);
           } catch (error) {
@@ -1032,19 +1085,22 @@ function scrollToTop() {
 
 // Function to handle the appearance of the sidebar menu based on the isSidebarMenuVisible value
 function adjustSidebarAppearance(isVisible) {
-
     if (isVisible) {
         $('#sidebarMenu').find('.hide-text').hide()
         $('#sidebarMenu').find('.collapse').removeClass('show').end()
+        //iconAnimation();
         $('#sidebarMenu').animate({ width: '50px' }, 500, function() {
             $('#sidebarMenu').find('.list-group-item').addClass('text-center');
+            $('#sidebarMenu').css("animation", "");
+            $('#sidebarMenu').removeClass('open')
         });
-        
 
     } else {
         $('#sidebarMenu').find('.list-group-item').removeClass('text-center').end()
         $('#sidebarMenu').animate({ width: '250px' }, 500, function() {
             $('#sidebarMenu').find('.hide-text').fadeIn();
+            //iconAnimation();
+            $('#sidebarMenu').addClass('open')
         });
     }
 
@@ -1052,45 +1108,54 @@ function adjustSidebarAppearance(isVisible) {
 
 // Function to handle toggle click event
 function toggleSidebarMenu() {
-    var isSidebarMenuVisible = JSON.parse(localStorage.getItem('isSidebarMenuVisible') || 'false');
-    isSidebarMenuVisible = !isSidebarMenuVisible;
-    localStorage.setItem('isSidebarMenuVisible', JSON.stringify(isSidebarMenuVisible));
-    adjustSidebarAppearance(isSidebarMenuVisible);
+    adjustSidebarAppearance($('#sidebarMenu').hasClass('open'));
 }
 
 function handleSideBar() {
     var isSidebarMenuVisible = JSON.parse(localStorage.getItem('isSidebarMenuVisible') || 'false');
 
+    $('#sidebarMenuToggle').on('click', toggleSidebarMenu);
     $('#sidebarMenu').find('li.list-group-item').not('.toggler').on('click', function() {
         if($(this).find('ul').length){
             adjustSidebarAppearance(false);
+        }    
+        var nextElem = $(this).html();
+        // Check if the next element is a link (a tag)
+        if(nextElem.includes('<a')) {
+            var linkHref = $(this).find('a').attr('href');
+
+            // Redirect to the href of the link
+            window.location.href = linkHref;
         }
     });
-    $('#sidebarMenuToggle').on('click', toggleSidebarMenu);
-    adjustSidebarAppearance(true);
-    $('#sidebarMenu').show()
+    //adjustSidebarAppearance(true);
+    //iconAnimation();
+    $('#sidebarMenu').show();
     $('main#dashboard').show();
 }
 
 function adjustSidebarAppearance2(){
 
     if ($('#sidebarMenu').is(':visible')) {
-        $('#sidebarMenu').find('.hide-text').hide()
+        enableTrackScroll()
         $('#sidebarMenu').find('.collapse').removeClass('show').end()
-        $('#sidebarMenu').animate({ width: '60px' }, 500, function() {
+        $('#sidebarMenu').animate({ 'max-height': '0' }, 500, function() {
             $('#sidebarMenu').find('.list-group-item').addClass('text-center');
             $('#sidebarMenu').fadeOut()
         });
     } else {
+        disableTrackScroll()
         $('#sidebarMenu').fadeIn()
         $('#sidebarMenu').find('.list-group-item').removeClass('text-center').end()
-        $('#sidebarMenu').animate({ width: '250px' }, 500, function() {
-            $('#sidebarMenu').find('.hide-text').fadeIn();
+        $('#sidebarMenu').find('.hide-text').show();
+        $('#sidebarMenu').animate({ 'max-height': '100vh' }, 500, function() {
         });
     }
 }
 function handleSideBar2(){
     $('#sidebarMenu').hide()
+    $('#sidebarMenu').css({ 'max-height': '0' ,width:"100%"})
+    $('main#dashboard').show();
     $('#sidebarMenuToggleSmall').on('click', adjustSidebarAppearance2);
 }
 function handleMemo(){
@@ -1148,6 +1213,73 @@ $('.remove-memo').on('click', function(e) {
 
 }
 
+function handleStream(response,callback) {
+    console.log(`Start streaming on : ${response.redirect}`);
+    
+
+    // Establish an EventSource connection for live streaming
+    const source = new EventSource(response.redirect);
+
+    source.onopen = function(event) {
+        //console.log("EventSource connection opened:", event);
+    };
+
+    source.onmessage = function(event) {
+        //console.log("Raw data received:", event.data);
+        
+        try {
+            // Assuming data contains a 'message' field. Modify as needed.
+            const message = JSON.parse(event.data).content;                
+            // Update the content of the card with the insertedId
+            callback(message)
+
+        } catch (e) {
+            console.error("Error parsing received data:", e);
+        }
+    };
+
+    source.onerror = function(error) {
+        console.error("EventSource failed:", error);
+        source.close();
+    };
+}
+function handleWebSocket(insertedId){
+    const ws = new WebSocket('ws://localhost:3000');
+    const index = $('#result').find('.card').length
+    // Create an initial card with the insertedId as an identifier
+    const initialCardHtml = '<div class="card mb-3" id="card-' + insertedId + index +'"><div class="card-body"></div></div>';
+    $('#result').prepend(initialCardHtml);
+    console.log(`Initial card created with id: card-${insertedId}`);
+
+    ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'openai_stream', id: insertedId }));
+    };
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.content) {
+            const message = data.content
+            // Update the content of the card with the insertedId
+            $('#card-' + insertedId + index +' .card-body').append(message);
+            console.log(`Updated card-${insertedId} with new message.`);
+        } else if (data.error) {
+            console.error(data.error);
+        }
+    };
+
+    ws.onerror = (error) => {
+        console.error(`WebSocket Error: ${error}`);
+    };
+
+    ws.onclose = (event) => {
+        if (event.wasClean) {
+            console.log(`Closed cleanly, code=${event.code}, reason=${event.reason}`);
+        } else {
+            console.error('Connection died');
+        }
+    };
+
+}
 function handleOpenaiForm(){
 
     handleCounterAndAddForm()
@@ -1158,7 +1290,225 @@ function handleOpenaiForm(){
     $('#aiCheckbox').change(handleCheckboxState);
     
     let initialFormData = new FormData($('form#ebook')[0]);
+    
+    $('form#summarizePDF').submit(function(e){
 
+        e.preventDefault();
+
+        let formData = new FormData(this);
+
+        if (!checkFormChange(initialFormData, formData)) {
+            alert('フォームに変更はありません。');
+            return
+        }
+        
+        const $buttonContainer = $(this).find('button[type="submit"]')
+        const $spinner = showSpinner($buttonContainer,'sns')
+        
+        // simulate request
+        $.ajax({
+            url: '/api/openai/custom/summarizePDF', // replace with your endpoint
+            method: 'POST',
+            data: formData,
+            processData: false, // Tell jQuery not to process data
+            contentType: false, // Tell jQuery not to set contentType
+            success: function(response) {
+                if (response.insertedId) {
+                    handleStream(response, function(message) {
+                        const containerID = `card-${response.insertedId}`;
+                        if($('#'+containerID).length == 0) {   
+                            // Create an initial card with the insertedId as an identifier
+                            const initialCardHtml = `<div class="card mb-3" id="${containerID}"><div class="card-body"></div></div>`;
+                            $('#result').prepend(initialCardHtml);
+                            console.log(`Initial card created with id: card-${containerID}`);
+                        }   
+                        $(`#${containerID} .card-body`).append(message);
+                    });
+                    
+                } else {
+                    const agent_message = response.completion;
+                    console.log({ agent_message });
+
+                    var cardsHtml = agent_message.map(function(message) {
+                        return '<div class="card mb-3"><div class="card-body">' + message + '</div></div>';
+                    }).join('');
+
+                    $('#result').prepend(cardsHtml);
+                }
+
+                $spinner.hide();
+                $buttonContainer.find('i').show();
+            },
+            error: function(error) {
+                console.error(error);
+                $spinner.hide();
+                $buttonContainer.find('i').show();
+            }
+        });
+
+
+    })
+    $('form#snsContent').submit(function(e){
+
+        e.preventDefault();
+
+        let formData = new FormData(this);
+        console.log(formData)
+
+        if (!checkFormChange(initialFormData, formData)) {
+            alert('フォームに変更はありません。');
+            return
+        }
+        
+        const snsChoice = $('#snsChoice').val()
+        const language = $('#language').val()
+        const link = $('#link').val()
+        const message = $('#message').val()
+        const keywordsArray = formDataArray('keyword') ;
+        const postCount = $('#postCount').val()
+        const data = {snsChoice,language,link,message,keywordsArray,postCount}
+        if(keywordsArray.length==0  || !message){
+            alert('申し訳ありませんが、フォームを送信する前に全ての必須項目をご記入ください。')
+            return
+        }
+        const $buttonContainer = $(this).find('button[type="submit"]')
+        const $spinner = showSpinner($buttonContainer,'sns')
+
+        const linkPrompt = link != '' ? `Here's a link I'd like to include: ${link} .`:''
+
+        // Constructing the GPT-3 prompt using the collected data
+        const gpt3Prompt = `
+        I am looking to craft an engaging post for ${snsChoice}. 
+        The primary language of my audience is ${language}. Write the post in ${language}.
+        ${linkPrompt}
+        The core message I want to convey is: "${message}". 
+        To give you more context, here are some keywords related to my post: ${keywordsArray.join(', ')}. 
+        And, I'd like to possibly integrate hashtags.
+        Respond with the post only, no coments,no translation if not asked !
+        `;
+                
+        // simulate request
+        $.ajax({
+            url: '/api/openai/custom/sns', // replace with your endpoint
+            method: 'POST',
+            data: { prompt: gpt3Prompt, time: new Date(), data },
+            success: function(response) {
+                if (response.insertedId) {
+                    for(let i = 1; i <= postCount; i++) {
+                        (function(index) {
+                            handleStream(response, function(message) {
+                                const containerID = `card-${response.insertedId}-${index}`;
+                                if($('#'+containerID).length == 0) {   
+                                    // Create an initial card with the insertedId as an identifier
+                                    const initialCardHtml = `<div class="card mb-3" id="${containerID}"><div class="card-body"></div></div>`;
+                                    $('#result').prepend(initialCardHtml);
+                                    console.log(`Initial card created with id: card-${containerID}`);
+                                }   
+                                $(`#${containerID} .card-body`).append(message);
+                            });
+                        })(i);
+                    }
+                    
+                } else {
+                    const agent_message = response.completion;
+                    console.log({ agent_message });
+
+                    var cardsHtml = agent_message.map(function(message) {
+                        return '<div class="card mb-3"><div class="card-body">' + message + '</div></div>';
+                    }).join('');
+
+                    $('#result').prepend(cardsHtml);
+                }
+
+                $spinner.hide();
+                $buttonContainer.find('i').show();
+            },
+            error: function(error) {
+                console.error(error);
+                $spinner.hide();
+                $buttonContainer.find('i').show();
+            }
+        });
+
+
+    })
+    $('form#blogPost').submit(function(e){
+
+        e.preventDefault();
+
+        let formData = new FormData(this);
+        console.log(formData)
+
+        if (!checkFormChange(initialFormData, formData)) {
+            alert('フォームに変更はありません。');
+            return
+        }
+        
+        const language = $('#language').val()
+        const title = $('#title').val()
+        const subtitle = $('#subtitle').val()
+        const author = $('#author').val()
+        const keywordsArray = formDataArray('keyword') ;
+        const data = {language, title,subtitle,author,keywordsArray}
+        if(keywordsArray.length==0  || !title || !subtitle || !author){
+            alert('申し訳ありませんが、フォームを送信する前に全ての必須項目をご記入ください。')
+            return
+        }
+        const $buttonContainer = $(this).find('button[type="submit"]')
+        const $spinner = showSpinner($buttonContainer,'article')
+
+
+        // Constructing the GPT-3 prompt using the collected data
+        const gpt3Prompt = `
+        Craft an engaging blog post for an audience whose primary language is ${language}. 
+        Title: "${title}"
+        Subtitle: "${subtitle}"
+        Author: ${author}
+        Relevant keywords: ${keywordsArray.join(', ')}
+        Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
+        `;        
+                
+        // simulate request
+        $.ajax({
+            url: '/api/openai/custom/article', // replace with your endpoint
+            method: 'POST',
+            data: { prompt: gpt3Prompt, time: new Date(), data },
+            success: function(response) {
+                if (response.insertedId) {
+                    watchAndConvertMarkdown("#result", "#htmlOutput"); 
+                    handleStream(response, function(message) {
+                        const containerID = `card-${response.insertedId}`;
+                        if($('#'+containerID).length == 0) {   
+                            // Create an initial card with the insertedId as an identifier
+                            const initialCardHtml = `<div class="card mb-3 bg-white" id="${containerID}"><div class="card-body"></div></div>`;
+                            $('#result').prepend(initialCardHtml);
+                            console.log(`Initial card created with id: card-${containerID}`);
+                        }   
+                        $(`#${containerID} .card-body`).append(message);
+                    });
+                } else {
+                    const agent_message = response.completion;
+                    console.log({ agent_message });
+
+                    var cardsHtml = agent_message.map(function(message) {
+                        return '<div class="card mb-3"><div class="card-body">' + message + '</div></div>';
+                    }).join('');
+
+                    $('#result').prepend(cardsHtml);
+                }
+
+                $spinner.hide();
+                $buttonContainer.find('i').show();
+            },
+            error: function(error) {
+                console.error(error);
+                $spinner.hide();
+                $buttonContainer.find('i').show();
+            }
+        });
+
+
+    })
     // On form submission
     $('form#ebook').submit(function(e) {
         e.preventDefault();
@@ -1171,32 +1521,11 @@ function handleOpenaiForm(){
             alert('フォームに変更はありません。');
             return
         }
-        const keywordsArray = [];
 
-        // Gather all the keywords from the input fields
-        $('[name="keywords[]"]').each(function() {
-            const keyword = $(this).val().trim();
-            if (keyword) {
-                keywordsArray.push(keyword);
-            }
-        });
-
-        // Now you have an array with all keywords. You can send this array to your server.
-        // For this example, we'll just log the array.
+        const keywordsArray = formDataArray('keyword') ;
         console.log(keywordsArray);
 
-        const chaptersArray = [];
-
-        // Gather all the keywords from the input fields
-        $('[name="chapters[]"]').each(function() {
-            const chapters = $(this).val().trim();
-            if (chapters) {
-                chaptersArray.push(chapters);
-            }
-        });
-
-        // Now you have an array with all keywords. You can send this array to your server.
-        // For this example, we'll just log the array.
+        const chaptersArray = formDataArray('chapters') ;
         console.log(chaptersArray);
 
         const topic = $('#topic').val()
@@ -1228,7 +1557,17 @@ function handleOpenaiForm(){
           });
     });
 }
-
+function formDataArray(type) {
+    const resultArray = [];
+    // Gather all the keywords from the input fields
+    $(`[name="${type}[]"]`).each(function() {
+        const data = $(this).val().trim();
+        if (data) {
+            resultArray.push(data);
+        }
+    });
+    return resultArray
+}
 function handleCheckboxState() {
     var isChecked = $('#aiCheckbox').prop('checked');
     
@@ -1289,7 +1628,7 @@ function onLargeScreen(callback){
 
     window.addEventListener('resize', function() {
         if (window.innerWidth >= YOUR_LARGE_SCREEN_BREAKPOINT) {
-            callback();
+            //callback();
         }
     });
     
@@ -1308,7 +1647,7 @@ function onSmallScreen(callback){
     
     window.addEventListener('resize', function() {
         if (window.innerWidth < YOUR_LARGE_SCREEN_BREAKPOINT) {
-            callback();
+            //callback();
         }
     });
     
@@ -1318,12 +1657,12 @@ function onSmallScreen(callback){
     }
     
 }
+let lastScrollTop = 0;
 
-function trackScroll() {
-    let lastScrollTop = 0;
-    const threshold = 50; // Adjust this value based on how much more you want to scroll before the behavior is triggered
+function enableTrackScroll() {
+    const threshold = 50;
 
-    $(window).on("scroll", function() {
+    $(window).on("scroll.trackScroll", function() {
         let currentScrollTop = $(this).scrollTop();
         let scrollDifference = Math.abs(currentScrollTop - lastScrollTop);
 
@@ -1337,3 +1676,77 @@ function trackScroll() {
         }
     });
 }
+
+function disableTrackScroll() {
+    $(window).off("scroll.trackScroll");
+}
+
+
+function iconAnimation(){
+    var icon = $("#sidebarMenuToggle i");
+
+    if(!icon.hasClass('init')){
+        icon.addClass('init')
+        return
+    }
+    // Toggle the class
+    icon.toggleClass("rotate-180");
+
+    // Check if the class is not present
+    if (!icon.hasClass("rotate-180")) {
+    icon.css("animation", "rotate0 1s forwards");
+
+    } else {
+    icon.css("animation", "rotate180 1s forwards");
+
+    }
+      
+}
+function showSpinner($buttonContainer,type) {
+    $buttonContainer.find('i').hide();
+    // Check if the spinner is already present, if not, create and append it to the card
+    if (!$buttonContainer.find('.spinner-border.for-'+type).length) {
+        var $spinner = $('<div>').addClass(`spinner-border for-${type} spinner-border-sm text-white mx-2`).attr('role', 'status');
+        var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
+        $spinner.append($span);
+        $buttonContainer.prepend($spinner);
+    }
+
+    // Show the spinner while the download is in progress
+    var $spinner = $buttonContainer.find('.spinner-border');
+    $spinner.show();
+
+    return $spinner
+}
+function watchAndConvertMarkdown(sourceSelector, outputSelector) {
+    // Use showdown library to convert markdown to HTML
+    const converter = new showdown.Converter();
+    
+    function convertMarkdownToHTML(markdownContent) {
+        return converter.makeHtml(markdownContent);
+    }
+
+    // Initialize MutationObserver to watch for changes in the source selector
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === "childList") {
+                let markdownContent = $(sourceSelector).text();
+                let htmlContent = convertMarkdownToHTML(markdownContent);
+                $(outputSelector).html(htmlContent);
+            }
+        });
+    });
+
+    // Configuration of the observer
+    const config = {
+        attributes: true,
+        childList: true,
+        characterData: true,
+        subtree: true
+    };
+
+    // Start observing the target node for configured mutations
+    observer.observe(document.querySelector(sourceSelector), config);
+}
+
+$('.convertToHTML')

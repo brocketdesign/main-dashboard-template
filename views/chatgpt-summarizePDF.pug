@@ -1,0 +1,45 @@
+extends dashboard-base
+
+block mainContent
+  h1.display-5.mb-4.fw-bold PDFの要約
+  .row.row-cols-1.row-cols-md-2.pe-0
+    .col.bg-white.p-3
+      .d-flex.justify-content-between.pb-3
+        h6 入力
+        button.btn.btn-warning.badge(onclick="location.reload()")
+          | リセットする
+      hr.mb-4
+      form#summarizePDF.row.default
+        .form-group.col-12.col-sm-6
+          label.fw-bold.my-2(for='language') 言語
+          select#language.form-control(name='language',required)
+            option(value='japanese')
+              i.faw.faw-flag-jp
+              |  Japanese
+            option(value='english')
+              i.faw.faw-flag-us
+              |  English
+        .form-group.col-12.col-sm-6
+          label.fw-bold.my-2(for='pdf1') PDF 1
+          input#pdf1.form-control(type='file', name='pdf1', accept='.pdf')
+        .my-3.px-3
+          button.btn.btn-primary(type='submit') 
+            i.fas.fa-paper-plane
+    .col.p-3
+      h6 生成結果
+      hr.mb-4
+      #result
+      if userOpenaiDocs || userOpenaiDocs.length  > 0
+        for doc of userOpenaiDocs
+          if doc.completion
+            for item of doc.completion
+              .card.mb-3(data-id=doc._id)
+                .card-top.p-3.d-flex.align-items-center.justify-content-between
+                  .tools.d-flex.align-items-center
+                    badge.btn.tool-button.tool-button-copy.mx-2(data-toggle="tooltip" title="コピー")
+                      i.fas.fa-copy
+                  .text-end.text-sm.text-muted(style="font-size:12px")
+                    .custom-date(data-value=doc.prompt_time)
+                .card-body 
+                  p.convertToHTML #{item}
+

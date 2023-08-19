@@ -3,21 +3,24 @@ require('dotenv').config(); // Load environment variables from .env file
 const express = require('express');
 const session = require('express-session');
 const flash = require('connect-flash');
+const compression = require('compression');
 
-const passport = require('passport');
-const path = require('path'); // Add path module
-
+const http = require('http');
 const LocalStrategy = require('passport-local').Strategy;
 const { MongoClient, ObjectId } = require('mongodb');
 const MongoDBStore = require('connect-mongodb-session')(session);
 const { StableDiffusionApi } = require("stable-diffusion-api");
 
-
+const passport = require('passport');
+const path = require('path'); // Add path module
 const ip = require('ip');
 const bcrypt = require('bcrypt');
 const app = express();
+const WebSocketRouter = require('./routers/WebSocketRouter');
+const server = http.createServer(app);
 
-
+// Attach the WebSocket server to the HTTP server
+WebSocketRouter(server);
 
 const port = process.env.PORT || 3000;
 
@@ -103,7 +106,8 @@ function startServer() {
             done(err, null);
           });
       });
-
+      
+      app.use(compression());
       app.use(flash());
       app.use((req, res, next) => {
         res.locals.messages = req.flash();
@@ -135,7 +139,7 @@ function startServer() {
 
 
 
-      app.listen(port, () => 
+      server.listen(port, () => 
       console.log(`Express running → PORT http://${ip.address()}:${port}`));
     })
     .catch(err => {

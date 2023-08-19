@@ -4,10 +4,9 @@ main#dashboard {
 
 .hide-text{
   font-size: 12px;
+  display:none;
 }
-.chat-message{
-    background-color: #ffffff;
-}
+
 .contain-text {
   height: 30px;  /* Or whatever height you desire */
   padding: 10px; /* Or whatever padding you desire */
@@ -78,6 +77,34 @@ main#dashboard {
   position: sticky;
   top: 0;
   z-index:1000;
+}
+.rotate-180 {
+  animation: rotate180 1s forwards;
+}
+
+@keyframes rotate180 {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes rotate0 {
+  0% {
+    transform: rotate(180deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+li.list-group-item{
+  cursor:pointer;
+}
+.hashtag-inputs input, .chapters-inputs input, .keyword-inputs input{
+  min-width: 150px;
 }
 @media (max-width: 992px) {
   .top-nav .navbar {

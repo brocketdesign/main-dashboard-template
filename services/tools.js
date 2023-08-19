@@ -4,6 +4,7 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios'); // You'll need to install axios: npm install axios
+const { createParser } = require('eventsource-parser');
 
 
 // Initialize OpenAI with your API key
@@ -219,6 +220,78 @@ async function updateSameElements(foundElement, query) {
       await updateItemsByField('url', foundElement.url, query);
   }
 }
+async function getOpenaiTypeForUser(userId, type) {
+  // 1. Fetch the user's document.
+  const userDoc = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+
+  // If userDoc doesn't exist or doesn't have the specified openai_type, return an empty array.
+  if (!userDoc || !userDoc[`openai_${type}`]) {
+    return [];
+  }
+
+  // 2. Extract the list of openai document IDs from the user's document.
+  const openaiIds = userDoc[`openai_${type}`].map(id => new ObjectId(id));
+
+  // 3. Fetch the openai documents using the extracted IDs.
+  const openaiDocs = await global.db.collection('openai').find({ _id: { $in: openaiIds } }).sort({_id:-1}).toArray();
+
+  return openaiDocs;
+}
+const fetchOpenAICompletion = async (messages, res) => {
+  try {
+      let response = await fetch(
+          "https://api.openai.com/v1/chat/completions",
+          {
+              headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+              },
+              method: "POST",
+              body: JSON.stringify({
+                  model: process.env.COMPLETIONS_MODEL,
+                  messages,
+                  temperature: 0.75,
+                  top_p: 0.95,
+                  frequency_penalty: 0,
+                  presence_penalty: 0,
+                  max_tokens: 1000,
+                  stream: true,
+                  n: 1,
+              }),
+          }
+      );
+
+      let fullCompletion = ""; // Variable to collect the entire completion
+      let chunkIndex = 0; // Variable to keep track of the current chunk's index
+
+      const parser = createParser((event) => {
+          if (event.type === 'event') {
+              if (event.data !== "[DONE]") {
+                  const content = JSON.parse(event.data).choices[0].delta?.content || "";
+                  //console.log(`Chunk Index: ${chunkIndex}, Content: ${content}`);
+                  fullCompletion += content;
+                  res.write(`data: ${JSON.stringify({ content })}\n\n`);
+                  res.flush(); // Flush the response to send the data immediately
+                  chunkIndex++; // Increment the chunk index
+              }
+          }
+      });
+
+      for await (const value of response.body?.pipeThrough(new TextDecoderStream())) {
+          parser.feed(value);
+      }
+
+      return fullCompletion;
+
+  } catch (error) {
+      console.error("Error fetching OpenAI completion:", error);
+      throw error;
+  }
+}
+
+// Usage:
+// const messages = [...]; // Define your messages here
+// await fetchOpenAICompletion(messages, res);
 
 module.exports = { 
   formatDateToDDMMYYHHMMSS, 
@@ -229,5 +302,7 @@ module.exports = {
   findDataInMedias,
   filterHiddenElement,
   sanitizeData,
-  updateSameElements
+  updateSameElements,
+  getOpenaiTypeForUser,
+  fetchOpenAICompletion
 }
