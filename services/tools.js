@@ -254,7 +254,7 @@ const fetchOpenAICompletion = async (messages, res) => {
                   top_p: 0.95,
                   frequency_penalty: 0,
                   presence_penalty: 0,
-                  max_tokens: 1000,
+                  max_tokens: 75,
                   stream: true,
                   n: 1,
               }),

@@ -110,28 +110,25 @@ router.delete('/user/:elementRemoved/:elementId', async (req, res) => {
 router.post('/openai/custom/:type', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }]), async (req, res) => {
   let { prompt, time, data } = req.body;
   const type = req.params.type;
-  
+
   let isPDF = false
   let input1 = ''
   try{
     if(req.files && req.files.pdf1 ){
       isPDF = true
       input1 = await pdfToChunks(req.files.pdf1[0].path)
+      if(isPDF){
+        input1 = input1[0]
+      }
+      data = {pdf_content :input1}
+      data.language= req.body.language
+  
+      prompt = `
+      What is this content about ? 
+      Summarize this content in ${data.language} in a few lines : ${input1}
+      `
     }
-    if(!input1){
-      res.status(500).send('Error with the input');
-      return
-    }
-    if(isPDF){
-      input1 = input1[0]
-    }
-    data = {pdf_content :input1}
-    data.language= req.body.language
 
-    prompt = `
-    What is this content about ? 
-    Summarize this content in ${data.language} in a few lines : ${input1}
-    `
   }catch(e){
       console.log('No PDF provided')
       console.log(e)

@@ -1447,10 +1447,10 @@ function handleOpenaiForm(){
         const language = $('#language').val()
         const title = $('#title').val()
         const subtitle = $('#subtitle').val()
-        const author = $('#author').val()
         const keywordsArray = formDataArray('keyword') ;
-        const data = {language, title,subtitle,author,keywordsArray}
-        if(keywordsArray.length==0  || !title || !subtitle || !author){
+        const postCount = $('#postCount').val()
+        const data = {language, title,subtitle,keywordsArray,postCount}
+        if(keywordsArray.length==0  || !title || !subtitle){
             alert('申し訳ありませんが、フォームを送信する前に全ての必須項目をご記入ください。')
             return
         }
@@ -1460,10 +1460,10 @@ function handleOpenaiForm(){
 
         // Constructing the GPT-3 prompt using the collected data
         const gpt3Prompt = `
-        Craft an engaging blog post for an audience whose primary language is ${language}. 
+        Write a chapter the following blog post :
+        Language:  ${language}. 
         Title: "${title}"
         Subtitle: "${subtitle}"
-        Author: ${author}
         Relevant keywords: ${keywordsArray.join(', ')}
         Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
         `;        
@@ -1475,17 +1475,27 @@ function handleOpenaiForm(){
             data: { prompt: gpt3Prompt, time: new Date(), data },
             success: function(response) {
                 if (response.insertedId) {
-                    watchAndConvertMarkdown("#result", "#htmlOutput"); 
-                    handleStream(response, function(message) {
-                        const containerID = `card-${response.insertedId}`;
-                        if($('#'+containerID).length == 0) {   
-                            // Create an initial card with the insertedId as an identifier
-                            const initialCardHtml = `<div class="card mb-3 bg-white" id="${containerID}"><div class="card-body"></div></div>`;
-                            $('#result').prepend(initialCardHtml);
-                            console.log(`Initial card created with id: card-${containerID}`);
-                        }   
-                        $(`#${containerID} .card-body`).append(message);
-                    });
+
+                    for(let i = 1; i <= postCount; i++) {
+                        (function(index) {
+                            const containerID = `card-${response.insertedId}-${index}`;
+                            if($(`#${response.insertedId}-${index}`).length == 0) {                                 // Create an initial card with the insertedId as an identifier
+                                const initialCardHtml = `<div class="card mb-3 bg-white"><div id="${response.insertedId}-${index}" class="card-body" ></div></div>`;
+                                $('#htmlOutput').prepend(initialCardHtml);
+                            }   
+                            handleStream(response, function(message) {
+                                if($('#'+containerID).length == 0) {   
+                                    // Create an initial card with the insertedId as an identifier
+                                    const initialCardHtml = `<div class="card mb-3 bg-white" id="${containerID}"><div class="card-body"></div></div>`;
+                                    $('#result').prepend(initialCardHtml);
+                                    console.log(`Initial card created with id: card-${containerID}`);
+                                    watchAndConvertMarkdown("#"+containerID, "#"+response.insertedId+'-'+index); 
+                                }   
+                                $(`#${containerID} .card-body`).append(message);
+                            });
+                        })(i);
+                    }
+
                 } else {
                     const agent_message = response.completion;
                     console.log({ agent_message });
