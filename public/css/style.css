@@ -69,7 +69,6 @@ main#dashboard {
   overflow-y: hidden;  /* Hide vertical scrollbar */
   resize: none;        /* Disable textarea resizing */
 }
-
 #video-holder video {
   max-height: 40vh;
 }
@@ -136,16 +135,31 @@ li.list-group-item{
         left: 0 ;
         transform: none ;
     }
-    #video-holder{
+    #message-container {
+      padding-right: 0 !important;
+    }
+    #summary{
+      width:100% !important;
+    }
+    #video-container{
+      width:100%
+    }
+    #video-container{
       position: sticky !important;
       z-index: 2;
       top: 0;
       left:0;
       right:0;
-      transform: translateX(-3.5%);
-      width: 106.8% !important;
-      max-height: 40vh;;
-      
+      width: 100%;
+      display:none;
+    }
+
+    #video-holder .card.info-container, #video-container #summary {
+      position: absolute;
+      display: none;
+    }
+    #video-holder video {
+      max-height: auto !important;
     }
   }
   

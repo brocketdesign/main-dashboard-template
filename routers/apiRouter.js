@@ -200,6 +200,9 @@ router.get('/openai/stream/:type', async (req, res) => {
           { $push: { completion: fullCompletion,completion_time:new Date() } }
       );
 
+      res.write('event: end\n');
+      res.write('data: {"id": "'+id+'"}\n\n');
+      res.flush(); // Flush the response to send the data immediately
       res.end();
   } catch (error) {
       console.log(error);
@@ -260,18 +263,69 @@ router.post('/openai/pdf/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf
   }
 });
 // Define the /openai/summarize route
-router.post('/openai/summarize', async (req, res) => {
+router.get('/openai/summarize', async (req, res) => {
+
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  
+  res.flushHeaders(); // Flush the headers to establish the SSE connection
+
   console.log('Received request to /openai/summarize');
 
   try {
-    const videoId = req.body.videoId;
+    const videoId = req.query.videoId;
+    if(!videoId){
+      console.log('Provide a video ID')
+      res.end();
+      return
+    }
     console.log(`Video ID received: ${videoId}`);
 
     const { elementIndex, foundElement } = await findElementIndex(req.user,videoId);
     const title = await translateText(foundElement.title,'japanese');
     console.log(`Title fetched for video: ${title}`);
 
-    const content = await summarizeVideo(req.user,videoId);
+    const chunks = await summarizeVideo(req.user,videoId);
+
+    const summaries = [];
+
+    for (let i = 0; i < chunks.length; i++) {
+      console.log(`Summarize section ${i + 1}/${chunks.length}`);
+      const prompt = `
+      以下の内容を要約してください \n\n${chunks[i]}\n\n 
+      そして、主要なポイントの短い段落にし、リストの中で簡潔にハイライトされた情報にまとめてください。各ハイライトには適切な絵文字を選んでください。
+      あなたの出力は以下のテンプレートを使用してください:
+      要約
+      ハイライト
+      結論
+      [絵文字] バレットポイント
+      Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
+      `;
+      const messages = [
+        { role: 'system', content: 'You are a powerful assistant' },
+        { role: 'user', content: prompt },
+      ];
+    
+      const summary = await fetchOpenAICompletion(messages, res);
+      summaries.push(summary);
+    }
+
+    
+    const combinedSummary = summaries
+    .map((summary, index) => `<h2> パート ${index + 1}</h2><br>${summary}`)
+    .join('<br>');
+
+    console.log({combinedSummary})
+    saveDataSummarize(req.user, videoId, {summary:combinedSummary})
+
+    res.write('event: end\n');
+    res.write('data: {"videoId": "'+videoId+'"}\n\n');
+    res.flush(); // Flush the response to send the data immediately
+    res.end();
+    return { summary: combinedSummary };
+
     const embedLink = `https://www.youtube.com/embed/${videoId}`;
     const iframeEmbed = `<div style="text-align:center;width:100%;"><iframe width="560" height="315" src="${embedLink}" frameborder="0" allowfullscreen></iframe></div>`;
 
@@ -279,20 +333,19 @@ router.post('/openai/summarize', async (req, res) => {
     console.log(`Content fetched: ${contentHtml.substring(0, 100)}...`); // Displaying first 100 characters for brevity
 
     saveDataSummarize(req.user, videoId, content)
-
-    const response = await postArticleToWordpress({
-      user: req.user,
-      title: title,
-      content: contentHtml
-    });
-
-    console.log('Article successfully posted to Wordpress:', response);
-
-    res.json({ content, message: 'Successfully summarized and posted' });
-
+      return
+      const response = await postArticleToWordpress({
+        user: req.user,
+        title: title,
+        content: contentHtml
+      });
+  
+      console.log('Article successfully posted to Wordpress:', response);
+  
   } catch (err) {
-    console.error('Error encountered:', err);
-    res.status(500).json({ message: err.message });
+      console.error('Error encountered:', err);
+      res.write('data: {"error": "Internal server error"}\n\n');
+      res.end();
   }
 });
 // Define the /openai/ebook route
@@ -516,10 +569,12 @@ router.post('/submit/:sectionName', ensureAuthenticated, (req, res) => {
 // Define a route to handle video requests
 router.get('/video', async (req, res) => {
   try {
-    const { id } = req.query;
+    const { videoId } = req.query;
     
+    const { elementIndex, foundElement } = await findElementIndex(req.user,videoId);
+
     // Call the function to get the highest quality video URL for the provided id
-    const url = await getHighestQualityVideoURL(id,req.user);
+    const url = await getHighestQualityVideoURL(videoId,req.user);
     //const related = await scrapeMode1GetRelatedVideo(id,req.user,req.user.mode, req.user.nsfw)
 
     if (!url) {
@@ -527,7 +582,7 @@ router.get('/video', async (req, res) => {
     }
 
     // Respond with the highest quality video URL
-    return res.json({ url });
+    return res.json({ url,data:foundElement });
   } catch (error) {
     console.error('Error occurred while processing the request:', error);
     return res.status(500).json({ error: 'An error occurred while processing the request.' });

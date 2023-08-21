@@ -92,34 +92,20 @@ $(document).ready(function() {
     $(".card.pricing").hover(() => $(this).addClass('border-primary'), () => $(this).removeClass('border-primary'));
     $('.delete-button').click(function(e) { 
         e.preventDefault()
-        const confirmation = confirm("Are you sure you want to delete this ?");
-
-        if (!confirmation) {
-            return
-        }
 
          handleHiding($(this).closest('.card').data('id'))  
     });
     $('.delete-button-history').click(function(e) {  
         e.preventDefault()
-        const confirmation = confirm("Are you sure you want to delete this ?");
-
-        if (!confirmation) {
-            return
-        }
         $(this).closest('a').remove()
         handleHidingHistory($(this).closest('.card').data('query'))  
     });
 
     $(document).on('click','.summarize-button', function(event) { 
         event.preventDefault(); // Prevents the default click behavior
-        const confirmation = confirm("Are you sure you post this video summary ?");
 
-        if (!confirmation) {
-            return
-        }
         const videoId = $(this).closest('.card').data('id');
-          console.log('Download button clicked for:', {videoId});
+          console.log('Summarize button clicked for:', {videoId});
           var $buttonContainer = $(this);
     
           // Check if the card has already been processed
@@ -135,24 +121,30 @@ $(document).ready(function() {
           const DLicon = $buttonContainer.find('i').clone();
           const $spinner = showSpinner($buttonContainer,'summary')
 
+          let response = {}
+          response.redirect = '/api/openai/summarize?videoId='+videoId
+          handleStream(response, function(message) {
+            const containerID = `card-summarize`;
+            if($('#'+containerID).length == 0) {   
+                $('#summary').html('')
+                // Create an initial card with the insertedId as an identifier
+                const initialCardHtml = `<div class="card mb-3"><div id="${containerID}" class="card-body"></div></div>`;
+                const initialCardHtmlMobile = `<div class="card mb-3"><div id="mobile-${containerID}" class="card-body"></div></div>`;
 
-          $.ajax({
-            url: '/api/openai/summarize',
-            method: 'POST',
-            data: { videoId },
-            success: function(response) {
-                handleFormResult(true,response.message)
-    
-                $spinner.remove();
-    
-                if(!$buttonContainer.find('i').length){
-                $buttonContainer.append(DLicon)
-                }
-                // Handle the success response
-                console.log(response);
-                },
-            error: handleFormError
+                $('#summary').prepend(initialCardHtml);
+                $('#mobile-toolbar').append(initialCardHtmlMobile);
+
+                console.log(`Initial card created with id: ${containerID}`);
+            }   
+            watchAndConvertMarkdown(`#result`, `#${containerID}`); 
+            watchAndConvertMarkdown(`#result`, `#mobile-${containerID}`); 
+            $(`#result`).append(message);
+        },function(endMessage){
+            console.log('Generation ended ',endMessage)
+            $spinner.hide();
+            $buttonContainer.find('i').show();
         });
+
     });
     $('.card img').on('error', function() { 
         var videoId = $(this).data('id');
@@ -183,21 +175,7 @@ $(document).ready(function() {
     });
 
     $('input#searchTerm').on('change',function(){$('#page').val(1)})
-
-    $('.custom-date').each(function(){
-        const options = {
-            year: 'numeric',
-            month: 'long',   // You can also use 'short' for abbreviated month names
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        };
-        const new_date = new Date($(this).data('value')).toLocaleString('ja-JP', options);
-        $(this).text(new_date);  // Use 'this' instead of '.custom-date' to target the current element
-    });
-
       
-
       
         $(document).on('mouseenter', '.tool-button', function() {
           $(this).tooltip('show');
@@ -205,25 +183,7 @@ $(document).ready(function() {
         $(document).on('mouseout', '.tool-button', function() {
           $(this).tooltip('hide');
         });
-      
-        $(document).on('click', '.tool-button-copy', function() {
-          let content = $(this).closest('.card').find(".card-body p").text();
-          let tempTextArea = $("<textarea></textarea>");
-          $("body").append(tempTextArea);
-          tempTextArea.val(content);
-          tempTextArea.select();
-          document.execCommand("copy");
-          tempTextArea.remove();
-      
-          // After 2 seconds, update the tooltip title to "コピーしました" and show it
-            $(this).attr('data-mdb-original-title', 'コピーしました').tooltip('show');
-      
-          // After another 2 seconds, hide the tooltip
-          setTimeout(() => {
-            // Immediately display the tooltip with title "コピー"
-            $(this).attr('data-mdb-original-title', 'コピー');
-          }, 2000);
-        });
+
       
     // Initialize the showdown converter
     const converter = new showdown.Converter();
@@ -236,6 +196,8 @@ $(document).ready(function() {
         // Replace the content of the element with the converted HTML
         $(this).html(htmlContent);
     });
+    handleCopyButtons()
+    updateMoments();
     enableTrackScroll();
     handleOpenaiForm();
     handleMemo();
@@ -264,6 +226,8 @@ function scrollBottomWindow(){
 const handleScrollDownButton = () => {
     if ($('#chat-input-section').length) {
         scrollBottomWindow()
+        $('.chat-window').animate({ scrollTop: $('.chat-window')[0].scrollHeight }, 'slow');
+        disableTrackScroll()
     }
     
     // Detect scroll event on the chat window
@@ -421,7 +385,7 @@ const handleCardClickable = () => {
       $spinner.show();
 
       // Make a request to the server to get the highest quality video URL for the given ID
-      $.get('/api/video', { id: id }, function(response) {
+      $.get('/api/video', { videoId: id }, function(response) {
           console.log('API Response:', response);
 
         // Hide the spinner
@@ -441,23 +405,42 @@ const handleCardClickable = () => {
                 // Code to be executed when the video is ready to play
                 console.log('Video ready to play');
                 //handleMasonry()
-            });;
+            });
+            console.log('Video element created:', $video);
+            //$thisCard.find('.card-img-top').remove()
+            
+            // Update the card body with the new video
+            //$thisCard.prepend($video);
+            $('#video-holder').html('')
+            $('#video-holder').append($video)//.append($thisCard.find('.tool-bar').clone()).append($thisCard.find('.card-title').clone().show())
+            
+            //scrollToTop();
 
-              console.log('Video element created:', $video);
-              //$thisCard.find('.card-img-top').remove()
-              
-              // Update the card body with the new video
-              //$thisCard.prepend($video);
-              $('#video-holder').html('')
-              $('#video-holder').append($video)//.append($thisCard.find('.tool-bar').clone()).append($thisCard.find('.card-title').clone().show())
-              scrollToTop();
-              const cardClone = $thisCard.clone()
-              cardClone.find('.card-top').hide()
-              cardClone.find('img').hide()
-              cardClone.find('.card-title').show()
-              cardClone.find('.card-body-over').hide()
-              cardClone.find('.card-body').removeClass('position-absolute px-3')
-              $('#video-holder').append(cardClone)
+            $('#mobile-toolbar').html('')
+            const cardClone = $thisCard.clone()
+            cardClone.find('.card-top').remove()
+            cardClone.find('img').remove()
+            cardClone.find('.card-title').show()
+            cardClone.find('.card-body-over').remove()
+            cardClone.find('.card-body').removeClass('position-absolute px-3')
+
+            $('#video-holder').append(cardClone.clone())
+
+            $('#mobile-toolbar').append(cardClone.clone())
+       
+            $('#summary').html('')
+            if(response && response.data && response.data.summary && response.data.summary.length > 0){
+                if($('#summary-content').length == 0){
+                    const initialCardHtml = `<div class="card mb-3" id="summary"><div class="card-body"></div></div>`;
+                    const initialCardHtmlMobile = `<div class="card mb-3" id="summary-content"><div class="card-body"></div></div>`;
+                    $('#summary').prepend(initialCardHtml);
+                    $('#mobile-toolbar').append(initialCardHtmlMobile);
+                }
+                $('#summary .card-body').append(response.data.summary)
+                $('#mobile-toolbar #summary-content .card-body').append(response.data.summary)
+            }
+   
+              $('#video-container').show()
               $thisCard.hide()
               handleMasonry()
               console.log('Video added to card body.');
@@ -503,7 +486,7 @@ const handleDownloadButton = () => {
   $(document).on('click', '.download-button', function(event) {
     event.preventDefault(); // Prevents the default click behavior
     var id = $(this).closest('.info-container').data('id');
-    var title = $(this).closest('.card').data('title');
+    var title = $(this).closest('.info-container').data('title');
       console.log('Download button clicked for:', {id,title});
       var $buttonContainer = $(this);
 
@@ -640,8 +623,7 @@ const handleSwitchNSFW= () => {
     if (switchState !== null) {
         $('#nsfw').prop('checked', switchState === 'true');
     }
-
-    handleNSFWlabel(switchState)
+    handleNSFWlabel(switchState === 'true')
 
     // Save the state of the switch to a local variable when it's toggled
     $('#nsfw').change(function() {
@@ -664,7 +646,7 @@ const handleSwitchNSFW= () => {
     });
 }
 function handleNSFWlabel(nsfw){
-    if(nsfw === true || nsfw === 'true'){
+    if(nsfw === true ){
         $('label[for="nsfw"]').addClass('bg-danger').removeClass('bg-dark')
     }else{
         $('label[for="nsfw"]').removeClass('bg-danger').addClass('bg-dark')
@@ -752,9 +734,7 @@ const handleCOmpare = () => {
 
         const $this = $(this);
         const $input = $('#chat-input-section input');
-        const prompt = $input.val();
-
-        console.log(prompt);
+        const prompt = $input.val() ;
 
         if (!prompt) {
             return;
@@ -781,19 +761,26 @@ const handleCOmpare = () => {
         $.ajax({
             url: '/api/openai/custom/chat', // replace with your endpoint
             method: 'POST',
-            data: { prompt,time:new Date() },
+            data: { 
+                prompt:prompt+ `\n\nNote: Respond using markdown`,
+                time:new Date() },
             success: function(response) {
-
-
-                const $agentTemplate = $('.template').clone().removeAttr('style class');
-                $agentTemplate.addClass('p-4 text-end bg-dark text-white');
-                $agentTemplate.find('.userName').text('エージェント');
-                $agentTemplate.find('.time').text(new Date().toLocaleTimeString('ja-JP'));
-                $agentTemplate.find('.message').addClass('agent text-start')
-                $messages.append($agentTemplate);
-
+                $('#temporary').html('')
                 handleStream(response, function(message) {
-                    $agentTemplate.find('.message').append(message);
+
+                    if($(`#${response.insertedId}`).length==0){
+                        const $agentTemplate = $('.template').clone().removeAttr('style class');
+                        
+                        $agentTemplate.addClass('p-4 text-end bg-dark text-white');
+                        $agentTemplate.find('.userName').text('エージェント');
+                        $agentTemplate.find('.time').text(new Date().toLocaleTimeString('ja-JP'));
+                        $agentTemplate.find('.message').addClass('agent text-start').attr('id',response.insertedId)
+                        $agentTemplate.append(`<div id="temp-${response.insertedId}" class="d-none"></div>`)
+                        $messages.append($agentTemplate);
+                        watchAndConvertMarkdown(`#temp-${response.insertedId}`, `#${response.insertedId}`); 
+                    }
+                    
+                    $(`#temp-${response.insertedId}`).append(message);
                 });
      
                 scrollBottomWindow()
@@ -1213,9 +1200,8 @@ $('.remove-memo').on('click', function(e) {
 
 }
 
-function handleStream(response,callback) {
+function handleStream(response,callback,endCallback) {
     console.log(`Start streaming on : ${response.redirect}`);
-    
 
     // Establish an EventSource connection for live streaming
     const source = new EventSource(response.redirect);
@@ -1229,7 +1215,7 @@ function handleStream(response,callback) {
         
         try {
             // Assuming data contains a 'message' field. Modify as needed.
-            const message = JSON.parse(event.data).content;                
+            const message = JSON.parse(event.data).content;    
             // Update the content of the card with the insertedId
             callback(message)
 
@@ -1237,6 +1223,12 @@ function handleStream(response,callback) {
             console.error("Error parsing received data:", e);
         }
     };
+
+    source.addEventListener('end', function(event) {
+        console.log("Stream has ended:", event.data);
+        if (endCallback) endCallback(JSON.parse(event.data));
+        source.close();
+    });
 
     source.onerror = function(error) {
         console.error("EventSource failed:", error);
@@ -1303,7 +1295,7 @@ function handleOpenaiForm(){
         }
         
         const $buttonContainer = $(this).find('button[type="submit"]')
-        const $spinner = showSpinner($buttonContainer,'sns')
+        const $spinner = showSpinner($buttonContainer,'summarizePDF')
         
         // simulate request
         $.ajax({
@@ -1362,11 +1354,10 @@ function handleOpenaiForm(){
         
         const snsChoice = $('#snsChoice').val()
         const language = $('#language').val()
-        const link = $('#link').val()
         const message = $('#message').val()
         const keywordsArray = formDataArray('keyword') ;
         const postCount = $('#postCount').val()
-        const data = {snsChoice,language,link,message,keywordsArray,postCount}
+        const data = {snsChoice,language,message,keywordsArray,postCount}
         if(keywordsArray.length==0  || !message){
             alert('申し訳ありませんが、フォームを送信する前に全ての必須項目をご記入ください。')
             return
@@ -1374,62 +1365,65 @@ function handleOpenaiForm(){
         const $buttonContainer = $(this).find('button[type="submit"]')
         const $spinner = showSpinner($buttonContainer,'sns')
 
-        const linkPrompt = link != '' ? `Here's a link I'd like to include: ${link} .`:''
 
         // Constructing the GPT-3 prompt using the collected data
         const gpt3Prompt = `
         I am looking to craft an engaging post for ${snsChoice}. 
         The primary language of my audience is ${language}. Write the post in ${language}.
-        ${linkPrompt}
         The core message I want to convey is: "${message}". 
         To give you more context, here are some keywords related to my post: ${keywordsArray.join(', ')}. 
         And, I'd like to possibly integrate hashtags.
         Respond with the post only, no coments,no translation if not asked !
         `;
-                
-        // simulate request
-        $.ajax({
-            url: '/api/openai/custom/sns', // replace with your endpoint
-            method: 'POST',
-            data: { prompt: gpt3Prompt, time: new Date(), data },
-            success: function(response) {
-                if (response.insertedId) {
-                    for(let i = 1; i <= postCount; i++) {
-                        (function(index) {
-                            handleStream(response, function(message) {
-                                const containerID = `card-${response.insertedId}-${index}`;
-                                if($('#'+containerID).length == 0) {   
-                                    // Create an initial card with the insertedId as an identifier
-                                    const initialCardHtml = `<div class="card mb-3" id="${containerID}"><div class="card-body"></div></div>`;
-                                    $('#result').prepend(initialCardHtml);
-                                    console.log(`Initial card created with id: card-${containerID}`);
-                                }   
-                                $(`#${containerID} .card-body`).append(message);
-                            });
-                        })(i);
+        generateStream('sns',gpt3Prompt,data,function(response){
+            for(let i = 1; i <= postCount; i++) {
+                (function(index) {handleStream(response, function(message) {
+                    const containerID = `card-${response.insertedId}-${index}`;
+                    const item = message; // Replace with the appropriate value for "item"
+                    const doc = response; // Replace with the appropriate value for "doc"
+                  
+                    if($('#' + containerID).length == 0) {
+                      const initialCardHtml = `
+                        <div class="card mb-3" id="${containerID}" data-id="${doc._id}">
+                          <div class="card-top p-3 d-flex align-items-center justify-content-between">
+                            <div class="tools d-flex align-items-center">
+                              <a class="btn tool-button mx-2" href="https://twitter.com/intent/tweet?text=${item}&url" target='_blank' data-toggle="tooltip" title="Twitterでシェア">
+                                <i class="fas fa-share-alt"></i>
+                              </a>
+                              <badge class="btn tool-button tool-button-copy mx-2" data-toggle="tooltip" title="コピー">
+                                <i class="fas fa-copy"></i>
+                              </badge>
+                            </div>
+                            <div class="text-end text-sm text-muted" style="font-size:12px">
+                              <div class="custom-date" data-value="${new Date()}"></div>
+                            </div>
+                          </div>
+                          <div class="card-body py-0">
+                            <p>${item}</p>
+                          </div>
+                        </div>`;
+                        
+                      $('#result').prepend(initialCardHtml);
+                      updateMoments();
+                      console.log(`Initial card created with id: card-${containerID}`);
                     }
-                    
-                } else {
-                    const agent_message = response.completion;
-                    console.log({ agent_message });
-
-                    var cardsHtml = agent_message.map(function(message) {
-                        return '<div class="card mb-3"><div class="card-body">' + message + '</div></div>';
-                    }).join('');
-
-                    $('#result').prepend(cardsHtml);
-                }
-
-                $spinner.hide();
-                $buttonContainer.find('i').show();
-            },
-            error: function(error) {
-                console.error(error);
-                $spinner.hide();
-                $buttonContainer.find('i').show();
+                  
+                    $(`#${containerID} .card-body p`).append(message);
+                  },function(message){
+                    console.log('Generation ended. ',message)
+                    handleCopyButtons();
+                  });
+                  
+                })(i);
             }
-        });
 
+            $spinner.hide();
+            $buttonContainer.find('i').show();
+
+        },function(){
+            $spinner.hide();
+            $buttonContainer.find('i').show();
+        })
 
     })
     $('form#blogPost').submit(function(e){
@@ -1467,56 +1461,32 @@ function handleOpenaiForm(){
         Relevant keywords: ${keywordsArray.join(', ')}
         Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
         `;        
-                
-        // simulate request
-        $.ajax({
-            url: '/api/openai/custom/article', // replace with your endpoint
-            method: 'POST',
-            data: { prompt: gpt3Prompt, time: new Date(), data },
-            success: function(response) {
-                if (response.insertedId) {
-
-                    for(let i = 1; i <= postCount; i++) {
-                        (function(index) {
-                            const containerID = `card-${response.insertedId}-${index}`;
-                            if($(`#${response.insertedId}-${index}`).length == 0) {                                 // Create an initial card with the insertedId as an identifier
-                                const initialCardHtml = `<div class="card mb-3 bg-white"><div id="${response.insertedId}-${index}" class="card-body" ></div></div>`;
-                                $('#htmlOutput').prepend(initialCardHtml);
-                            }   
-                            handleStream(response, function(message) {
-                                if($('#'+containerID).length == 0) {   
-                                    // Create an initial card with the insertedId as an identifier
-                                    const initialCardHtml = `<div class="card mb-3 bg-white" id="${containerID}"><div class="card-body"></div></div>`;
-                                    $('#result').prepend(initialCardHtml);
-                                    console.log(`Initial card created with id: card-${containerID}`);
-                                    watchAndConvertMarkdown("#"+containerID, "#"+response.insertedId+'-'+index); 
-                                }   
-                                $(`#${containerID} .card-body`).append(message);
-                            });
-                        })(i);
-                    }
-
-                } else {
-                    const agent_message = response.completion;
-                    console.log({ agent_message });
-
-                    var cardsHtml = agent_message.map(function(message) {
-                        return '<div class="card mb-3"><div class="card-body">' + message + '</div></div>';
-                    }).join('');
-
-                    $('#result').prepend(cardsHtml);
-                }
-
-                $spinner.hide();
-                $buttonContainer.find('i').show();
-            },
-            error: function(error) {
-                console.error(error);
-                $spinner.hide();
-                $buttonContainer.find('i').show();
+        generateStream('article',gpt3Prompt,data,function(response){
+            for(let i = 1; i <= postCount; i++) {
+                (function(index) {
+                    handleStream(response, function(message) {
+                        const containerID = `card-${response.insertedId}-${index}`;
+                        if($('#'+containerID).length == 0) {   
+                            // Create an initial card with the insertedId as an identifier
+                            const initialCardHtml = `<div class="card mb-3"><div id="${containerID}" class="card-body"></div></div>`;
+                            const initialCardHtmlOutput = `<div class="card mb-3"><div id="${containerID}-output" class="card-body"></div></div>`;
+                            $('#result').prepend(initialCardHtml);
+                            $('#htmlOutput').prepend(initialCardHtmlOutput);
+                            console.log(`Initial card created with id: card-${containerID}`);
+                        }   
+                        watchAndConvertMarkdown(`#${containerID}`, `#${containerID}-output`); 
+                        $(`#${containerID}`).append(message);
+                    });
+                })(i);
             }
-        });
 
+            $spinner.hide();
+            $buttonContainer.find('i').show();
+
+        },function(){
+            $spinner.hide();
+            $buttonContainer.find('i').show();
+        })
 
     })
     // On form submission
@@ -1525,46 +1495,104 @@ function handleOpenaiForm(){
 
         let formData = new FormData(this);
 
-        console.log(formData);
-
         if (!checkFormChange(initialFormData, formData)) {
             alert('フォームに変更はありません。');
             return
         }
 
+        const $buttonContainer = $(this).find('button[type="submit"]')
+        const $spinner = showSpinner($buttonContainer,'ebook')
+
         const keywordsArray = formDataArray('keyword') ;
-        console.log(keywordsArray);
 
         const chaptersArray = formDataArray('chapters') ;
-        console.log(chaptersArray);
 
         const topic = $('#topic').val()
         const language = $('#language').val()
         const aiCheckbox = $('#aiCheckbox').prop('checked')
-
-        if(keywordsArray.length==0 || chaptersArray.length==0 || !language || !topic){
+        const data = { topic, language, keywords:keywordsArray,  userChapters:chaptersArray, aiCheckbox }
+        if(keywordsArray.length==0 || (chaptersArray.length==0 && !aiCheckbox) || !language || !topic){
             alert('申し訳ありませんが、フォームを送信する前に全ての必須項目をご記入ください。')
             return
         }
-        $.ajax({
-            url: "/api/openai/ebook",
-            type: "POST",
-            data: {
-                topic, 
-                language,
-                keywords:keywordsArray, 
-                userChapters:chaptersArray,
-                aiCheckbox
+        const gpt3Prompt = `
+        write the details for a book about "${topic}". 
+        The book content and details must be in ${language}.
+        The main keywords are : ${data.keywords.join(', ')}.
+        ${aiCheckbox=='true'?'':`Use those chapters for the book : ${data.userChapters.join('\n - ')}`}
+        Respond without comment, only using this JSON template : 
+        {
+            "book": {
+                "language": "${language}",
+                "title": "{{book_title}:{book_sub_title}}",
             },
-            success: function(response) {
-              // Code to handle the successful response
-              console.log(response);
-            },
-            error: function(xhr, status, error) {
-              // Code to handle the error response
-              console.error(error);
-            }
-          });
+            "tone": "{{book_tone}}",
+            "chapters": [
+                {
+                    "title": "{{chapter_1_title}}",
+                    "sub_chapters": [
+                        {
+                            "title": "{{sub_chapter_1_1}}"
+                        },
+                        {
+                            "title": "{{sub_chapter_1_2}}"
+                        }
+                    ]
+                },
+                {
+                    "title": "{{chapter_2_title}}",
+                    "sub_chapters": [
+                        {
+                            "title": "{{sub_chapter_2_1}}"
+                        },
+                        {
+                            "title": "{{sub_chapter_2_2}}"
+                        }
+                    ]
+                }
+            ]
+        }    
+        `; 
+        generateStream('ebook',gpt3Prompt,data,function(response){
+            const id = []
+            handleStream(response, function(message) {
+                const containerID = `card-${response.insertedId}`;
+                if($('#'+containerID).length == 0) {   
+                    id.push(containerID)
+                    // Create an initial card with the insertedId as an identifier
+                    const initialCardHtml = `<div class="card mb-3" id="${containerID}"><div class="card-body"></div></div>`;
+                    $('#result').prepend(initialCardHtml);
+                    console.log(`Initial card created with id: card-${containerID}`);
+                }   
+                $(`#${containerID} .card-body`).append(message);
+            }, function(endMessage){
+                console.log("End of stream:", endMessage);
+                let bookDetails = $(`#${id[0]} .card-body`).text().trim();
+
+                try {
+                    bookDetails = JSON.parse(bookDetails);
+                } catch (error) {
+                    console.log(bookDetails)
+                    console.log('Error parsing the returned JSON:', error);
+                    return false;
+                }
+                
+                bookDetails.topic = topic;
+                bookDetails.book_content = [];
+                bookDetails.date = new Date()
+
+                console.log(bookDetails)
+                $spinner.hide();
+                $buttonContainer.find('i').show();
+    
+            });
+
+ 
+        },function(){
+            $spinner.hide();
+            $buttonContainer.find('i').show();
+        })
+
     });
 }
 function formDataArray(type) {
@@ -1675,11 +1703,13 @@ function enableTrackScroll() {
     $(window).on("scroll.trackScroll", function() {
         let currentScrollTop = $(this).scrollTop();
         let scrollDifference = Math.abs(currentScrollTop - lastScrollTop);
+        let atTopOfPage = currentScrollTop === 0;
+        let atBottomOfPage = currentScrollTop + $(window).height() >= $(document).height();
 
-        if (scrollDifference >= threshold) {
-            if (currentScrollTop > lastScrollTop) { // Scrolling down
+        if (atTopOfPage || atBottomOfPage || scrollDifference >= threshold) {
+            if (currentScrollTop > lastScrollTop && !atTopOfPage && !atBottomOfPage) { // Scrolling down
                 $(".auto-hide").fadeOut();
-            } else { // Scrolling up
+            } else { // Scrolling up or at top/bottom of page
                 $(".auto-hide").fadeIn();
             }
             lastScrollTop = currentScrollTop;
@@ -1758,5 +1788,63 @@ function watchAndConvertMarkdown(sourceSelector, outputSelector) {
     // Start observing the target node for configured mutations
     observer.observe(document.querySelector(sourceSelector), config);
 }
+function generateStream(type,gpt3Prompt,data,callback,errorcallback){
+    // simulate request
+    $.ajax({
+        url: '/api/openai/custom/'+type, // replace with your endpoint
+        method: 'POST',
+        data: { prompt: gpt3Prompt, time: new Date(), data },
+        success: function(response) {
+            callback(response)
+        },
+        error: function(error) {
+            console.error(error);
+            errorcallback()
+        }
+    }); 
+}
+       
 
-$('.convertToHTML')
+function updateMoments(){
+    $('.custom-date').each(function(){
+        const dateValue = $(this).data('value');
+        const date = new Date(dateValue);
+        const now = new Date();
+        const diffInSeconds = (now - date) / 1000;
+        let displayText;
+
+        if (diffInSeconds < 60) {
+            displayText = Math.round(diffInSeconds) + ' 秒前';
+        } else if (diffInSeconds < 3600) {
+            displayText = Math.round(diffInSeconds / 60) + ' 分前';
+        } else if (diffInSeconds < 86400) {
+            displayText = Math.round(diffInSeconds / 3600) + ' 時間前';
+        } else {
+            displayText = Math.round(diffInSeconds / 86400) + ' 日前';
+        }
+        
+    
+        $(this).text(displayText);
+    });
+    
+}
+      
+function handleCopyButtons() {
+    $(document).on('click', '.tool-button-copy', function() {
+      let content = $(this).closest('.card').find(".card-body p").text().trim();
+      let tempTextArea = $("<textarea></textarea>");
+      $("body").append(tempTextArea);
+      tempTextArea.val(content);
+      tempTextArea.select();
+      document.execCommand("copy");
+      tempTextArea.remove();
+  
+      // Update the tooltip title to "コピーしました" and show it
+      $(this).attr('title', 'コピーしました').tooltip('_fixTitle').tooltip('show');
+  
+      // After 2 seconds, revert the tooltip title to "コピー"
+      setTimeout(() => {
+        $(this).attr('title', 'コピー').tooltip('_fixTitle');
+      }, 2000);
+    });
+}

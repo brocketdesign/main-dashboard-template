@@ -185,7 +185,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
   page = parseInt(page) || 1
   
   console.log('Dashboard page requested');
-  console.log(req.query);
+  console.log( req.query, nsfw );
 
   if(!searchTerm){
     res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
@@ -231,7 +231,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
   }catch(err){
     console.log(err)
   }
-  if (mode == 4) {
+  
     //check for object with the same source and keep only one
     let uniqueData = [];
     let seenSources = new Set();
@@ -244,7 +244,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
     }
     
     scrapedData = uniqueData; // Now, scrapedData contains unique items based on the source property.
-  }
+  
   
   res.render(`search`, { user: req.user, searchTerm, scrapedData:scrapedData.reverse(), mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 });
@@ -303,40 +303,44 @@ if (userInfo) {
     console.log(err)
   }
   try { 
-    // Filter the scrapedData array based on the 'mode'
     let filteredData = scrapedData.filter(item => item.mode === mode && item.nsfw === nsfw && item.hide_query != true);
-    filteredData = await filterHiddenElement(filteredData)
-    // Create an object where the key is the 'query' and the value is an array of up to four items matching that 'query'.
-    const queryMap = filteredData.reduce((acc, item) => {
-      if (!item.query) {
-        // If item.query is not defined or is falsy, skip to the next item.
-        return acc;
-      }
-    
-      const key = `${item.query}${item.page}`; // Combine query and page to create the key
+    filteredData = await filterHiddenElement(filteredData);
 
-      if (!acc[key]) {
-        acc[key] = []; // If this combined key is not already in the object, add it with an empty array as the value.
+    let highestPagePerQuery = {}; // Map to keep track of the highest page for each query
+    let queryMap = {};
+
+    filteredData.forEach(item => {
+      if (!item.query) return;
+
+      const page = parseInt(item.page);
+
+      // If this is the highest page for this query, update highestPagePerQuery
+      if (!highestPagePerQuery[item.query] || page > highestPagePerQuery[item.query]) {
+        highestPagePerQuery[item.query] = page;
       }
-    
-      if (acc[key].length < 4) {
-        // If the array for this combined key has less than four items, add the current item.
-        if (item.hide !== true) {
-          acc[key].push(item);
+    });
+
+    // Iterate through filteredData again, adding items to queryMap only if they are on the highest page for that query
+    filteredData.forEach(item => {
+      if (!item.query) return;
+
+      const page = parseInt(item.page);
+
+      if (page === highestPagePerQuery[item.query]) {
+        const key = item.query;
+        if (!queryMap[key]) {
+          queryMap[key] = [];
+        }
+
+        if (queryMap[key].length < 4 && item.hide !== true) {
+          queryMap[key].push(item);
         }
       }
-    
-      return acc;
-    }, {});
-    
-    // Sort the items in each array by the 'page' property
-    for (const key in queryMap) {
-      queryMap[key].sort((a, b) => a.page - b.page);
-    }
-    
-    data = queryMap;
+    });
+
+    data = queryMap; // Return an object with one set of data for each query, containing the items for the highest page
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
 
   res.render('history', { user: req.user, data, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template

@@ -7,6 +7,7 @@ async function findAndUpdateUser(userId, newScrapedData = null) {
   if (!user) console.log('User not found in the database.');
 
   if(!newScrapedData){
+    console.log('No data provided')
     return user
   }
 
@@ -62,6 +63,7 @@ async function ManageScraper(url, nsfw, mode, user, page) {
 
   const userInfo = await findAndUpdateUser(userId);
 
+
   const existingData = userInfo.scrapInfo?.[url];
   const moreThan24h = existingData
       ? currentTime - Number(existingData.time) > 24 * 60 * 60 * 1000
@@ -76,6 +78,19 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     }
   }
 
+if (page <= currentPage) {
+    if(!url || !moreThan24h) {
+      let userScrapedDataWithCurrentPage = getUserScrapedData(userInfo, url, mode, nsfw, page);
+  
+      if (userScrapedDataWithCurrentPage.length > 1) {
+        console.log('Data has already been scraped today.');
+        userScrapedDataWithCurrentPage = await filterHiddenElement(userScrapedDataWithCurrentPage)
+        return userScrapedDataWithCurrentPage;
+      } else {
+        console.log('No data scraped for the current page.');
+      }
+    }
+}
 
   scrapedData = await findDataInMedias({
     query:url,
@@ -85,14 +100,19 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     link:{$exists:true}
   })
 
-  if(scrapedData && scrapedData.length > 0){
+  if(scrapedData){
     scrapedData = await filterHiddenElement(scrapedData)
     return scrapedData
   }
 
-  
   scrapedData = await scrapeMode(url, mode, nsfw, page);
   console.log(`Scrape data and found ${scrapedData.length} elements.`)
+
+  if(scrapedData.length == 0) {
+    let userScrapedDataWithCurrentPage = getUserScrapedData(userInfo, url, mode, nsfw).slice(0, 50);
+    userScrapedDataWithCurrentPage =await  filterHiddenElement(userScrapedDataWithCurrentPage)
+    return userScrapedDataWithCurrentPage;
+  }
 
   scrapedData = scrapedData.map((data) => ({
     ...data,
@@ -105,10 +125,8 @@ async function ManageScraper(url, nsfw, mode, user, page) {
   })); 
 
 
-  if(scrapedData && scrapedData.length > 0){
-    await findAndUpdateUser(userId, scrapedData);
-    console.log('Scraped data saved.');
-  }
+  await findAndUpdateUser(userId, scrapedData);
+  console.log('Scraped data saved.');
 
   url = url ? url : process.env.DEFAULT_URL
   await global.db.collection('users').updateOne(
@@ -116,9 +134,25 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     { $set: { ['scrapInfo.' + url]: {time:currentTime, page:page >= currentPage?page:currentPage} } }, // Concatenate 'scrapInfo.' with your variable
     { upsert: true }
   );
+  // Retrieve updated user info from the database
+  const updatedUserInfo = await findAndUpdateUser(userId);
+  // Pass updated user info to the function
+  let userScrapedDataWithCurrentPage = getUserScrapedData(updatedUserInfo, url, mode, nsfw, page);
 
+  scrapedData = await findDataInMedias({
+    query:url,
+    page:page,
+    hide:{$exists:false},
+    isdl:{$exists:false},
+    link:{$exists:true}
+  })
+  if(scrapedData){
+    scrapedData = await filterHiddenElement(scrapedData)
+    return scrapedData
+  }
+  userScrapedDataWithCurrentPage = await filterHiddenElement(userScrapedDataWithCurrentPage)
 
-  return scrapedData;
+  return userScrapedDataWithCurrentPage;
 }
 
 module.exports = ManageScraper;

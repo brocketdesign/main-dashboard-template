@@ -3,63 +3,69 @@ extends dashboard-base
 block mainContent
   h1.display-5.mb-4.fw-bold Ebook生成
   if !bookId
-    form.row#ebook.default
-      .row.row-cols-1.row-cols-md-2
-        .col.bg-white.p-3
-          h6 入力
-          hr.mb-4
-          .form-group.col.my-3
-            div.keywords-container
-              label.fw-bold.my-2.d-flex.justify-content-between(for='keyword-1') 
-                | キーワード
-                button.badge.bg-primary.add-item(type="button" data-name="keyword" data-label="キーワード")   
-                        i.fas.fa-plus
-              div.input-group.mb-3
-                  div.keyword-inputs.row.row-cols-1.row-cols-md-3
-                    .col.p-1
-                      input.form-control(type='text', name="keyword[]", placeholder='20代', id='keyword-1', required)                        
-          .form-group.col.my-3
-            label.fw-bold.my-2(for='topic') タイトル
-            input#topic.form-control(type='text',name="topic" placeholder='20代でエンジニアに転職する方法とは？手順やおすすめ企業を解説', required)
-          .form-group.col.my-3
-            label.fw-bold.my-2(for='language') 言語
-            select#language.form-control(name='language',required)
-              option(value='japanese')
-                i.faw.faw-flag-jp
-                |  Japanese
-              option(value='english')
-                i.faw.faw-flag-us
-                |  English
-          .form-group.col.my-3
-            div.chapters-container
-                label.fw-bold.my-2.d-flex.justify-content-between(for='chapters-1') 
-                  | 目次
-                  button.badge.bg-primary.add-item(type="button" data-name="chapters" data-label="目次")   
-                    i.fas.fa-plus
-                .form-check
-                    input#aiCheckbox.form-check-input(type="checkbox", name="aiCheckbox")
-                    label.form-check-label(for="aiCheckbox") 目次をAIで生成しますか？
+    .row.row-cols-1.row-cols-md-2.pe-0
+      .col.bg-white.p-3
+        h6 入力
+        hr.mb-4
+        form.row#ebook.default
+          .row.row-cols-1
+            .form-group.col.my-3
+              div.keywords-container
+                label.fw-bold.my-2.d-flex.justify-content-between(for='keyword-1') 
+                  | キーワード
+                  button.badge.bg-primary.add-item(type="button" data-name="keyword" data-label="キーワード")   
+                          i.fas.fa-plus
                 div.input-group.mb-3
-                    div.chapters-inputs.row.row-cols-1.row-cols-md-2
+                    div.keyword-inputs.row.row-cols-1.row-cols-md-3
                       .col.p-1
-                        input.form-control(type='text', name="chapters[]", placeholder="20代で営業職に転職する難しさ", id='chapters-1', required)
-          .my-3
-            button.btn.btn-primary.w-100(type='submit') 
-              i.fas.fa-paper-plane.me-3
-              | 生成する
-      if books.length > 0
-        .row.row-cols-1.row-cols-md-3.my-3
-          each book in books 
-            .col
-              a.text-dark(href=`/dashboard/app/openai/ebook/${book._id}`)
-                .card.btn.bg-white.mb-4
-                  .card-body
-                      h3.fw-normal.fs-6.text-capitalize=book.title
-                      if book.book_content && book.book_content[0] && book.book_content[0].content
-                        p.text-capitalize=book.book_content[0].content.slice(0,50)
-                            | ... 
-      else 
-        p Write a book
+                        input.form-control(type='text', name="keyword[]", placeholder='20代', id='keyword-1', required)                        
+            .form-group.col.my-3
+              label.fw-bold.my-2(for='topic') タイトル
+              input#topic.form-control(type='text',name="topic" placeholder='20代でエンジニアに転職する方法とは？手順やおすすめ企業を解説', required)
+            .form-group.col.my-3
+              label.fw-bold.my-2(for='language') 言語
+              select#language.form-control(name='language',required)
+                option(value='japanese')
+                  i.faw.faw-flag-jp
+                  |  Japanese
+                option(value='english')
+                  i.faw.faw-flag-us
+                  |  English
+            .form-group.col.my-3
+              div.chapters-container
+                  label.fw-bold.my-2.d-flex.justify-content-between(for='chapters-1') 
+                    | 目次
+                    button.badge.bg-primary.add-item(type="button" data-name="chapters" data-label="目次")   
+                      i.fas.fa-plus
+                  .form-check
+                      input#aiCheckbox.form-check-input(type="checkbox", name="aiCheckbox")
+                      label.form-check-label(for="aiCheckbox") 目次をAIで生成しますか？
+                  div.input-group.mb-3
+                      div.chapters-inputs.row.row-cols-1.row-cols-md-2
+                        .col.p-1
+                          input.form-control(type='text', name="chapters[]", placeholder="20代で営業職に転職する難しさ", id='chapters-1', required)
+            .my-3
+              button.btn.btn-primary.w-100(type='submit') 
+                i.fas.fa-paper-plane.me-3
+                | 生成する
+      .col.p-3
+        h6 生成結果
+        hr.mb-4
+        #result
+      .col-12
+        if books.length > 0
+          .row.row-cols-1.row-cols-md-3.my-3
+            each book in books 
+              .col
+                a.text-dark(href=`/dashboard/app/openai/ebook/${book._id}`)
+                  .card.btn.bg-white.mb-4
+                    .card-body
+                        h3.fw-normal.fs-6.text-capitalize=book.title
+                        if book.book_content && book.book_content[0] && book.book_content[0].content
+                          p.text-capitalize=book.book_content[0].content.slice(0,50)
+                              | ... 
+        else 
+          p Write a book
   else 
     #edit-book(data-id=book._id)
       .position-fixed.tools.m-auto.p-3(style="bottom:0;z-index:2")

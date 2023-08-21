@@ -10,7 +10,7 @@ const openaiClient = new OpenAIApi(openAIConfig);
 const bookCollection = global.db.collection('books');
 const userCollection = global.db.collection('users');
 
-const MAX_TOKENS = 2500
+const MAX_TOKENS = 1000
 
 async function fetchBookDetails(user, data) {
 
@@ -20,130 +20,50 @@ async function fetchBookDetails(user, data) {
     write the details for a book about "${topic}". 
     The book content and details must be in ${language}.
     The main keywords are : ${keywords.join(', ')}.
-    Make a charismatic and authentic author name.
     ${aiCheckbox=='true'?'':`Use those chapters for the book : ${userChapters.join('\n - ')}`}
     Respond without comment, only using this JSON template : 
     {
         "book": {
             "language": "${language}",
             "title": "{{book_title}:{book_sub_title}}",
-            "author": {
-            "name": "{{author_name}}",
-            "bio": "{{author_bio}}",
-            "nationality": "{{author_nationality}}"
+        },
+        "tone": "{{book_tone}}",
+        "chapters": [
+            {
+                "title": "{{chapter_1_title}}",
+                "sub_chapters": [
+                    {
+                        "title": "{{sub_chapter_1_1}}"
+                    },
+                    {
+                        "title": "{{sub_chapter_1_2}}"
+                    }
+                ]
             },
-            "description": "{{book_description}}",
-            "tone": "{{book_tone}}",
-            "genre": "{{book_genre}}",
-            "chapters": [
-                {
-                    "title": "{{chapter_1_title}}",
-                    "sub_chapters": [
-                        {
-                            "title": "{{sub_chapter_1_1}}",
-                            "key_points": [
-                                "{{sub_chapter_1_1_key_point_1}}",
-                                "{{sub_chapter_1_1_key_point_2}}",
-                                "{{sub_chapter_1_1_key_point_3}}"
-                            ]
-                        },
-                        {
-                            "title": "{{sub_chapter_1_2}}",
-                            "key_points": [
-                                "{{sub_chapter_1_2_key_point_1}}",
-                                "{{sub_chapter_1_2_key_point_2}}",
-                                "{{sub_chapter_1_2_key_point_3}}"
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "title": "{{chapter_2_title}}",
-                    "sub_chapters": [
-                        {
-                            "title": "{{sub_chapter_2_1}}",
-                            "key_points": [
-                                "{{sub_chapter_2_1_key_point_1}}",
-                                "{{sub_chapter_2_1_key_point_2}}",
-                                "{{sub_chapter_2_1_key_point_3}}"
-                            ]
-                        },
-                        {
-                            "title": "{{sub_chapter_2_2}}",
-                            "key_points": [
-                                "{{sub_chapter_2_2_key_point_1}}",
-                                "{{sub_chapter_2_2_key_point_2}}",
-                                "{{sub_chapter_2_2_key_point_3}}"
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "title": "{{chapter_3_title}}",
-                    "sub_chapters": [
-                        {
-                            "title": "{{sub_chapter_3_1}}",
-                            "key_points": [
-                                "{{sub_chapter_3_1_key_point_1}}",
-                                "{{sub_chapter_3_1_key_point_2}}",
-                                "{{sub_chapter_3_1_key_point_3}}"
-                            ]
-                        },
-                        {
-                            "title": "{{sub_chapter_3_2}}",
-                            "key_points": [
-                                "{{sub_chapter_3_2_key_point_1}}",
-                                "{{sub_chapter_3_2_key_point_2}}",
-                                "{{sub_chapter_3_2_key_point_3}}"
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "title": "{{chapter_4_title}}",
-                    "sub_chapters": [
-                        {
-                            "title": "{{sub_chapter_4_1}}",
-                            "key_points": [
-                                "{{sub_chapter_4_1_key_point_1}}",
-                                "{{sub_chapter_4_1_key_point_2}}",
-                                "{{sub_chapter_4_1_key_point_3}}"
-                            ]
-                        },
-                        {
-                            "title": "{{sub_chapter_4_2}}",
-                            "key_points": [
-                                "{{sub_chapter_4_2_key_point_1}}",
-                                "{{sub_chapter_4_2_key_point_2}}",
-                                "{{sub_chapter_4_2_key_point_3}}"
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "title": "{{chapter_5_title}}",
-                    "sub_chapters": [
-                        {
-                            "title": "{{sub_chapter_5_1}}",
-                            "key_points": [
-                                "{{sub_chapter_5_1_key_point_1}}",
-                                "{{sub_chapter_5_1_key_point_2}}",
-                                "{{sub_chapter_5_1_key_point_3}}"
-                            ]
-                        },
-                        {
-                            "title": "{{sub_chapter_5_2}}",
-                            "key_points": [
-                                "{{sub_chapter_5_2_key_point_1}}",
-                                "{{sub_chapter_5_2_key_point_2}}",
-                                "{{sub_chapter_5_2_key_point_3}}"
-                            ]
-                        }
-                    ]
-                }
-            ]
-        }
-    }
+            {
+                "title": "{{chapter_2_title}}",
+                "sub_chapters": [
+                    {
+                        "title": "{{sub_chapter_2_1}}"
+                    },
+                    {
+                        "title": "{{sub_chapter_2_2}}"
+                    }
+                ]
+            },
+            {
+                "title": "{{chapter_3_title}}",
+                "sub_chapters": [
+                    {
+                        "title": "{{sub_chapter_3_1}}"
+                    },
+                    {
+                        "title": "{{sub_chapter_3_2}}"
+                    }
+                ]
+            }
+        ]
+    }    
     `; 
 
     const MatchingBooks = await bookCollection.findOne(

@@ -40,9 +40,6 @@ block mainContent
                 |  Facebook
               option(value='linkedin')
                 |  LinkedIn
-          .form-group.col-12.col-sm-6.my-3
-            label.fw-bold.my-2(for='link') リンク
-            input#link.form-control(type='url', name="link", placeholder='https://...')
           .form-group.col-12.my-3
             div.keywords-container
                 label.fw-bold.my-2.d-flex.justify-content-between(for='keyword-1') 
@@ -72,15 +69,12 @@ block mainContent
                     .card-top.p-3.d-flex.align-items-center.justify-content-between
                       .tools.d-flex.align-items-center
                         a.btn.tool-button.mx-2(href=`https://twitter.com/intent/tweet?text=${item}&url` target='_blank' data-toggle="tooltip" title="Twitterでシェア")
-                          img(src="/img/twitter.png" height="18px")
+                         i.fas.fa-share-alt
                         badge.btn.tool-button.tool-button-copy.mx-2(data-toggle="tooltip" title="コピー")
                           i.fas.fa-copy
-                        if doc.data
-                          .text-sm.text-muted 
-                            .text-capitalize #{doc.data.snsChoice} 文章
                       .text-end.text-sm.text-muted(style="font-size:12px")
                         .custom-date(data-value=doc.prompt_time)
-                    .card-body 
+                    .card-body.py-0
                       p #{item}
 
 

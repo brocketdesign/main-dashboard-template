@@ -2,7 +2,7 @@ const express = require('express');
 const { YoutubeTranscript } = require('youtube-transcript');
 const natural = require('natural');
 const { Configuration, OpenAIApi } = require('openai');
-const {formatDateToDDMMYYHHMMSS,findElementIndex,saveData} = require('../services/tools')
+const {formatDateToDDMMYYHHMMSS,findElementIndex,saveData, fetchOpenAICompletion} = require('../services/tools')
 
 
 // Initialize OpenAI with your API key
@@ -22,25 +22,6 @@ function extractKeywords(text) {
   const tokenizer = new natural.WordTokenizer();
   const words = tokenizer.tokenize(text);
   return words;
-}
-
-async function summarizeText(text) {
-    let summary = '';
-    
-    const gptResponse = await openai.createCompletion({
-      model: "text-davinci-003",
-      prompt: `以下の内容を要約してください \n\n${text}\n\n そして、主要なポイントの短い段落にし、リストの中で簡潔にハイライトされた情報にまとめてください。各ハイライトには適切な絵文字を選んでください。
-      あなたの出力は以下のテンプレートを使用してください:
-            <h3> 要約 </h3>
-            <h3> ハイライト </h3>
-            <h3> 結論 </h3>
-            - [絵文字] バレットポイント
-      `,
-      max_tokens: 1000,
-      temperature: 0,
-    });
-    
-    return gptResponse.data.choices[0].text.trim();
 }
 
 
@@ -78,20 +59,8 @@ async function summarizeVideo(user,videoId) {
   const transcript = await getTranscript(videoId);
   const keywords = extractKeywords(transcript);
   const chunks = chunkText(transcript, 3946);
-  const summaries = [];
 
-  for (let i = 0; i < chunks.length; i++) {
-    console.log(`Summarize section ${i + 1}/${chunks.length}`);
-    const summary = await summarizeText(chunks[i]);
-    summaries.push(summary);
-}
-
-  
-  const combinedSummary = summaries
-  .map((summary, index) => `<h2> パート ${index + 1}</h2><br>${summary}`)
-  .join('<br>');
-
-  return { summary: combinedSummary, keywords };
+  return chunks
 }
 
 async function isSummarized (user,videoId) {

@@ -1,8 +1,14 @@
 extends dashboard-base
 
 block mainContent
-  #video-holder.px-0.mb-4.w-100.bg-white
-  #relatedd-flex.flex-nowrap.overflow-auto
+  #video-container
+    .row.row-cols-1.row-cols-sm-2.w-100.m-0
+      .col.px-0
+        #video-holder.px-0.mb-4.bg-transparent
+      .col
+        #summary.d-none.d-md-block
+        #result.d-none
+  #mobile-toolbar.mb-3.d-block.d-md-none
   form#search(action=`/dashboard/app/${mode}`, method="GET")
     .input-group.mb-3
       input(type="hidden" name="page" id="page" value=page)
