@@ -201,8 +201,11 @@ $(document).ready(function() {
     enableTrackScroll();
     handleOpenaiForm();
     handleMemo();
+
+    //Handle SideBAR
     onLargeScreen(handleSideBar)
     onSmallScreen(handleSideBar2)
+
     handleBookEditing();
     handleScrollDownButton();
     handleCardClickable();
@@ -624,7 +627,7 @@ const handleSwitchNSFW= () => {
         $('#nsfw').prop('checked', switchState === 'true');
     }
     handleNSFWlabel(switchState === 'true')
-
+    nsfwUpdateData({nsfw:switchState === 'true'})
     // Save the state of the switch to a local variable when it's toggled
     $('#nsfw').change(function() {
         $('input#searchTerm').val('')
@@ -632,19 +635,25 @@ const handleSwitchNSFW= () => {
         console.log('NSFW: ',$(this).is(':checked'))
         const nsfw = $(this).is(':checked')
         handleNSFWlabel(nsfw)
-        $.ajax({
-            url: `/user/nsfw`,
-            type: 'POST',
-            data: {nsfw},
-            success: (response) => {
-                //handleFormResult(true, response.message);
-                location.href = location.origin + location.pathname;
-            },
-            error: handleFormError
-        });
-        
+        nsfwUpdateData({nsfw},function(){
+            //handleFormResult(true, response.message);
+            location.href = location.origin + location.pathname;
+        })
     });
 }
+function nsfwUpdateData(nsfw,callback) {
+    console.log('Update NSFW to: ',nsfw)
+    $.ajax({
+        url: `/user/nsfw`,
+        type: 'POST',
+        data: nsfw,
+        success: (response) => {
+           if(callback){ callback()}
+        },
+        error: handleFormError
+    });
+}
+
 function handleNSFWlabel(nsfw){
     if(nsfw === true ){
         $('label[for="nsfw"]').addClass('bg-danger').removeClass('bg-dark')
@@ -1076,13 +1085,14 @@ function adjustSidebarAppearance(isVisible) {
         $('#sidebarMenu').find('.hide-text').hide()
         $('#sidebarMenu').find('.collapse').removeClass('show').end()
         //iconAnimation();
-        $('#sidebarMenu').animate({ width: '50px' }, 500, function() {
-            $('#sidebarMenu').find('.list-group-item').addClass('text-center');
+        $('#sidebarMenu').animate({ width: '60px' }, 500, function() {
+            //$('#sidebarMenu').find('.list-group-item').addClass('text-center');
             $('#sidebarMenu').css("animation", "");
             $('#sidebarMenu').removeClass('open')
+            $('#sidebarMenu').fadeOut()
         });
-
     } else {
+        $('#sidebarMenu').fadeIn()
         $('#sidebarMenu').find('.list-group-item').removeClass('text-center').end()
         $('#sidebarMenu').animate({ width: '250px' }, 500, function() {
             $('#sidebarMenu').find('.hide-text').fadeIn();
@@ -1101,7 +1111,8 @@ function toggleSidebarMenu() {
 function handleSideBar() {
     var isSidebarMenuVisible = JSON.parse(localStorage.getItem('isSidebarMenuVisible') || 'false');
 
-    $('#sidebarMenuToggle').on('click', toggleSidebarMenu);
+    //$('#sidebarMenuToggle').on('click', toggleSidebarMenu);
+    $('#sidebarMenuToggleSmall').on('click', toggleSidebarMenu);
     $('#sidebarMenu').find('li.list-group-item').not('.toggler').on('click', function() {
         if($(this).find('ul').length){
             adjustSidebarAppearance(false);
@@ -1117,7 +1128,7 @@ function handleSideBar() {
     });
     //adjustSidebarAppearance(true);
     //iconAnimation();
-    $('#sidebarMenu').show();
+    $('#sidebarMenu').hide();
     $('main#dashboard').show();
 }
 

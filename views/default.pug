@@ -23,7 +23,7 @@ html
           nav.navbar.navbar-expand-md.navbar-white.bg-white
             .container-fluid
               a.navbar-brand(href='/')
-                img.logo.mx-2(src='/img/logo.png', alt='ロゴ' style="max-width: 50px;")
+                img.logo.mx-2(src='/img/logo.png', alt='ロゴ' style="max-width: 30px;")
                 | RAKUBUN
               #navbarCollapse.collapse.navbar-collapse
                 ul.navbar-nav.ms-auto.mb-2.mb-md-0
@@ -39,13 +39,13 @@ html
                       li.nav-item
                           a.btn.btn-outline-warning.btn-lg.shadow-0(href="/user/signup" role="button") まずは無料で使ってみる
       else 
-        .top-nav.d-blovk.d-md-none.auto-hide
-            nav.navbar.navbar-expand-md.navbar-white.bg-white
+        .top-nav.auto-hide
+            nav.navbar.navbar-expand-md.navbar-white.bg-white.py-0
               .container-fluid.text-start.p-0
                 #sidebarMenuToggleSmall.btn.btn-dark.rounded-0.shadow-0.py-3(type="button")
                   i.fas.fa-bars
                 a.navbar-brand(href='/')
-                  img.logo.mx-2(src='/img/logo.png', alt='ロゴ' style="max-width: 50px;")
+                  img.logo.mx-2(src='/img/logo.png', alt='ロゴ' style="max-width: 30px;")
                   | RAKUBUN
       #back-alert.alert-container.container.position-relative(style="cursor:pointer")
         if messages.error

@@ -185,7 +185,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
   page = parseInt(page) || 1
   
   console.log('Dashboard page requested');
-  console.log( req.query, nsfw );
+  console.log( req.query, {nsfw} );
 
   if(!searchTerm){
     res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
