@@ -3,12 +3,12 @@ extends dashboard-base
 block mainContent
   h1.display-5.mb-4.fw-bold Ebook生成
   if !bookId
-    .row.row-cols-1.row-cols-md-2.pe-0
-      .col.bg-white.p-3
+    .row.row-cols-1.row-cols-md-3.pe-0
+      .col.p-3
         h6 入力
         hr.mb-4
         form.row#ebook.default
-          .row.row-cols-1
+          .row.row-cols-1.bg-white
             .form-group.col.my-3
               div.keywords-container
                 label.fw-bold.my-2.d-flex.justify-content-between(for='keyword-1') 
@@ -52,10 +52,10 @@ block mainContent
         h6 生成結果
         hr.mb-4
         #result
-      .col-12
-        if books.length > 0
-          .row.row-cols-1.row-cols-md-3.my-3
-            each book in books 
+      .col
+        if userOpenaiDocs && userOpenaiDocs.length > 0
+          .row.row-cols-1.my-3
+            each book in userOpenaiDocs 
               .col
                 a.text-dark(href=`/dashboard/app/openai/ebook/${book._id}`)
                   .card.btn.bg-white.mb-4

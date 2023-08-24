@@ -6,7 +6,9 @@ main#dashboard {
   font-size: 12px;
   display:none;
 }
-
+.done i {
+  color:red;
+}
 .contain-text {
   height: 30px;  /* Or whatever height you desire */
   padding: 10px; /* Or whatever padding you desire */
@@ -70,7 +72,7 @@ main#dashboard {
   resize: none;        /* Disable textarea resizing */
 }
 #video-holder video {
-  max-height: 40vh;
+  max-height: 70vh;
 }
 .top-nav {
   position: sticky;
@@ -144,6 +146,7 @@ li.list-group-item{
     #video-container{
       width:100%
     }
+
     #video-container{
       position: sticky !important;
       z-index: 2;
@@ -161,5 +164,6 @@ li.list-group-item{
     #video-holder video {
       max-height: auto !important;
     }
+    
   }
   

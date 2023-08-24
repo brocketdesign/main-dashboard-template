@@ -140,7 +140,6 @@ $(document).ready(function() {
             watchAndConvertMarkdown(`#result`, `#mobile-${containerID}`); 
             $(`#result`).append(message);
         },function(endMessage){
-            console.log('Generation ended ',endMessage)
             $spinner.hide();
             $buttonContainer.find('i').show();
         });
@@ -388,7 +387,7 @@ const handleCardClickable = () => {
       $spinner.show();
 
       // Make a request to the server to get the highest quality video URL for the given ID
-      $.get('/api/video', { videoId: id }, function(response) {
+      $.get('/api/video?videoId='+id, function(response) {
           console.log('API Response:', response);
 
         // Hide the spinner
@@ -456,7 +455,7 @@ const handleCardClickable = () => {
                     $spinner = $cardContainer.find('.spinner-border');
                     $spinner.hide()
                     $cardContainer.addClass('item m-2').style('width','18rem')
-                    $cardContainer.attr('data-id',item.video_id).attr('data-title',item.alt)
+                    $cardContainer.attr('data-id',item._id).attr('data-title',item.alt)
                     $cardContainer.find('src').attr('src',item.imageUrl)
                     $cardContainer.find('a.source').attr('href',item.href)
                     $cardContainer.find('p.card-title').text(item.alt)
@@ -533,7 +532,7 @@ const handleDownloadButton = () => {
       }).fail(function() {
 
         $spinner.remove();
-
+        $buttonContainer.removeClass('done');
         console.error('Error occurred while downloading file.');
         if(!$buttonContainer.find('i').length){
           $buttonContainer.append(DLicon)
@@ -817,7 +816,7 @@ const handleHiding = (videoId) => {
     $.ajax({
         url: '/api/hide',
         method: 'POST',
-        data: { id: videoId },
+        data: { element_id: videoId },
         success: function(response) {
             $container.remove()
             handleMasonry()
@@ -887,23 +886,21 @@ function updategridlayout(value) {
         $('.load-more-previous').remove()
     }
     $('.load-more').on('click', function(){
-        let nextPage
-        if($(this).hasClass('load-more-next')){
-            nextPage = parseInt(currentPage) + 1
-        }else{
-            nextPage = parseInt(currentPage) - 1
-            nextPage < 0 ? 1 : nextPage
-        }
-        const currentPageQueries = getCurrentPageQueries();
-        let query = currentPageQueries.searchTerm || null 
 
-        console.log({currentPage,nextPage,query})
+        const data = $(this).data()
 
-        $('#page').val(nextPage)
-        $('input#searchTerm').val(query)
-        setTimeout(() => {
-            $('form#search').submit()
-        }, 1000);
+        $.ajax({
+            url: `/api/loadpage`,
+            type: 'POST',
+            data,
+            success: function(response){
+                const url =`/dashboard/app/${data.mode}?page=${data.page}&searchTerm=${data.searchterm}&nsfw=${data.nsfw}`
+                console.log(url)
+                window.location=url
+            },
+            error: handleFormError
+        });
+
     })
   }
   const handleResetFormSubmission = () => {
@@ -1236,9 +1233,16 @@ function handleStream(response,callback,endCallback) {
     };
 
     source.addEventListener('end', function(event) {
-        console.log("Stream has ended:", event.data);
-        if (endCallback) endCallback(JSON.parse(event.data));
+
+        const data = JSON.parse(event.data);
+
+        console.log("Stream has ended:", {data});
+
+        if (endCallback) endCallback(data);
+
         source.close();
+
+        handleCopyButtons();
     });
 
     source.onerror = function(error) {
@@ -1398,7 +1402,7 @@ function handleOpenaiForm(){
                         <div class="card mb-3" id="${containerID}" data-id="${doc._id}">
                           <div class="card-top p-3 d-flex align-items-center justify-content-between">
                             <div class="tools d-flex align-items-center">
-                              <a class="btn tool-button mx-2" href="https://twitter.com/intent/tweet?text=${item}&url" target='_blank' data-toggle="tooltip" title="Twitterでシェア">
+                              <a class="btn tool-button share mx-2" onclick="handleShareButton(this)" data-toggle="tooltip" title="Twitterでシェア">
                                 <i class="fas fa-share-alt"></i>
                               </a>
                               <badge class="btn tool-button tool-button-copy mx-2" data-toggle="tooltip" title="コピー">
@@ -1420,9 +1424,7 @@ function handleOpenaiForm(){
                     }
                   
                     $(`#${containerID} .card-body p`).append(message);
-                  },function(message){
-                    console.log('Generation ended. ',message)
-                    handleCopyButtons();
+                  },function(data){
                   });
                   
                 })(i);
@@ -1858,4 +1860,9 @@ function handleCopyButtons() {
         $(this).attr('title', 'コピー').tooltip('_fixTitle');
       }, 2000);
     });
+}
+
+function handleShareButton(e) {
+    const tweetText = $(e).closest('.card').find(`.card-body p`).text();
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url`)
 }

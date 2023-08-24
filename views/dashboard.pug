@@ -1,10 +1,11 @@
 extends dashboard-base
 
 block mainContent
+  a.display-4(href=`/dashboard/app/${mode}`) Home
   #video-container
     .row.row-cols-1.row-cols-sm-2.w-100.m-0
       .col.px-0
-        #video-holder.px-0.mb-4.bg-transparent
+        #video-holder.sticky-video.px-0.mb-4.bg-transparent
       .col
         #summary.d-none.d-md-block
         #result.d-none

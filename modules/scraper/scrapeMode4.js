@@ -17,15 +17,17 @@ async function scrapeMode4(site, mode, nsfw, page) {
         let postMedia = postMediaResponse.data;
         console.log(`Fetched ${postMedia.length} media items for post ID: ${post.id}`);
     
-        if(postMedia.length<=2){
-            postMedia = postMedia.concat(await fetchMediaUrls(postUrl));
-        }
+        if (postMedia.length <= 2) {
+            const additionalMediaUrls = await fetchMediaUrls(postUrl);
+            postMedia = postMedia.concat(additionalMediaUrls);
+            console.log(postMedia.length)
+        }          
         const dirPath = path.join(__dirname, '..', '..', 'public', 'downloads', 'downloaded_images');
         if (!fs.existsSync(dirPath)) {
             fs.mkdirSync(dirPath, { recursive: true });
             console.log(`Created directory: ${dirPath}`);
         }
-    
+
         let mediaObjects = await Promise.all(postMedia.map(async (media) => {
             try {
                 const mediaUrl = media.source_url;
@@ -53,6 +55,7 @@ async function scrapeMode4(site, mode, nsfw, page) {
             }
         }));
         mediaObjects = mediaObjects.filter(Boolean);
+
         mediaObjects = mediaObjects.map((data) => ({
             ...data,
             currentPage: site,
@@ -62,35 +65,11 @@ async function scrapeMode4(site, mode, nsfw, page) {
             page: page
           })); 
 
-        console.log(`Inserting ${mediaObjects.length} media items into the database...`);
-        const insertResult = await global.db.collection('medias').insertMany(mediaObjects);
-        console.log(`Inserted ${insertResult.insertedCount} media items into the database.`);
-    
         const combinedResults = mediaObjects.map((media, index) => ({
             link: media.filePath.replace(/.*public/, ''),
             source: media.source,
-            video_id: insertResult.insertedIds[index].toString()
         }));
         console.log(combinedResults.slice(0,2))
-        // Assuming you have a MongoDB collection for medias
-        const mediasCollection = global.db.collection('medias');
-
-        // Loop through each element of combinedResults and update them in the database
-        for (const item of combinedResults) {
-            await mediasCollection.updateOne(
-                { _id: new ObjectId(item.video_id) }, // Filter by video_id
-                {
-                    $set: {
-                        link: item.link,
-                        source: item.source,
-                        video_id: item.video_id,
-                    }
-                }
-            );
-        }
-
-        console.log(`Updated ${combinedResults.length} items in the database.`);
-
         return combinedResults;
 }
 

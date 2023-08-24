@@ -9,7 +9,8 @@ const {
   saveData, 
   translateText, 
   updateSameElements,
-  fetchOpenAICompletion
+  fetchOpenAICompletion,
+  initCategories
 } = require('../services/tools')
 const pdfToChunks = require('../modules/pdf-parse')
 const multer = require('multer');
@@ -18,6 +19,7 @@ const summarizeVideo = require('../modules/youtube-summary')
 const postArticleToWordpress = require('../modules/postArticleToWordpress')
 const scrapeMode1GetRelatedVideo = require('../modules/scraper/scrapeMode1GetRelatedVideo')
 const createBookChapters = require('../modules/createBookChapters')
+const ManageScraper = require('../modules/ManageScraper');
 
 const axios = require('axios');
 const path = require('path');
@@ -200,8 +202,11 @@ router.get('/openai/stream/:type', async (req, res) => {
           { $push: { completion: fullCompletion,completion_time:new Date() } }
       );
 
+      // 文字列内のダブルクォートと改行をエスケープ
+      const completionEscaped = fullCompletion.replace(/"/g, '\\"').replace(/\n/g, '\\n');
+
       res.write('event: end\n');
-      res.write('data: {"id": "'+id+'"}\n\n');
+      res.write(`data: {"id": "${id}","completion":"${completionEscaped}"}\n\n'`);
       res.flush(); // Flush the response to send the data immediately
       res.end();
   } catch (error) {
@@ -284,7 +289,7 @@ router.get('/openai/summarize', async (req, res) => {
     console.log(`Video ID received: ${videoId}`);
 
     const { elementIndex, foundElement } = await findElementIndex(req.user,videoId);
-    const title = await translateText(foundElement.title,'japanese');
+    const title = foundElement.title
     console.log(`Title fetched for video: ${title}`);
 
     const chunks = await summarizeVideo(req.user,videoId);
@@ -293,7 +298,7 @@ router.get('/openai/summarize', async (req, res) => {
 
     for (let i = 0; i < chunks.length; i++) {
       console.log(`Summarize section ${i + 1}/${chunks.length}`);
-      const prompt = `
+      const promptJP = `
       以下の内容を要約してください \n\n${chunks[i]}\n\n 
       そして、主要なポイントの短い段落にし、リストの中で簡潔にハイライトされた情報にまとめてください。各ハイライトには適切な絵文字を選んでください。
       あなたの出力は以下のテンプレートを使用してください:
@@ -303,6 +308,18 @@ router.get('/openai/summarize', async (req, res) => {
       [絵文字] バレットポイント
       Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
       `;
+      const prompt = `
+      Please summarize the following content:\n
+      ${chunks[i]}\n
+      Then, create short paragraphs of the main points and summarize the information in concise highlighted points within a list. Please choose appropriate emojis for each highlight.
+      Use the following template for your output:
+      Summary
+      Highlights
+      Conclusion
+      [Emoji] Bullet Point
+      Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
+      `;
+
       const messages = [
         { role: 'system', content: 'You are a powerful assistant' },
         { role: 'user', content: prompt },
@@ -571,8 +588,7 @@ router.get('/video', async (req, res) => {
   try {
     const { videoId } = req.query;
     
-    const { elementIndex, foundElement } = await findElementIndex(req.user,videoId);
-
+    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
     // Call the function to get the highest quality video URL for the provided id
     const url = await getHighestQualityVideoURL(videoId,req.user);
     //const related = await scrapeMode1GetRelatedVideo(id,req.user,req.user.mode, req.user.nsfw)
@@ -628,106 +644,19 @@ router.post('/dl', async (req, res) => {
     // Create download folder if it doesn't exist
     await fs.promises.mkdir(download_directory, { recursive: true });
 
+    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
+
     if (url.includes('youtube.com')) {
-      const info = await ytdl.getInfo(video_id);
-      //console.log(info.formats);
-
-      const videoFormat = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
-      const audioFormat = ytdl.chooseFormat(info.formats.filter(format => !format.videoCodec), { quality: 'highestaudio' });
-      
-      // Define temporary file paths
-      let videoFilePath = path.join(download_directory, `video_${Date.now()}.mp4`);
-      let audioFilePath = path.join(download_directory, `audio_${Date.now()}.mp4`);
-
-      // Download video
-      const videoDownload = ytdl.downloadFromInfo(info, { format: videoFormat });
-      videoDownload.pipe(fs.createWriteStream(videoFilePath));
-
-      // Download audio
-      const audioDownload = ytdl.downloadFromInfo(info, { format: audioFormat });
-      audioDownload.pipe(fs.createWriteStream(audioFilePath));
-
-      // Wait for both downloads to finish
-      await Promise.all([
-        new Promise((resolve, reject) => {
-          videoDownload.on('end', resolve);
-          videoDownload.on('error', reject);
-        }),
-        new Promise((resolve, reject) => {
-          audioDownload.on('end', resolve);
-          audioDownload.on('error', reject);
-        })
-      ]);
-
-
-      // Merge video and audio files
-      await new Promise((resolve, reject) => {
-        ffmpeg()
-        .input(videoFilePath)
-        .input(audioFilePath).audioCodec('copy').noVideo()  // Extract only the audio stream
-        .outputOptions('-map', '0:v', '-map', '1:a')
-        .saveToFile(filePath)
-        .on('end', resolve)
-        .on('error', reject);
-      });
-
-      // Delete temporary files
-      fs.unlinkSync(videoFilePath);
-      fs.unlinkSync(audioFilePath);
+      await downloadYoutubeVideo(download_directory,filePath,foundElement.video_id)
     } else {
-      // If it's not a YouTube video, download it directly
-      const response = await axios.get(url, { responseType: 'stream', maxContentLength: 10 * 1024 * 1024 });
-      console.log('Received response for URL:', url);
-
-      const writer = fs.createWriteStream(filePath);
-      response.data.pipe(writer);
-
-      await new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
-        writer.on('error', reject);
-      });
+      await downloadFileFromURL(filePath,url)
     }
 
     // After the file is downloaded, do the same things for both YouTube videos and other types of files
 
     console.log('File downloaded:', fileName);
 
-    // Save the download details to the database (update the video document)
-    const currentTime = new Date().getTime();
-
-    const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
-    const AllData = userInfo.scrapedData;
-    const foundElement = AllData.find(item => item.video_id === video_id);
-    // Find the index of the element with the desired video_id in the scrapedData array
-    const elementIndex = AllData.findIndex(item => item.video_id === video_id);
-
-    if(elementIndex !== -1){
-      console.log('Element founded in the user data')
-      AllData[elementIndex].filePath = filePath.replace('public','');
-      AllData[elementIndex].isdl = true;
-      AllData[elementIndex].isdl_data = new Date();
-      
-      // Update the user document in the 'users' collection with the modified scrapedData array
-      const result = await global.db.collection('users').updateOne(
-        { _id: new ObjectId(req.user._id) },
-        { $set: { scrapedData: AllData } },
-        (err) => {
-          if (err) {
-            console.log('Error occurred while saving download details:', err.message);
-          }
-        }
-      );
-      // Check if the document was updated
-      if (result.matchedCount > 0) {
-        updateSameElements(foundElement,{isdl:true,isdl_data:new Date()})
-      } else {
-        console.log("Failed to update the document.");
-      }
-
-    }else{
-      console.log('Element not founded')
-    }
-
+    updateSameElements(foundElement,{isdl:true,isdl_data:new Date()})
     // Send a success status response after the file is downloaded
     res.status(200).json({ message: 'アイテムが成功的に保存されました。' });
 
@@ -737,7 +666,78 @@ router.post('/dl', async (req, res) => {
   }
 });
 
+async function downloadFileFromURL(filePath,url) {
+  // If it's not a YouTube video, download it directly
+  const response = await axios.get(url, { responseType: 'stream', maxContentLength: 10 * 1024 * 1024 });
+  console.log('Received response for URL:', url);
 
+  const writer = fs.createWriteStream(filePath);
+  response.data.pipe(writer);
+
+  await new Promise((resolve, reject) => {
+    writer.on('finish', resolve);
+    writer.on('error', reject);
+  });
+}
+
+async function downloadYoutubeVideo(download_directory,filePath,video_id) {
+  const info = await ytdl.getInfo(video_id);
+  //console.log(info.formats);
+
+  const videoFormat = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
+  const audioFormat = ytdl.chooseFormat(info.formats.filter(format => !format.videoCodec), { quality: 'highestaudio' });
+  
+  // Define temporary file paths
+  let videoFilePath = path.join(download_directory, `video_${Date.now()}.mp4`);
+  let audioFilePath = path.join(download_directory, `audio_${Date.now()}.mp4`);
+
+  // Download video
+  const videoDownload = ytdl.downloadFromInfo(info, { format: videoFormat });
+  videoDownload.pipe(fs.createWriteStream(videoFilePath));
+
+  // Download audio
+  const audioDownload = ytdl.downloadFromInfo(info, { format: audioFormat });
+  audioDownload.pipe(fs.createWriteStream(audioFilePath));
+
+  // Wait for both downloads to finish
+  await Promise.all([
+    new Promise((resolve, reject) => {
+      videoDownload.on('end', resolve);
+      videoDownload
+      .on('error', (err) => {
+        console.error('Error occurred while videoDownload files:', err);
+        reject(err);
+      });
+    }),
+    new Promise((resolve, reject) => {
+      audioDownload.on('end', resolve);
+      audioDownload
+      .on('error', (err) => {
+        console.error('Error occurred while audioDownload files:', err);
+        reject(err);
+      });
+    })
+  ]);
+
+
+  // Merge video and audio files
+  await new Promise((resolve, reject) => {
+    ffmpeg()
+    .input(videoFilePath)
+    .input(audioFilePath).audioCodec('copy').noVideo()  // Extract only the audio stream
+    .outputOptions('-map', '0:v', '-map', '1:a')
+    .saveToFile(filePath + '.mp4') // Adding .mp4 extension
+    .on('end', resolve)
+    .on('error', (err, stdout, stderr) => {
+      console.error('Error occurred while merging files:', err, stderr);
+      reject(err);
+    });
+  });
+
+  // Delete temporary files
+  fs.unlinkSync(videoFilePath);
+  fs.unlinkSync(audioFilePath);
+}
 // Endpoint for fetching data from Reddit based on the subreddit and filter parameters
 router.get('/reddit/:subreddit', async (req, res) => {
   const { subreddit } = req.params;
@@ -857,59 +857,166 @@ router.post('/image', async (req, res) => {
 });
 
 router.post('/hide', async (req, res) => {
-  const element_id = req.body.id;
-  console.log('Request hide for ',element_id)
+  let { element_id, category} = req.body;
+
+  if (!element_id ) {
+    return res.status(400).json({ message: 'IDまたはカテゴリが提供されていません' });
+  }
+  if(!category){
+      // Find the current user's data
+    const user = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
+
+    // Check if the category "All" already exists
+    let base_category = user.categories && user.categories.find(cat => cat.name === 'All');
+
+    // If the category already exists, return its ID in an array
+    category = [base_category.id];
+  }
   try {
-    const statusUpdate = await saveData(req.user, element_id, {hide:true})
-    if(!statusUpdate){
-      res.status(500).json({ message:'An error occured' });
-      return
+    // このエレメントIDに関連するソースを見つける (Find the source related to this element_id)
+    const element = await global.db.collection('medias').findOne({ _id: new ObjectId(element_id) });
+    const source = element.source; // ソースの取得 (Assuming 'source' is the field you want to match)
+
+    // 同じソースを持つすべてのエレメントを更新する (Update all elements with the same source)
+    const result = await global.db.collection('medias').updateMany(
+      { source: source }, // 条件 (Criteria: Match all documents with the same source)
+      {
+        $pull: { categories: category.toString() }, // カテゴリの削除 (Removing the category)
+        $set: { hide: true } // 非表示フィールドを追加 (Add hide field)
+      }
+    );   
+    console.log(`Updated ${result.modifiedCount} elements with the same source.`);
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ message: '要素が見つかりませんでした' });
     }
-    res.status(200).json({ message:'この要素はもう表示されません' });
+
+    console.log('メディアが正常に更新されました');
+    res.status(200).json({ message: 'この要素はもう表示されません' });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message:'An error occured' });
+    res.status(500).json({ message: 'エラーが発生しました' });
   }
 });
 
+
 router.post('/hideHistory', async (req, res) => {
-  const query = req.body.query;
-  console.log('Hide the query:', query)
+  const { query, category } = req.body.query;
+  console.log('クエリを非表示にする:', query); // Hide the query: query
   if (!query) {
-    return res.status(400).json({ message: 'Query not provided' });
+    return res.status(400).json({ message: 'クエリが提供されていません' }); // Query not provided
   }
 
   const userId = req.user._id; // Assuming you are getting userId from a logged in user
   
   try {
-    const userInfo = await global.db.collection('users').findOne({ _id: userId });
-    if (!userInfo) {
-      return res.status(404).json({ message: 'User not found' });
+    // Getting all the medias that match the query
+    const medias = await global.db.collection('medias').find({ query }).toArray();
+    
+    // Looping through each media and removing the category from the categories array
+    for (const media of medias) {
+      await global.db.collection('medias').updateOne(
+        { _id: media._id }, // 条件 (Criteria)
+        { $pull: { categories: category } } // カテゴリの削除 (Removing the category)
+      );
     }
     
-    const scrapedData = userInfo.scrapedData || [];
-    
-    // Loop through scrapedData and update any matching items
-    for (let i = 0; i < scrapedData.length; i++) {
-      if (scrapedData[i].query === query) { // Assuming the 'data' field contains the data you want to match against
-        scrapedData[i].hide_query = true;
-      }
-    }
+    console.log('メディアが正常に更新されました'); // Media has been successfully updated
 
-    // Update the user's scrapedData in the database
-    await global.db.collection('users').updateOne({ _id: userId }, {
-      $set: {
-        scrapedData: scrapedData
-      }
-    });
-
-    res.status(200).json({ message: 'This element wont be displayed anymore' });
+    res.status(200).json({ message: 'この要素はもう表示されません' }); // This element won't be displayed anymore
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: 'An error occured' });
+    res.status(500).json({ message: 'エラーが発生しました' }); // An error occurred
   }
 });
 
+router.post('/category/add', async (req, res) => {
+  const { categoryName, mode } = req.body;
+  const userId = req.user._id; // Assuming user ID is available in the request
+
+  try {
+    // Retrieve the current user's data
+    const user = await global.db.collection('users').findOne({ _id: new ObjectID(userId) });
+
+    // Check if a category with the same name already exists
+    if (user.categories && user.categories.some(cat => cat.name === categoryName)) {
+      return res.status(400).json({ message: 'この名前のカテゴリは既に存在します' }); // A category with this name already exists
+    }
+
+    // Create a category object with a unique ID
+    const category = { id: new ObjectID(), name: categoryName, mode };
+
+    // Add the new category to the user's categories object
+    await global.db.collection('users').updateOne(
+      { _id: new ObjectID(userId) },
+      { $push: { categories: category } }
+    );
+
+    res.status(200).json({ message: 'カテゴリが追加されました', categoryId: category.id }); // Category has been added
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'エラーが発生しました' }); // An error occurred
+  }
+});
+
+router.post('/category/edit', async (req, res) => {
+  const { categoryId, newName, newMode } = req.body;
+  const userId = req.user._id; // Assuming user ID is available in the request
+
+  try {
+    // Update the category name and mode in the user's categories object
+    await global.db.collection('users').updateOne(
+      { _id: new ObjectID(userId), 'categories.id': new ObjectID(categoryId) },
+      { $set: { 'categories.$.name': newName, 'categories.$.mode': newMode } }
+    );
+
+    res.status(200).json({ message: 'カテゴリが更新されました' }); // Category has been updated
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'エラーが発生しました' }); // An error occurred
+  }
+});
+router.post('/category/remove', async (req, res) => {
+  const { categoryId } = req.body;
+  const userId = req.user._id; // Assuming user ID is available in the request
+
+  try {
+    // Remove the category from the user's categories object
+    await global.db.collection('users').updateOne(
+      { _id: new ObjectID(userId) },
+      { $pull: { categories: { id: new ObjectID(categoryId) } } }
+    );
+
+    res.status(200).json({ message: 'カテゴリが削除されました' }); // Category has been removed
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'エラーが発生しました' }); // An error occurred
+  }
+});
+// ルーターを定義して '/loadpage' への POST リクエストを処理します
+router.post('/loadpage', async (req, res) => {
+  // リクエストボディをコンソールにログ
+
+  const data = { 
+    nsfw: req.body.nsfw == 'true',
+    searchTerm: req.body.searchterm , 
+    page: req.body.page ,
+    mode: req.body.mode 
+  }
+
+  let scrapedData = await ManageScraper(
+    data.searchTerm,
+    data.nsfw,
+    data.mode,
+    req.user, 
+    data.page);
+
+  // JSON 応答を送る
+  res.status(200).json({
+    status: '成功', // Status as success
+    message: 'ページが正常にロードされました' // Message indicating the page has been successfully loaded
+  });
+});
 
 async function saveImageToDB(db, userID, prompt, image) {
   const imageID = new ObjectId();

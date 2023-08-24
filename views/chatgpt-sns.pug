@@ -68,7 +68,7 @@ block mainContent
                   .card.mb-3(data-id=doc._id)
                     .card-top.p-3.d-flex.align-items-center.justify-content-between
                       .tools.d-flex.align-items-center
-                        a.btn.tool-button.mx-2(href=`https://twitter.com/intent/tweet?text=${item}&url` target='_blank' data-toggle="tooltip" title="Twitterでシェア")
+                        a.btn.tool-button.mx-2(onclick="handleShareButton(this)" data-toggle="tooltip" title="Twitterでシェア")
                          i.fas.fa-share-alt
                         badge.btn.tool-button.tool-button-copy.mx-2(data-toggle="tooltip" title="コピー")
                           i.fas.fa-copy

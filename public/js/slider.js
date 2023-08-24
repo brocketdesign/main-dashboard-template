@@ -34,8 +34,8 @@ $(document).ready(function() {
         title:$(this).find('.info-container').attr('data-title')
       };
     }).get();
-console.log(images.slice(0,1))
-   $('.custom-carousel-item[data-mode="3"] img, .custom-carousel-item[data-mode="2"] img, .custom-carousel-item[data-mode="4"] img').on('click', function() {
+
+    $('.custom-carousel-item[data-mode="3"] img, .custom-carousel-item[data-mode="2"] img, .custom-carousel-item[data-mode="4"] img').on('click', function() {
     var clickedImageIndex = images.findIndex(function(image) {
       return image.img === $(this).attr('src');
     }.bind(this));

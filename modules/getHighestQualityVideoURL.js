@@ -7,19 +7,8 @@ const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 async function getHighestQualityVideoURL(video_id, user, stream = true) {
   try {
     const userId = user._id;
-    const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-    const AllData = userInfo.scrapedData;
-    let { foundElement } = await findElementIndex(AllData, video_id);
-
-    if (!foundElement) {
-      console.log('Element with video_id not found in user data.');
-      foundElement = await global.db.collection('medias').findOne({ _id: new ObjectId(video_id) });
-      if (foundElement) {
-        console.log('Element founded in medias', foundElement)
-      }else{
-        return null
-      }
-    }
+    
+    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
 
     if(foundElement.filePath){
       console.log('The element has already been downloaded', foundElement)
@@ -39,7 +28,7 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
       return foundElement.link; 
     }
 
-    return await searchVideo(AllData, foundElement, user, stream);
+    return await searchVideo(foundElement, user, stream);
   } catch (error) {
     console.log('Error occurred while getting the video URL:', error);
     return null;
@@ -66,24 +55,25 @@ function getVideoFilePathOrHighestQualityURL(videoDocument, stream) {
   return videoDocument.filePath ? videoDocument.filePath : videoDocument.highestQualityURL;
 }
 
+
 async function updateLastScraped(videoDocument) {
   console.log('Mode 3: returning the URL');
 
 }
 
-async function searchVideo(AllData, videoDocument, user, stream) {
+async function searchVideo(videoDocument, user, stream) {
   const videoLink = videoDocument.link; // Assuming 'link' field contains the video link
   return videoLink.includes('youtube') ? 
-    await searchVideoYoutube(AllData, videoDocument, user, stream) : await searchVideoUrl(AllData, videoDocument, user);
+    await searchVideoYoutube(videoDocument, user, stream) : await searchVideoUrl(videoDocument, user);
 }
 
-async function findElementIndex(AllData, video_id){
+async function findElementIndex( video_id){
   const foundElement = AllData.find(item => item.video_id === video_id);
   const elementIndex = AllData.findIndex(item => item.video_id === video_id);
   return {elementIndex,foundElement};
 }
 
-async function searchVideoUrl(AllData, videoDocument, user) {
+async function searchVideoUrl( videoDocument, user) {
 
   videoURL = videoDocument.link
   if(!videoDocument.link.includes('http')){
@@ -111,13 +101,14 @@ async function searchVideoUrl(AllData, videoDocument, user) {
 
   const highestQualityURL = mp4Urls[0] || null;
 
-  await saveData(user, videoDocument.video_id, {highestQualityURL:highestQualityURL});
+  updateSameElements(videoDocument, {highestQualityURL:highestQualityURL,last_scraped:new Date()})
   
   console.log('Highest Quality URL:', highestQualityURL);
   return highestQualityURL;
 }
 
-async function searchVideoYoutube(AllData, videoDocument, user, stream){
+async function searchVideoYoutube( videoDocument, user, stream){
+
   if(!stream){
     return videoDocument.link
   }
@@ -128,8 +119,7 @@ async function searchVideoYoutube(AllData, videoDocument, user, stream){
     filter: 'audioandvideo', 
     quality: 'highestaudio'
   });
-
-  await saveData(AllData, videoDocument, {streamingUrl:format.url}, user);
+  updateSameElements(videoDocument, {streamingUrl:format.url,last_scraped:new Date()})
 
   //console.log('Format found!', format.url);
   return format.url;

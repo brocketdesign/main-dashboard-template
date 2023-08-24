@@ -26,16 +26,6 @@ function formatDateToDDMMYYHHMMSS() {
   return ddmmyyhhmmss;
 }
 
-async function findElementIndex(user,video_id){
-  const userId = user._id;
-  console.log({userId,video_id})
-  const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-  const AllData = userInfo.scrapedData || [] ;
-  const foundElement = AllData.find(item => item.video_id === video_id);
-  const elementIndex = AllData.findIndex(item => item.video_id === video_id);
-  return {elementIndex,foundElement};
-}
-
 
 async function saveData(user, documentId, update){
   try {
@@ -107,11 +97,11 @@ async function translateText(text,lang) {
   
   return gptResponse.data.choices[0].text.trim();
 }
-
 async function fetchMediaUrls(url) {
+  console.log('Starting to fetch media URLs from:', url); // Log start
   const browser = await puppeteer.launch({
-      headless: false,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+    headless: false,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
   });
   const page = await browser.newPage();
 
@@ -119,12 +109,12 @@ async function fetchMediaUrls(url) {
 
   // Listen to all requests
   page.on('request', request => {
-      const resourceType = request.resourceType();
-      const requestUrl = request.url();
+    const resourceType = request.resourceType();
+    const requestUrl = request.url();
 
-      if (resourceType === 'image') {
-          images.push({ source_url: requestUrl });
-      }
+    if (resourceType === 'image') {
+      images.push({ source_url: requestUrl });
+    }
   });
 
   await page.goto(url, { waitUntil: 'networkidle2' });
@@ -135,61 +125,59 @@ async function fetchMediaUrls(url) {
   let attempts = 0;
 
   while (attempts < maxScrollAttempts) {
-      previousHeight = await page.evaluate('document.body.scrollHeight');
-      await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
+    previousHeight = await page.evaluate('document.body.scrollHeight');
+    await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
 
-      try {
-          await page.waitForFunction(`document.body.scrollHeight > ${previousHeight}`, { timeout: 3000 }); // 3 seconds timeout
-      } catch (error) {
-          // If waitForFunction times out, break out of the loop
-          break;
-      }
+    try {
+      await page.waitForFunction(`document.body.scrollHeight > ${previousHeight}`, { timeout: 3000 }); // 3 seconds timeout
+    } catch (error) {
+      console.log('Reached the end of scrolling, or an error occurred' ); // Log error or end of scrolling
+      break;
+    }
 
-      const newHeight = await page.evaluate('document.body.scrollHeight');
-      if (newHeight === previousHeight) {
-          break;
-      }
+    const newHeight = await page.evaluate('document.body.scrollHeight');
+    if (newHeight === previousHeight) {
+      console.log('No new content loaded, breaking the loop.'); // Log if no new content is loaded
+      break;
+    }
 
-      attempts++;
+    attempts++;
   }
 
   await browser.close();
 
+  console.log('Finished fetching media URLs.'); // Log finish
   return images;
 }
-async function findDataInMedias(query){
-  console.log(`Looking in collection medias`)
-  var scrapedData = await global.db.collection('medias').find(query).toArray()
 
-  if(scrapedData.length >0 ){
-    console.log(`Found ${scrapedData.length} elements. `)
-    return scrapedData
-  }
-  console.log('Nothing founded.')
-  return false
-}
-async function filterHiddenElement(scrapedData) {
-  // Extract all sources from scrapedData
-  const sources = scrapedData.reduce((acc, item) => {
-    if (item && typeof item.source !== 'undefined') {
-      acc.push(item.source);
+async function findDataInMedias(userId, query, categoryId = null) {
+  // Retrieve the current user's data
+  const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+
+  // If a specific category ID is provided, use it
+  // Otherwise, find the "All" category within the user's categories
+  let categoryToUse;
+  if (categoryId) {
+    categoryToUse = user.categories && user.categories.find(cat => cat.id.toString() === categoryId.toString());
+    if (!categoryToUse) {
+      throw new Error('指定されたカテゴリが見つかりませんでした'); // Specified category not found
     }
-    return acc;
-  }, []);
-    if(sources.length ==0 ){
-    return scrapedData
+  } else {
+    categoryToUse = user.categories && user.categories.find(cat => cat.name === 'All');
+    if (!categoryToUse) {
+      throw new Error('カテゴリ「All」が見つかりませんでした'); // Category "All" not found
+    }
   }
-  // Find sources that exist in the "medias" collection with hide: true
-  const hiddenSources = await global.db.collection('medias').find({ 
-    source: { $in: sources },
-    hide: true
-  }).toArray();
 
-  const hiddenSourceSet = new Set(hiddenSources.map(item => item.source));
+  // Add the category ID to the query
+  query.categories = { $in: [categoryToUse.id.toString()] };
 
-  // Filter out items from scrapedData that have hide: true in the "medias" collection
-  return scrapedData.filter(item => !hiddenSourceSet.has(item.source));
+  // Find the medias that match the query
+  const medias = await global.db.collection('medias').find(query).toArray();
+
+  return medias;
 }
+
 function sanitizeData(scrapedData,query) {
   //check for object with the same source and keep only one
   let uniqueData = [];
@@ -215,12 +203,17 @@ async function updateItemsByField(fieldName, fieldValue, query) {
 }
 
 async function updateSameElements(foundElement, query) {
+
   if (foundElement.source) {
       await updateItemsByField('source', foundElement.source, query);
   }
   if (foundElement.url) {
       await updateItemsByField('url', foundElement.url, query);
   }
+  if (foundElement.link) {
+      await updateItemsByField('link', foundElement.link, query);
+  }
+  
 }
 async function getOpenaiTypeForUser(userId, type) {
   // 1. Fetch the user's document.
@@ -296,7 +289,7 @@ const fetchOpenAICompletion = async (messages, res) => {
       for await (const value of response.body?.pipeThrough(new TextDecoderStream())) {
           parser.feed(value);
       }
-console.log(fullCompletion)
+
       return fullCompletion;
 
   } catch (error) {
@@ -305,20 +298,40 @@ console.log(fullCompletion)
   }
 }
 
-// Usage:
-// const messages = [...]; // Define your messages here
-// await fetchOpenAICompletion(messages, res);
+
+async function initCategories(userId) {
+  // Find the current user's data
+  const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+
+  // Check if the category "All" already exists
+  const category = user.categories && user.categories.find(cat => cat.name === 'All');
+
+  if (category) {
+    // If the category already exists, return its ID in an array
+    return [category.id.toString()];
+  } else {
+    // If the category does not exist, create it and add to the user's categories
+    const newCategory = { id: new ObjectId().toString() , name: 'All' };
+ 
+    await global.db.collection('users').updateOne(
+      { _id: new ObjectId(userId) },
+      { $push: { categories: newCategory } }
+    );
+
+    // Return the inserted ID in an array
+    return [newCategory.id];
+  }
+} 
 
 module.exports = { 
   formatDateToDDMMYYHHMMSS, 
-  findElementIndex, 
   saveData ,
   translateText ,
   fetchMediaUrls, 
   findDataInMedias,
-  filterHiddenElement,
   sanitizeData,
   updateSameElements,
   getOpenaiTypeForUser,
-  fetchOpenAICompletion
+  fetchOpenAICompletion,
+  initCategories
 }
