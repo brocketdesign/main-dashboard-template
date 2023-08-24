@@ -887,24 +887,56 @@ function updategridlayout(value) {
     if(currentPage==1){
         $('.load-more-previous').remove()
     }
-    $('.load-more').on('click', function(){
+    $('form#search').on('submit',function(e){
+        e.preventDefault()
+        
+        const formData = new FormData(this);
+        const searchdata = $('form#search').data();
+        
+        // Convert FormData to a plain object
+        let formDataObject = {};
+        for (let [key, value] of formData.entries()) {
+          formDataObject[key] = value;
+        }
+        
+        // Combine searchdata and formDataObject
+        const data = Object.assign(searchdata, formDataObject);
 
+        const $buttonContainer = $('form#search').find('button[type="submit"]')
+        const $spinner = showSpinner($buttonContainer,'loadmore')
+
+        sendSearchForm(data,function(){
+            $spinner.hide();
+            $buttonContainer.find('i').show();
+        })
+    })
+    $('.load-more').on('click', function(){
         const data = $(this).data()
 
-        $.ajax({
-            url: `/api/loadpage`,
-            type: 'POST',
-            data,
-            success: function(response){
-                const url =`/dashboard/app/${data.mode}?page=${data.page}&searchTerm=${data.searchterm}&nsfw=${data.nsfw}`
-                console.log(url)
-                window.location=url
-            },
-            error: handleFormError
-        });
+        const $buttonContainer = $(this)
+        const $spinner = showSpinner($buttonContainer,'loadmore')
 
+        sendSearchForm(data,function(){
+            $spinner.hide();
+            $buttonContainer.find('i').show();
+        })
     })
   }
+  function sendSearchForm(data,callback) {
+
+    $.ajax({
+        url: `/api/loadpage`,
+        type: 'POST',
+        data,
+        success: function(response){
+            const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchTerm=${data.searchterm?data.searchterm:data.searchTerm}&nsfw=${data.nsfw}`
+            console.log(url)
+            if(callback){callback()}
+            window.location=url
+        },
+        error: handleFormError
+    });
+}
   const handleResetFormSubmission = () => {
     $('form#reset-form').on('submit', function(e) {
         e.preventDefault();

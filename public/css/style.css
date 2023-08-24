@@ -6,8 +6,11 @@ main#dashboard {
   font-size: 12px;
   display:none;
 }
-.done .download-button {
-  color:red;
+.download-button i {
+  color:white ;
+}
+.done.download-button i {
+  color:red !important;
 }
 .contain-text {
   height: 30px;  /* Or whatever height you desire */

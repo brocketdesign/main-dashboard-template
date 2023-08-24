@@ -995,27 +995,36 @@ router.post('/category/remove', async (req, res) => {
 });
 // ルーターを定義して '/loadpage' への POST リクエストを処理します
 router.post('/loadpage', async (req, res) => {
-  // リクエストボディをコンソールにログ
 
-  const data = { 
-    nsfw: req.body.nsfw == 'true',
-    searchTerm: req.body.searchterm , 
-    page: req.body.page ,
-    mode: req.body.mode 
-  }
+try {
+    // リクエストボディをコンソールにログ
 
-  let scrapedData = await ManageScraper(
-    data.searchTerm,
-    data.nsfw,
-    data.mode,
-    req.user, 
-    data.page);
+    const data = { 
+      nsfw: req.body.nsfw == 'true',
+      searchTerm: req.body.searchterm || req.body.searchTerm , 
+      page: req.body.page ,
+      mode: req.body.mode 
+    }
 
-  // JSON 応答を送る
-  res.status(200).json({
-    status: '成功', // Status as success
-    message: 'ページが正常にロードされました' // Message indicating the page has been successfully loaded
+    let scrapedData = await ManageScraper(
+      data.searchTerm,
+      data.nsfw,
+      data.mode,
+      req.user, 
+      data.page);
+  
+    // JSON 応答を送る
+    res.status(200).json({
+      status: '成功', // Status as success
+      message: 'ページが正常にロードされました' // Message indicating the page has been successfully loaded
+    });
+} catch (error) {
+  console.log('Error')
+  res.status(500).json({
+    status: 'Error', // Status as success
+    message: 'An error occured' // Message indicating the page has been successfully loaded
   });
+}
 });
 
 async function saveImageToDB(db, userID, prompt, image) {
