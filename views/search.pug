@@ -47,7 +47,7 @@ block dynamicContent
       button.btn.bg-outline-dark.bordert.load-more.load-more-next(type="button" data-mode=mode, data-page=page+1, data-searchTerm=searchTerm, data-nsfw= user.nsfw)        
         | 次へ
         i.fas.fa-angle-right.ms-3
-      a.btn.bg-outline-dark.bordert(type="button", class=scrapInfo.page==page?'d-none':'',href=`/dashboard/app/${mode}?page=${scrapInfo?scrapInfo.page:'1'}&searchTerm=${searchTerm}&nsfw=${user.nsfw}`)        
+      a.btn.bg-outline-dark.bordert(type="button", class=scrapInfo&&scrapInfo.page==page?'d-none':'',href=`/dashboard/app/${mode}?page=${scrapInfo?scrapInfo.page:'1'}&searchTerm=${searchTerm}&nsfw=${user.nsfw}`)        
         | Last Page
         i.fas.fa-angle-right.ms-3
   #slickModal.modal.fade(tabindex='-1')

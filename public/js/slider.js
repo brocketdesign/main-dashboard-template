@@ -19,9 +19,12 @@ const updateSliderToolBar = (images) => {
     $('#slickCarousel-tool-bar').attr('data-id',images[currentSlide].id)
     $('#slickCarousel-tool-bar').attr('data-title',images[currentSlide].title)
     $('#slickCarousel-tool-bar').find('.source').attr('href',images[currentSlide].source)
-    
+    console.log(images[currentSlide])
     const $buttonDownload = $('#slickCarousel-tool-bar').find('.download-button')
-    $buttonDownload.removeClass('done text-primary')
+    $buttonDownload
+    .removeClass('done text-primary')
+    .data('id',images[currentSlide].id)
+    .data('title',images[currentSlide].title)
 }
 $(document).ready(function() {
 

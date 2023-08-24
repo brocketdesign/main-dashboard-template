@@ -6,7 +6,7 @@ main#dashboard {
   font-size: 12px;
   display:none;
 }
-.done i {
+.done .download-button {
   color:red;
 }
 .contain-text {

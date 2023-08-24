@@ -487,10 +487,12 @@ const handleCardClickable = () => {
 const handleDownloadButton = () => {
   $(document).on('click', '.download-button', function(event) {
     event.preventDefault(); // Prevents the default click behavior
-    var id = $(this).closest('.info-container').data('id');
-    var title = $(this).closest('.info-container').data('title');
-      console.log('Download button clicked for:', {id,title});
-      var $buttonContainer = $(this);
+
+    var id = $(this).data('id') || $(this).closest('.info-container').data('id');
+    var title = $(this).data('title') || $(this).closest('.info-container').data('title');
+
+    console.log('Download button clicked for:', {id,title});
+    var $buttonContainer = $(this);
 
       // Check if the card has already been processed
       if ($buttonContainer.hasClass('done')) {
