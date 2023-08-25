@@ -379,7 +379,7 @@ const handleCardClickable = () => {
 
       // Check if the spinner is already present, if not, create and append it to the card
       if (!$thisCard.find('.spinner-border .for-strm').length) {
-          var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute text-white bg-dark').css({inset:"0px", margin:"auto"}).attr('role', 'status');
+          var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute bg-dark').css({inset:"0px", margin:"auto"}).attr('role', 'status');
           var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
           $spinner.append($span);
           $thisCard.find('.card-body-over').append($spinner);
@@ -431,6 +431,9 @@ const handleCardClickable = () => {
             cardClone.find('.card-title').show()
             cardClone.find('.card-body-over').remove()
             cardClone.find('.card-body').removeClass('position-absolute px-3')
+            cardClone.find('.text-white').each(function(){
+                $(this).removeClass('text-white')
+            })
 
             $('#video-holder').append(cardClone.clone())
 
@@ -516,7 +519,7 @@ const handleDownloadButton = () => {
 
       // Check if the spinner is already present, if not, create and append it to the card
       if (!$(this).find('.spinner-border.for-dl').length) {
-          var $spinner = $('<div>').addClass('spinner-border for-dl spinner-border-sm text-white').attr('role', 'status');
+          var $spinner = $('<div>').addClass('spinner-border for-dl spinner-border-sm').attr('role', 'status');
           var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
           $spinner.append($span);
           $(this).prepend($spinner);
@@ -872,6 +875,13 @@ function updategridlayout(value) {
   
   
   const handleGridRange = () => {
+    if($('#range').data('mode')==1 && $(window).width() <= 768){
+        $('#grid-range').val(1);
+        updategridlayout(1)
+        $('#range').hide()
+        return
+
+    }
     // Check if the local variable exists
     var rangeState = localStorage.getItem('rangeState');
   
@@ -1800,7 +1810,7 @@ function showSpinner($buttonContainer,type) {
     $buttonContainer.find('i').hide();
     // Check if the spinner is already present, if not, create and append it to the card
     if (!$buttonContainer.find('.spinner-border.for-'+type).length) {
-        var $spinner = $('<div>').addClass(`spinner-border for-${type} spinner-border-sm text-white mx-2`).attr('role', 'status');
+        var $spinner = $('<div>').addClass(`spinner-border for-${type} spinner-border-sm mx-2`).attr('role', 'status');
         var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
         $spinner.append($span);
         $buttonContainer.prepend($spinner);

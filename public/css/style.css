@@ -6,14 +6,14 @@ main#dashboard {
   font-size: 12px;
   display:none;
 }
-.download-button i {
-  color:white ;
+#video-container i,#video-container .spinner-border {
+  color: black !important;
 }
 .done.download-button i {
   color:red !important;
 }
-#video-container i {
-  color: black !important;
+.masonry-container .download-button i,.masonry-container .spinner-border  {
+  color:white ;
 }
 .contain-text {
   height: 30px;  /* Or whatever height you desire */
@@ -56,6 +56,35 @@ main#dashboard {
   animation: spin 1s linear infinite;
 }
 
+#slickModal .modal-dialog {
+  max-height: 100vh;
+  display: inline;
+  flex-direction: column;
+  justify-content: center;
+  border-radius:0;
+}
+#slickCarousel .slick-slide img {
+  height: 100vh;
+  object-fit: contain;
+}
+.slick-prev {
+  left: 0;
+  bottom: 0;
+  top: 0;
+  width: 50%;
+  opacity: 0;
+  position:absolute;
+  z-index: 2;
+}
+.slick-next {
+  right: 0;
+  bottom: 0;
+  top: 0;
+  width: 50%;
+  opacity: 0;
+  position:absolute;
+  z-index: 2;
+}
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
