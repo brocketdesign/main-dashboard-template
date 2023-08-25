@@ -4,13 +4,13 @@ block mainContent
   h1.display-5.mb-4.fw-bold SNS投稿生成
   if !contentId
     .row.row-cols-1.row-cols-md-2.pe-0
-      .col.bg-white.p-3
-        .d-flex.justify-content-between.pb-3
+      .col.p-3
+        .d-flex.justify-content-between
           h6 入力
-          button.btn.btn-warning.badge(onclick="location.reload()")
+          button.btn.btn-warning.badge.py-0(onclick="location.reload()")
             | リセットする
         hr.mb-4
-        form.row#snsContent.default
+        form.row#snsContent.default.bg-white
           .row
             .form-group.col-6.my-3
               label.fw-bold.my-2(for='language') 言語
@@ -58,7 +58,8 @@ block mainContent
               i.fas.fa-paper-plane.me-3
               | 生成する
       .col.p-3
-        h6 生成結果
+        .d-flex.justify-content-between
+          h6 生成結果
         hr.mb-4
         #result
           if userOpenaiDocs || userOpenaiDocs.length  > 0

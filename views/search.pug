@@ -9,11 +9,11 @@ block dynamicContent
       each data in scrapedData
         if data._id
           .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
-            .card.info-container(class=`card-clickable-${mode}`, data-id=data._id, data-title=data.title)
+            .card.info-container(class=`card-clickable-${mode}`, style="cursor:pointer", data-id=data._id, data-title=data.title)
               .card-body-over.position-absolute(style="inset:0;display: none;")
               .card-top.py-2.px-3.position-absolute
                 .d-flex.justify-content-between
-                    .delete-button.btn.hover.shadow-0.text-white(type="button", style="display:none")
+                    .delete-button.btn.hover.shadow-0.text-white.p-0(type="button", style="display:none")
                         i.fas.fa-trash-alt
               if mode == 2
                 if data.link.includes('redgif')
@@ -26,14 +26,14 @@ block dynamicContent
                   img.card-img-top(type="button", style="object-fit:cover;height: 100%;min-height:200px", src=data.url || data.imageUrl || data.link, alt=data.title,  data.imageUrl=data.imageUrl?data.imageUrl:undefined )
               .card-body.py-1.px-3.w-100.position-absolute.hover(style="bottom: 0;display:none")
                 .d-flex.justify-content-between.tool-bar.py-2
-                  .download-button.btn.shadow-0(type="button", class=data.isdl?'done':'')
+                  .download-button.btn.shadow-0.p-0(type="button", class=data.isdl?'done':'')
                     i.fas.fa-heart
-                  a.source.btn.shadow-0.text-white(target="_blank", href=data.source||data.link||data.webm||data.url)
+                  a.source.btn.shadow-0.text-white.p-0(target="_blank", href=data.source||data.link||data.webm||data.url)
                     i.fas.fa-link
-                  .info-button.btn.shadow-0.text-white(type="button")
+                  .info-button.btn.shadow-0.text-white.p-0(type="button")
                     i.fas.fa-info
                   if mode == 1
-                    .summarize-button.btn.shadow-0.text-white(type="button")
+                    .summarize-button.btn.shadow-0.text-white.p-0(type="button")
                       i.fas.fa-plane
                 p.card-title.text-white.bg-dark.border-white.border.p-3(style="display:none")= data.title
   else

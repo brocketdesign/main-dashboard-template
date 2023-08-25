@@ -13,7 +13,7 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     if(foundElement.filePath){
       console.log('The element has already been downloaded', foundElement)
       updateSameElements(foundElement,{isdl:true,isdl_data:new Date()})
-      return foundElement.filePath
+      return foundElement.filePath.replace('public','')
     }
 
     if (hasBeenScrapedRecently(foundElement)) {

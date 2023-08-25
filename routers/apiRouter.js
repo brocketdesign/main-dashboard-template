@@ -636,7 +636,8 @@ router.post('/dl', async (req, res) => {
       download_directory = download_directory+'/youtube';
     }
     // Get file name from the URL
-    let extension = getFileExtension(url);
+    const fileExtension = getFileExtension(url)
+    let extension = getFileExtension(url) == '' ? '.mp4':fileExtension;
     let sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, ''); // This will keep only alphanumeric characters
     let fileName = `${sanitizedTitle}_${Date.now()}${extension}`;
     let filePath = path.join(download_directory, fileName);
@@ -656,7 +657,7 @@ router.post('/dl', async (req, res) => {
 
     console.log('File downloaded:', fileName);
 
-    updateSameElements(foundElement,{isdl:true,isdl_data:new Date()})
+    updateSameElements(foundElement,{filePath:filePath.replace('public',''), isdl:true,isdl_data:new Date()})
     // Send a success status response after the file is downloaded
     res.status(200).json({ message: 'アイテムが成功的に保存されました。' });
 
@@ -723,20 +724,21 @@ async function downloadYoutubeVideo(download_directory,filePath,video_id) {
   // Merge video and audio files
   await new Promise((resolve, reject) => {
     ffmpeg()
-    .input(videoFilePath)
-    .input(audioFilePath).audioCodec('copy').noVideo()  // Extract only the audio stream
-    .outputOptions('-map', '0:v', '-map', '1:a')
-    .saveToFile(filePath + '.mp4') // Adding .mp4 extension
-    .on('end', resolve)
-    .on('error', (err, stdout, stderr) => {
-      console.error('Error occurred while merging files:', err, stderr);
-      reject(err);
-    });
+      .input(videoFilePath)
+      .input(audioFilePath)
+      .outputOptions('-map', '0:v', '-map', '1:a')
+      .saveToFile(filePath) // Adding .mp4 extension
+      .on('end', resolve)
+      .on('error', (err, stdout, stderr) => {
+        console.error('Error occurred while merging files:', err, stderr);
+        reject(err);
+      });
   });
 
   // Delete temporary files
   fs.unlinkSync(videoFilePath);
   fs.unlinkSync(audioFilePath);
+
 }
 // Endpoint for fetching data from Reddit based on the subreddit and filter parameters
 router.get('/reddit/:subreddit', async (req, res) => {

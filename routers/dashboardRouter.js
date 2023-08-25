@@ -240,7 +240,6 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
       nsfw:nsfw,
       isdl:true,
     });
-
     medias = getUniqueElementBySource(medias)
     res.render(`search`, { user: req.user, searchTerm, scrapedData:medias.reverse(), mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 
@@ -253,19 +252,27 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
 });
 
 function getUniqueElementBySource(medias) {
-  //check for object with the same source and keep only one
+  // Map the sources and filter those that are undefined
+  const undefinedSources = medias.filter(object => object.source === undefined);
+
   let uniqueData = [];
   let seenSources = new Set();
   
   for (let item of medias) {
+      if (item.source === undefined) {
+          continue; // Skip undefined sources, as we've already collected them
+      }
+      
       if (!seenSources.has(item.source)) {
           seenSources.add(item.source);
           uniqueData.push(item);
       }
   }
-  
-  return uniqueData; // Now, scrapedData contains unique items based on the source property.
+
+  // Combine unique data with the undefined sources
+  return [...uniqueData, ...undefinedSources]; // Now, the return value contains unique items based on the source property and all items with an undefined source.
 }
+
 
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (req, res) => {

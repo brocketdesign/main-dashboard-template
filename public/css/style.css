@@ -12,6 +12,9 @@ main#dashboard {
 .done.download-button i {
   color:red !important;
 }
+#video-container i {
+  color: black !important;
+}
 .contain-text {
   height: 30px;  /* Or whatever height you desire */
   padding: 10px; /* Or whatever padding you desire */

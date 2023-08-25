@@ -370,6 +370,10 @@ const handleCardClickable = () => {
           return;
       }
 
+      //Reset all the other cards
+      $(`.card-clickable-1`).each(function(){
+        $(this).removeClass('done')
+      })
       // Mark the card as done to avoid processing it again
       $thisCard.addClass('done');
 
@@ -391,6 +395,8 @@ const handleCardClickable = () => {
           console.log('API Response:', response);
 
         // Hide the spinner
+
+        $thisCard.find('.card-body-over').hide();
         $spinner.hide();
           // Assuming the response from the API is a JSON object with a 'url' property
           if (response && response.url) {
@@ -443,7 +449,7 @@ const handleCardClickable = () => {
             }
    
               $('#video-container').show()
-              $thisCard.hide()
+              //$thisCard.hide()
               handleMasonry()
               console.log('Video added to card body.');
 
@@ -476,6 +482,7 @@ const handleCardClickable = () => {
               // If the response does not contain a URL, show an error message or handle it as needed
               console.error('Error: Video URL not available.');
 
+              $thisCard.find('.card-body-over').hide();
               // Hide the spinner if there's an error
               $spinner.hide();
           }
