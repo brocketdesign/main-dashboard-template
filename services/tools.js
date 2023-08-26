@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios'); // You'll need to install axios: npm install axios
 const { createParser } = require('eventsource-parser');
+const fetch = require('node-fetch');
 
 
 // Initialize OpenAI with your API key
