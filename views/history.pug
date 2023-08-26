@@ -8,7 +8,7 @@ block dynamicContent
           .card.hover(style="overflow: hidden;", data-query=query)
             .card-top.py-2.px-3.position-absolute
               .d-flex.justify-content-between
-                  .delete-button-history.btn.btn-dark.border-white.border.hover.shadow(type="button", style="display:none")
+                  button.delete-button-history.btn.btn-dark.border-white.border.hover.shadow.p-0(type="button", style="display:none")
                       i.fas.fa-trash-alt
             .card-body.row.p-0.rounded
               each item in data[query]

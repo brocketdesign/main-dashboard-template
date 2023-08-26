@@ -129,16 +129,20 @@ async function checkUserScrapeInfo(user){
   const scrapInfo = Array.isArray(user.scrapInfo) 
   const userId = user._id
   if(!scrapInfo){
-    console.log(('Init info'))
-        // If the URL doesn't exist, push the new scrapInfo
-        await global.db.collection('users').updateOne(
-          { _id: new ObjectId(userId) },
-          {
-            $set:{scrapInfo: []}
-            
-          },
-          { upsert: true }
-        );
+    try {
+      console.log(('Init info'))
+      // If the URL doesn't exist, push the new scrapInfo
+      await global.db.collection('users').updateOne(
+        { _id: new ObjectId(userId) },
+        {
+          $set:{scrapInfo: []}
+          
+        },
+        { upsert: true }
+      );
+    } catch (error) {
+      console,log(error)
+    }
   }
 }
 module.exports = ManageScraper;
