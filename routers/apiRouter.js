@@ -5,7 +5,6 @@ const getHighestQualityVideoURL = require("../modules/getHighestQualityVideoURL"
 const ensureAuthenticated = require('../middleware/authMiddleware');
 const {
   formatDateToDDMMYYHHMMSS,
-  findElementIndex,
   saveData, 
   translateText, 
   updateSameElements,
@@ -288,7 +287,7 @@ router.get('/openai/summarize', async (req, res) => {
     }
     console.log(`Video ID received: ${videoId}`);
 
-    const { elementIndex, foundElement } = await findElementIndex(req.user,videoId);
+    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
     const title = foundElement.title
     console.log(`Title fetched for video: ${title}`);
 
@@ -493,20 +492,12 @@ async function saveDataSummarize(user, videoId, format){
     const userId = user._id;
     const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
     const AllData = userInfo.scrapedData;
-    const { elementIndex, foundElement } = await findElementIndex(user,videoId);
 
-    if (elementIndex === -1) {
-      console.log('Element with video_id not found.');
-      return;
-    }
-
-    AllData[elementIndex] = Object.assign({}, AllData[elementIndex], format);
-    AllData[elementIndex].last_summarized = Date.now();
-
-    await global.db.collection('users').updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { scrapedData: AllData } }
-    );
+    format.last_summarized = Date.now();
+    const foundElement = await global.db.collection('medias').updateOne(
+      {_id:new ObjectId(video_id)},
+      {$set:format}
+    )
 
     console.log('Element updated in the database.');
   } catch (error) {
