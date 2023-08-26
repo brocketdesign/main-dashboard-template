@@ -435,7 +435,7 @@ const handleCardClickable = () => {
                 $(this).removeClass('text-white')
             })
 
-            $('#video-holder').append(cardClone.clone())
+            $('#video-holder').append(cardClone)
 
             $('#mobile-toolbar').append(cardClone.clone())
        

@@ -9,7 +9,7 @@ block mainContent
       .col
         #summary.d-none.d-md-block
         #result.d-none
-  #mobile-toolbar.mb-3.d-block.d-md-none
+  #mobile-toolbar.mb-3
   form#search(action=`/dashboard/app/${mode}`, method="GET", data-mode=mode, data-page=page, data-nsfw= user.nsfw)
     .input-group.mb-3
       input(type="hidden" name="page" id="page" value=page)

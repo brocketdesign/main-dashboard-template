@@ -9,7 +9,7 @@ main#dashboard {
 #video-container i,#video-container .spinner-border {
   color: black !important;
 }
-#video-container .card-title{
+#video-container .card-title, #mobile-toolbar .card-title{
   color:white;
 }
 .done.download-button i {
