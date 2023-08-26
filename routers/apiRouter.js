@@ -287,7 +287,7 @@ router.get('/openai/summarize', async (req, res) => {
     }
     console.log(`Video ID received: ${videoId}`);
 
-    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
+    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
     const title = foundElement.title
     console.log(`Title fetched for video: ${title}`);
 
