@@ -199,7 +199,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
     
       await initCategories(req.user._id)
       let scrapedData = await ManageScraper(searchTerm,nsfw,mode,req.user, page);
-      console.log('Finish getting the data.')
+
       let scrapInfo  
       try {
         scrapInfo = req.user.scrapInfo.find(info => info.url === searchTerm);
