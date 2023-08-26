@@ -153,7 +153,7 @@ async function fetchMediaUrls(url) {
 async function findDataInMedias(userId, query, categoryId = null) {
   // Retrieve the current user's data
   const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-
+  await initCategories(userId)
   // If a specific category ID is provided, use it
   // Otherwise, find the "All" category within the user's categories
   let categoryToUse;
