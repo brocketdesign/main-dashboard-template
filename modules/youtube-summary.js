@@ -2,7 +2,8 @@ const express = require('express');
 const { YoutubeTranscript } = require('youtube-transcript');
 const natural = require('natural');
 const { Configuration, OpenAIApi } = require('openai');
-const {formatDateToDDMMYYHHMMSS,findElementIndex,saveData, fetchOpenAICompletion} = require('../services/tools')
+const { ObjectId } = require('mongodb');
+const {formatDateToDDMMYYHHMMSS,saveData, fetchOpenAICompletion} = require('../services/tools')
 
 
 // Initialize OpenAI with your API key
@@ -13,7 +14,11 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 async function getTranscript(videoId) {
-  const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+
+  const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
+  const video_id = foundElement.video_id
+
+  const transcript = await YoutubeTranscript.fetchTranscript(video_id);
   const text = transcript.map(t => t.text).join(' ');
   return text;
 }
@@ -65,7 +70,7 @@ async function summarizeVideo(user,videoId) {
 
 async function isSummarized (user,videoId) {
 
-  const { elementIndex, foundElement } = await findElementIndex(user,videoId);
+  const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
   if(foundElement.summary){
     return foundElement
   }

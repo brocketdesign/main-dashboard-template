@@ -334,7 +334,7 @@ router.get('/openai/summarize', async (req, res) => {
     .join('<br>');
 
     console.log({combinedSummary})
-    saveDataSummarize(req.user, videoId, {summary:combinedSummary})
+    saveDataSummarize(videoId, {summary:combinedSummary})
 
     res.write('event: end\n');
     res.write('data: {"videoId": "'+videoId+'"}\n\n');
@@ -487,19 +487,17 @@ router.post('/openai/regen-ebook', async (req, res) => {
 });
 
 
-async function saveDataSummarize(user, videoId, format){
+async function saveDataSummarize(videoId, format){
   try {
-    const userId = user._id;
-    const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-    const AllData = userInfo.scrapedData;
+    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
 
     format.last_summarized = Date.now();
-    const foundElement = await global.db.collection('medias').updateOne(
-      {_id:new ObjectId(video_id)},
+    const result = await global.db.collection('medias').updateOne(
+      {_id:new ObjectId(videoId)},
       {$set:format}
     )
 
-    console.log('Element updated in the database.');
+    console.log(`${result.modifiedCount} element updated in the database.`);
   } catch (error) {
     console.log('Error while updating element:', error);
   }
