@@ -430,6 +430,7 @@ const handleCardClickable = () => {
             cardClone.find('img').remove()
             cardClone.find('.card-title').show()
             cardClone.find('.card-body-over').remove()
+            cardClone.find('.card-body').show()
             cardClone.find('.card-body').removeClass('position-absolute px-3')
             cardClone.find('.text-white').each(function(){
                 $(this).removeClass('text-white')
