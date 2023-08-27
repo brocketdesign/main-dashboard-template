@@ -292,55 +292,58 @@ router.get('/openai/summarize', async (req, res) => {
     console.log(`Title fetched for video: ${title}`);
 
     const chunks = await summarizeVideo(req.user,videoId);
+    if (Array.isArray(chunks)) {
+      // chunks is an array
+      const summaries = [];
 
-    const summaries = [];
+      for (let i = 0; i < chunks.length; i++) {
+        console.log(`Summarize section ${i + 1}/${chunks.length}`);
+        const promptJP = `
+        以下の内容を要約してください \n\n${chunks[i]}\n\n 
+        そして、主要なポイントの短い段落にし、リストの中で簡潔にハイライトされた情報にまとめてください。各ハイライトには適切な絵文字を選んでください。
+        あなたの出力は以下のテンプレートを使用してください:
+        要約
+        ハイライト
+        結論
+        [絵文字] バレットポイント
+        Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
+        `;
+        const prompt = `
+        Please summarize the following content:\n
+        ${chunks[i]}\n
+        Then, create short paragraphs of the main points and summarize the information in concise highlighted points within a list. Please choose appropriate emojis for each highlight.
+        Use the following template for your output:
+        Summary
+        Highlights
+        Conclusion
+        [Emoji] Bullet Point
+        Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
+        `;
 
-    for (let i = 0; i < chunks.length; i++) {
-      console.log(`Summarize section ${i + 1}/${chunks.length}`);
-      const promptJP = `
-      以下の内容を要約してください \n\n${chunks[i]}\n\n 
-      そして、主要なポイントの短い段落にし、リストの中で簡潔にハイライトされた情報にまとめてください。各ハイライトには適切な絵文字を選んでください。
-      あなたの出力は以下のテンプレートを使用してください:
-      要約
-      ハイライト
-      結論
-      [絵文字] バレットポイント
-      Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
-      `;
-      const prompt = `
-      Please summarize the following content:\n
-      ${chunks[i]}\n
-      Then, create short paragraphs of the main points and summarize the information in concise highlighted points within a list. Please choose appropriate emojis for each highlight.
-      Use the following template for your output:
-      Summary
-      Highlights
-      Conclusion
-      [Emoji] Bullet Point
-      Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
-      `;
+        const messages = [
+          { role: 'system', content: 'You are a powerful assistant' },
+          { role: 'user', content: prompt },
+        ];
+      
+        const summary = await fetchOpenAICompletion(messages, res);
+        summaries.push(summary);
+      }
 
-      const messages = [
-        { role: 'system', content: 'You are a powerful assistant' },
-        { role: 'user', content: prompt },
-      ];
-    
-      const summary = await fetchOpenAICompletion(messages, res);
-      summaries.push(summary);
+      
+      const combinedSummary = summaries
+      .map((summary, index) => `<h2> パート ${index + 1}</h2><br>${summary}`)
+      .join('<br>');
+
+      console.log({combinedSummary})
+      saveDataSummarize(videoId, {summary:combinedSummary})
+      return { summary: combinedSummary };
     }
-
-    
-    const combinedSummary = summaries
-    .map((summary, index) => `<h2> パート ${index + 1}</h2><br>${summary}`)
-    .join('<br>');
-
-    console.log({combinedSummary})
-    saveDataSummarize(videoId, {summary:combinedSummary})
 
     res.write('event: end\n');
     res.write('data: {"videoId": "'+videoId+'"}\n\n');
     res.flush(); // Flush the response to send the data immediately
     res.end();
-    return { summary: combinedSummary };
+    return
 
     const embedLink = `https://www.youtube.com/embed/${videoId}`;
     const iframeEmbed = `<div style="text-align:center;width:100%;"><iframe width="560" height="315" src="${embedLink}" frameborder="0" allowfullscreen></iframe></div>`;

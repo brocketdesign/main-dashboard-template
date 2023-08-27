@@ -205,7 +205,7 @@ router.post('/nsfw', async (req, res, next) => {
     await global.db.collection('users').updateOne({_id: new ObjectId(req.user._id)},{$set:{nsfw}}) 
     res.status(200).json({message:'NSFW sttatus updated'});
   }catch(err){
-    console.log(err)
+    console.log('User is not connected')
     res.status(500).json({message:'NSFW sttatus updated failed'});
   }
 

@@ -13,6 +13,7 @@ const searchYoutube = async (query, url, mode, nsfw, page) => {
     part: 'snippet',
     q: query,
     maxResults: 30,
+    type: 'video'  // This filters out everything except videos
   });
 
   const result = response.data.items.map(item => {

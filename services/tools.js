@@ -286,11 +286,15 @@ const fetchOpenAICompletion = async (messages, res) => {
           console.error("Event causing error:", event);
         }
       });
-      
-      for await (const value of response.body?.pipeThrough(new TextDecoderStream())) {
-          parser.feed(value);
-      }
 
+      let data = '';
+
+      for await (const chunk of response.body) {
+        data += new TextDecoder('utf-8').decode(chunk);
+      }
+      
+      parser.feed(data);
+      
       return fullCompletion;
 
   } catch (error) {

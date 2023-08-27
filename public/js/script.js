@@ -126,12 +126,12 @@ $(document).ready(function() {
           handleStream(response, function(message) {
             const containerID = `card-summarize`;
             if($('#'+containerID).length == 0) {   
-                $('#summary').html('')
+                $('#summary .content').html('')
                 // Create an initial card with the insertedId as an identifier
                 const initialCardHtml = `<div class="card mb-3"><div id="${containerID}" class="card-body"></div></div>`;
                 const initialCardHtmlMobile = `<div class="card mb-3"><div id="mobile-${containerID}" class="card-body"></div></div>`;
 
-                $('#summary').prepend(initialCardHtml);
+                $('#summary .content').prepend(initialCardHtml);
                 $('#mobile-toolbar').append(initialCardHtmlMobile);
 
                 console.log(`Initial card created with id: ${containerID}`);
@@ -140,6 +140,7 @@ $(document).ready(function() {
             watchAndConvertMarkdown(`#result`, `#mobile-${containerID}`); 
             $(`#result`).append(message);
         },function(endMessage){
+            console.log('Stream ended')
             $spinner.hide();
             $buttonContainer.find('i').show();
         });
@@ -440,12 +441,12 @@ const handleCardClickable = () => {
 
             $('#mobile-toolbar').append(cardClone.clone())
        
-            $('#summary').html('')
+            $('#summary .content').html('')
             if(response && response.data && response.data.summary && response.data.summary.length > 0){
                 if($('#summary-content').length == 0){
                     const initialCardHtml = `<div class="card mb-3" id="summary"><div class="card-body"></div></div>`;
                     const initialCardHtmlMobile = `<div class="card mb-3" id="summary-content"><div class="card-body"></div></div>`;
-                    $('#summary').prepend(initialCardHtml);
+                    $('#summary .content').prepend(initialCardHtml);
                     $('#mobile-toolbar').append(initialCardHtmlMobile);
                 }
                 $('#summary .card-body').append(response.data.summary)
@@ -638,8 +639,11 @@ const handleSwitchNSFW= () => {
     if (switchState !== null) {
         $('#nsfw').prop('checked', switchState === 'true');
     }
-    handleNSFWlabel(switchState === 'true')
-    nsfwUpdateData({nsfw:switchState === 'true'})
+    if ($('#nsfw').length > 0) {
+        handleNSFWlabel(switchState === 'true')
+        
+        nsfwUpdateData({nsfw:switchState === 'true'})
+    }
     // Save the state of the switch to a local variable when it's toggled
     $('#nsfw').change(function() {
         $('input#searchTerm').val('')
@@ -881,7 +885,11 @@ function updategridlayout(value) {
         updategridlayout(1)
         $('#range').hide()
         return
-
+    }else{
+        $('#grid-range').val(2);
+        updategridlayout(2)
+        $('#range').hide()
+        return
     }
     // Check if the local variable exists
     var rangeState = localStorage.getItem('rangeState');
@@ -1288,17 +1296,19 @@ function handleStream(response,callback,endCallback) {
 
         const data = JSON.parse(event.data);
 
-        console.log("Stream has ended:", {data});
-
         if (endCallback) endCallback(data);
+
+        handleCopyButtons();
+
+        console.log("Stream has ended:", {data});
 
         source.close();
 
-        handleCopyButtons();
     });
 
     source.onerror = function(error) {
         console.error("EventSource failed:", error);
+        if (endCallback) endCallback(data);
         source.close();
     };
 }
@@ -1421,7 +1431,7 @@ function handleOpenaiForm(){
         
         const snsChoice = $('#snsChoice').val()
         const language = $('#language').val()
-        const message = $('#message').val()
+        const message = $('#message').val() || ''
         const keywordsArray = formDataArray('keyword') ;
         const postCount = $('#postCount').val()
         const data = {snsChoice,language,message,keywordsArray,postCount}
@@ -1437,8 +1447,8 @@ function handleOpenaiForm(){
         const gpt3Prompt = `
         I am looking to craft an engaging post for ${snsChoice}. 
         The primary language of my audience is ${language}. Write the post in ${language}.
-        The core message I want to convey is: "${message}". 
-        To give you more context, here are some keywords related to my post: ${keywordsArray.join(', ')}. 
+        ${message!=''?`The core message I want to convey is: "${message}"`:''}. 
+        ${keywordsArray.length>0?`To give you more context, here are some keywords related to my post: ${keywordsArray.join(', ')}. `:''}
         And, I'd like to possibly integrate hashtags.
         Respond with the post only, no coments,no translation if not asked !
         `;
