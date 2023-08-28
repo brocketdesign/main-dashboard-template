@@ -187,8 +187,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
       nsfw = req.user.nsfw === 'true'?true:false
       page = parseInt(page) || 1
     
-      console.log('Dashboard page requested');
-      console.log( req.query, {nsfw} );
+      console.log(`Dashboard mode ${mode} requested`);
     
       if(!searchTerm){
         res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
@@ -224,22 +223,28 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
   nsfw = req.user.nsfw === 'true'?true:false
   page = parseInt(page) || 1
 
-  if(!searchTerm){
-    res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
-    return
-  }
   // If 'mode' is not provided, use the mode from the session (default to '1')
   const currentMode = mode || req.session.mode || '1';
 
   try{
-    let medias = await findDataInMedias(req.user._id, {
+    let query_obj = {
       query: {
         $regex: searchTerm,
       },
       mode:mode,
       nsfw:nsfw,
       isdl:true,
-    });
+    }
+    if(!searchTerm){
+      console.log('Should see all')
+      query_obj = {
+        mode:mode,
+        nsfw:nsfw,
+        isdl:true,
+      }
+    }
+    let medias = await findDataInMedias(req.user._id, query_obj);
+    console.log(`Found ${medias.length} element(s).`)
     medias = getUniqueElementBySource(medias)
     res.render(`search`, { user: req.user,result:true, searchTerm, scrapedData:medias.reverse(), mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 
@@ -253,21 +258,21 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
 
 function getUniqueElementBySource(medias) {
   // Map the sources and filter those that are undefined
-  const undefinedSources = medias.filter(object => object.source === undefined);
+  const undefinedSources = medias.filter(object => object.link === undefined);
 
   let uniqueData = [];
   let seenSources = new Set();
   
   for (let item of medias) {
-      if (item.source === undefined) {
-          continue; // Skip undefined sources, as we've already collected them
-      }
-      
-      if (!seenSources.has(item.source)) {
-          seenSources.add(item.source);
-          uniqueData.push(item);
-      }
-  }
+    if (item.link === undefined) {
+        continue; // Skip undefined sources, as we've already collected them
+    }
+    
+    if (!seenSources.has(item.link)) {
+        seenSources.add(item.link);
+        uniqueData.push(item);
+    }
+}
 
   // Combine unique data with the undefined sources
   return [...uniqueData, ...undefinedSources]; // Now, the return value contains unique items based on the source property and all items with an undefined source.
@@ -293,6 +298,7 @@ router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (r
       nsfw: nsfw,
       hide_query: { $exists: false },
     }, categoryId);
+
     console.log(`Found ${medias.length} items.`)
     const data = mapArrayHistory(medias)
     const userOpenAi = await mapArrayOpenai(req.user)

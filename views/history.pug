@@ -1,14 +1,20 @@
 extends dashboard
 
 block dynamicContent
-  .row.row-cols-1.row-cols-sm-2.w-100.m-0
+  if user.nsfw != 'true'
+    - colclass='row-cols-1 row-cols-sm-2'
+    - gridclass='col-12 col-sm-6'
+  else 
+    - colclass='row-cols-1'
+    - gridclass='col-12 col-sm-3'
+  .row.w-100.m-0(class=colclass)
     .col.order-1.p-3
       h6 最新の検索
       hr.mb-4
       if data
         .masonry-container.row.custom-carousel-container
           each query, index in Object.keys(data).reverse()
-            a.masonry-item.col-12.col-sm-6.mb-3.px-2.rounded(href=`/dashboard/app/${mode}/?searchTerm=${data[query][0].query}&page=${data[query][0].page}`)
+            a.masonry-item.mb-3.px-2.rounded(class=gridclass, href=`/dashboard/app/${mode}/?searchTerm=${data[query][0].query}&page=${data[query][0].page}`)
               .card.hover(style="overflow: hidden;", data-query=query)
                 .card-top.py-2.px-3.position-absolute
                   .d-flex.justify-content-between

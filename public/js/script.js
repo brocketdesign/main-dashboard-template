@@ -891,7 +891,8 @@ function updategridlayout(value) {
         updategridlayout(1)
         $('#range').hide()
         return
-    }else{
+    }
+    if($('#range').data('mode')== 1 && $(window).width() > 768){
         $('#grid-range').val(2);
         updategridlayout(2)
         $('#range').hide()
@@ -955,7 +956,6 @@ function updategridlayout(value) {
     })
   }
   function sendSearchForm(data,callback) {
-    data.nsfw = data.nsfw == 'on'
     $.ajax({
         url: `/api/loadpage`,
         type: 'POST',

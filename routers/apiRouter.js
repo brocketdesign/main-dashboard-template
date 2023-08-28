@@ -857,18 +857,35 @@ router.post('/hide', async (req, res) => {
     const element = await global.db.collection('medias').findOne({ _id: new ObjectId(element_id) });
     const source = element.source; // ソースの取得 (Assuming 'source' is the field you want to match)
 
-    // 同じソースを持つすべてのエレメントを更新する (Update all elements with the same source)
-    const result = await global.db.collection('medias').updateMany(
-      { source: source }, // 条件 (Criteria: Match all documents with the same source)
-      {
-        $pull: { categories: category.toString() }, // カテゴリの削除 (Removing the category)
-        $set: { hide: true } // 非表示フィールドを追加 (Add hide field)
-      }
-    );   
-    console.log(`Updated ${result.modifiedCount} elements with the same source.`);
+    console.log({source})
+    if(source && source != undefined){
+      // 同じソースを持つすべてのエレメントを更新する (Update all elements with the same source)
+      const result = await global.db.collection('medias').updateMany(
+        { source: source }, // 条件 (Criteria: Match all documents with the same source)
+        {
+          $pull: { categories: category.toString() }, // カテゴリの削除 (Removing the category)
+          $set: { hide: true } // 非表示フィールドを追加 (Add hide field)
+        }
+      );   
+      console.log(`Updated ${result.modifiedCount} elements with the same source.`);
 
-    if (result.modifiedCount === 0) {
-      return res.status(404).json({ message: '要素が見つかりませんでした' });
+      if (result.modifiedCount === 0) {
+        return res.status(404).json({ message: '要素が見つかりませんでした' });
+      }
+
+    }else{
+      const result = await global.db.collection('medias').updateOne(
+        { _id: new ObjectId(element_id) }, // 条件 (Criteria: Match all documents with the same source)
+        {
+          $pull: { categories: category.toString() }, // カテゴリの削除 (Removing the category)
+          $set: { hide: true } // 非表示フィールドを追加 (Add hide field)
+        }
+      );   
+      console.log(`Updated ${result.modifiedCount} elements with the same source.`);
+
+      if (result.modifiedCount === 0) {
+        return res.status(404).json({ message: '要素が見つかりませんでした' });
+      }
     }
 
     console.log('メディアが正常に更新されました');
@@ -983,7 +1000,7 @@ try {
     // リクエストボディをコンソールにログ
 
     const data = { 
-      nsfw: req.body.nsfw == 'true',
+      nsfw: req.body.nsfw == 'on',
       searchTerm: req.body.searchterm || req.body.searchTerm , 
       page: req.body.page ,
       mode: req.body.mode 
@@ -1002,7 +1019,7 @@ try {
       message: 'ページが正常にロードされました' // Message indicating the page has been successfully loaded
     });
 } catch (error) {
-  console.log('Error')
+  console.log(error)
   res.status(500).json({
     status: 'Error', // Status as success
     message: 'An error occured' // Message indicating the page has been successfully loaded
