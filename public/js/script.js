@@ -431,7 +431,7 @@ const handleCardClickable = () => {
             const cardClone = $thisCard.clone()
             cardClone.find('.card-top').remove()
             cardClone.find('img').remove()
-            cardClone.find('.card-title').show()
+            cardClone.find('.card-title').text().length > 0 ? cardClone.find('.card-title').show() : cardClone.find('.card-title').hide()
             cardClone.find('.card-body-over').remove()
             cardClone.find('.card-body').show()
             cardClone.find('.card-body').removeClass('position-absolute px-3')
@@ -852,6 +852,7 @@ const handleHiding = (videoId) => {
 }
 
 const handleHidingHistory = (query) => {
+    console.log(`Hide this query : ${query}`)
     $.ajax({
         url: '/api/hideHistory',
         method: 'POST',
@@ -954,7 +955,7 @@ function updategridlayout(value) {
     })
   }
   function sendSearchForm(data,callback) {
-
+    data.nsfw = data.nsfw == 'on'
     $.ajax({
         url: `/api/loadpage`,
         type: 'POST',

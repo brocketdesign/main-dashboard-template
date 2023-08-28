@@ -7,7 +7,7 @@ block mainContent
       input(type="hidden" name="page" id="page" value=page)
       if mode == 4
         select#category(type="text", name="category", class="form-control")
-      input#searchTerm(onfocus=mode==2?'searchSubreddits(this)':undefined ,type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
+      input#searchTerm(onfocus=mode==2?'searchSubreddits(this)':undefined ,type="text", name="searchTerm", class="form-control", placeholder="検索キーワードを入力してください", value=searchTerm, aria-label="Search")
       button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") 
         i.fas.fa-search
     .d-flex.mb-3

@@ -881,7 +881,7 @@ router.post('/hide', async (req, res) => {
 
 
 router.post('/hideHistory', async (req, res) => {
-  const { query, category } = req.body.query;
+  const { query, category } = req.body;
   console.log('クエリを非表示にする:', query); // Hide the query: query
   if (!query) {
     return res.status(400).json({ message: 'クエリが提供されていません' }); // Query not provided
@@ -897,7 +897,10 @@ router.post('/hideHistory', async (req, res) => {
     for (const media of medias) {
       await global.db.collection('medias').updateOne(
         { _id: media._id }, // 条件 (Criteria)
-        { $pull: { categories: category } } // カテゴリの削除 (Removing the category)
+        { 
+          $pull: { categories: category } ,
+          $set:{hide_query:true}
+        }
       );
     }
     

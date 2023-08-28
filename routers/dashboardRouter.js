@@ -291,6 +291,7 @@ router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (r
     const medias = await findDataInMedias(userId, {
       mode: mode,
       nsfw: nsfw,
+      hide_query: { $exists: false },
     }, categoryId);
     console.log(`Found ${medias.length} items.`)
     const data = mapArrayHistory(medias)
@@ -358,7 +359,6 @@ async function findAllData(data){
       console.log("一致するドキュメントはありません。"); // No matching documents
     }
 
-    console.log(result)
     return result
   } catch (err) {
     console.error("データベースエラー:", err); // Database error
