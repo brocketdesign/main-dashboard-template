@@ -241,7 +241,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
       isdl:true,
     });
     medias = getUniqueElementBySource(medias)
-    res.render(`search`, { user: req.user, searchTerm, scrapedData:medias.reverse(), mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+    res.render(`search`, { user: req.user,result:true, searchTerm, scrapedData:medias.reverse(), mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 
   }catch(err){
     console.log(err)
@@ -294,7 +294,8 @@ router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (r
     }, categoryId);
     console.log(`Found ${medias.length} items.`)
     const data = mapArrayHistory(medias)
-    res.render('history', { user: req.user, data, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
+    const userOpenAi = await mapArrayOpenai(req.user)
+    res.render('history', { user: req.user,userOpenAi, data, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
 
   } catch (error) {
     console.log(error);
@@ -302,6 +303,67 @@ router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (r
 
   }
 });
+async function mapArrayOpenai(user){
+  const summarize = user.openai_summarize
+
+  const all_summarize = await findAllOpenAI(summarize)
+  const info_summarize = await findAllData(all_summarize)
+
+  return info_summarize
+}
+async function findAllOpenAI(data){
+  let result = [];
+  try {
+    // Get a reference to the 'openai' collection
+    const collection = global.db.collection('openai');
+
+    // Convert string IDs to ObjectIds
+    const objectIds = data.map(id => new ObjectId(id));
+
+    // Find all matching documents in the 'openai' collection
+    result = await collection.find({
+      '_id': { '$in': objectIds }
+    }).toArray();
+
+
+    // Extract the videoId fields into a new array
+    result = result.map(doc => doc.videoId);
+
+    // If no documents are found
+    if(result.length === 0) {
+      console.log("一致するドキュメントはありません。"); // No matching documents
+    }
+
+    return result
+  } catch (err) {
+    console.error("データベースエラー:", err); // Database error
+  }
+}
+async function findAllData(data){
+  let result = [];
+  try {
+    // Get a reference to the 'openai' collection
+    const collection = global.db.collection('medias');
+
+    // Convert string IDs to ObjectIds
+    const objectIds = data.map(id => new ObjectId(id));
+
+    // Find all matching documents in the 'openai' collection
+    result = await collection.find({
+      '_id': { '$in': objectIds }
+    }).toArray();
+
+    // If no documents are found
+    if(result.length === 0) {
+      console.log("一致するドキュメントはありません。"); // No matching documents
+    }
+
+    console.log(result)
+    return result
+  } catch (err) {
+    console.error("データベースエラー:", err); // Database error
+  }
+}
 
 function mapArrayHistory(medias) {
   let highestPagePerQuery = {}; // Map to keep track of the highest page for each query

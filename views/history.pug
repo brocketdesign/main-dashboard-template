@@ -1,19 +1,37 @@
 extends dashboard
 
 block dynamicContent
-  if data
-    .masonry-container.row.custom-carousel-container
-      each query, index in Object.keys(data).reverse()
-        a.masonry-item.col-6.col-sm-3.mb-3.px-2.rounded(href=`/dashboard/app/${mode}/?searchTerm=${data[query][0].query}&page=${data[query][0].page}`)
-          .card.hover(style="overflow: hidden;", data-query=query)
-            .card-top.py-2.px-3.position-absolute
-              .d-flex.justify-content-between
-                  button.delete-button-history.btn.btn-dark.border-white.border.hover.shadow.p-0(type="button", style="display:none")
-                      i.fas.fa-trash-alt
-            .card-body.row.p-0.rounded
-              each item in data[query]
-                img.col-6.p-0(style="width:50%;height:75px;object-fit:cover", data-id=item.video_id, src=item.url || item.imageUrl || item.thumb || item.link ,  alt=item.title)
-              .text-dark.px-4.py-2.fw-bold
-                span=data[query][0].query
-  else
-    p Your search history will be displayed here.
+  .row.row-cols-1.row-cols-sm-2.w-100.m-0
+    .col.order-1.p-3
+      h6 生成結果
+      hr.mb-4
+      if data
+        .masonry-container.row.custom-carousel-container
+          each query, index in Object.keys(data).reverse()
+            a.masonry-item.col-6.col-sm-6.mb-3.px-2.rounded(href=`/dashboard/app/${mode}/?searchTerm=${data[query][0].query}&page=${data[query][0].page}`)
+              .card.hover(style="overflow: hidden;", data-query=query)
+                .card-top.py-2.px-3.position-absolute
+                  .d-flex.justify-content-between
+                      button.delete-button-history.btn.btn-dark.border-white.border.hover.shadow.p-0(type="button", style="display:none")
+                          i.fas.fa-trash-alt
+                .card-body.row.p-0.rounded
+                  each item in data[query]
+                    img.col-6.p-0(style="width:50%;height:75px;object-fit:cover", data-id=item.video_id, src=item.url || item.imageUrl || item.thumb || item.link ,  alt=item.title)
+                  .text-dark.px-4.py-2.fw-bold
+                    span=data[query][0].query
+      else
+        p Your search history will be displayed here.
+    .col.order-1.p-3
+      h6 生成結果
+      hr.mb-4
+      if userOpenAi
+        for item in userOpenAi
+          .card
+            .row 
+              .card-image.col-4.mx-0
+                img(src=item.imageUrl,width="100%")
+              .card-body.col-8.mx-0.py-2
+                h5=item.title
+                p=item.openai && item.openai.summarize ? item.openai.summarize.slice(0, 75) + '...' : ''
+      else
+        p Your search history will be displayed here.

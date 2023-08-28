@@ -24,10 +24,11 @@ block mainContent
   if result
     #video-container
       .row.row-cols-1.row-cols-sm-2.w-100.m-0
-        .col.px-0
-          #video-holder.sticky-video.px-0.mb-4.bg-transparent
+        .col.px-0.order-1.my-3
+          #video-holder.sticky-video.px-0.bg-transparent
+        .col.order-3.order-sm-3.my-3
           block dynamicContent
-        .col
+        .col.order-2.order-sm-2.my-3(class=user.nsfw=='true'?'d-none nsfw':'sfw')
           #result.d-none
           #summary(style="display:none")
             .content
@@ -156,7 +157,8 @@ block mainContent
                             | 生成する
                       #result-important
 
-    #mobile-toolbar.mb-3.d-block.d-md-none
+    //#mobile-toolbar.mb-3.d-block.d-md-none
+    //block dynamicContent
   else 
     block dynamicContent
   if uniqueCurrentPages

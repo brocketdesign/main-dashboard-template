@@ -196,13 +196,8 @@ li.list-group-item{
       left:0;
       right:0;
       width: 100%;
-      display:none;
     }
 
-    #video-holder .card.info-container, #video-container #summary {
-      position: absolute;
-      display: none;
-    }
     #video-holder video {
       max-height: auto !important;
     }
