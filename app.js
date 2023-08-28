@@ -127,12 +127,14 @@ function startServer() {
       // Define your routers
       const indexRouter = require('./routers/indexRouter');
       const apiRouter = require('./routers/apiRouter');
+      const videoOpenaiRouter = require('./routers/videoOpenaiRouter');
       const userRouter = require('./routers/userRouter');
       const dashboardRouter= require('./routers/dashboardRouter');
       const paymentRouter = require('./routers/paymentRouter');
 
       app.use('/', indexRouter); // Use the index router for '/'
       app.use('/api', apiRouter); // Use the API router for '/api'
+      app.use('/api/openai-video', videoOpenaiRouter); 
       app.use('/user', userRouter); // Use the user router for '/user'
       app.use('/payment', paymentRouter);
       app.use('/dashboard', dashboardRouter);

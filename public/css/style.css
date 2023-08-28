@@ -6,10 +6,10 @@ main#dashboard {
   font-size: 12px;
   display:none;
 }
-#video-container i,#video-container .spinner-border {
+#video-holder i,#video-holder.spinner-border {
   color: black !important;
 }
-#video-container .card-title, #mobile-toolbar .card-title{
+#video-holder .card-title, #mobile-toolbar .card-title{
   color:white;
 }
 .done.download-button i {
@@ -17,6 +17,10 @@ main#dashboard {
 }
 .masonry-container .download-button i,.masonry-container .spinner-border  {
   color:white ;
+}
+.accordion-item h2 button {
+  font-weight: bold;
+  font-size: 18px;
 }
 .contain-text {
   height: 30px;  /* Or whatever height you desire */

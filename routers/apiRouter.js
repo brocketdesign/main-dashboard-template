@@ -9,7 +9,8 @@ const {
   translateText, 
   updateSameElements,
   fetchOpenAICompletion,
-  initCategories
+  initCategories,
+  saveDataSummarize
 } = require('../services/tools')
 const pdfToChunks = require('../modules/pdf-parse')
 const multer = require('multer');
@@ -490,21 +491,6 @@ router.post('/openai/regen-ebook', async (req, res) => {
 });
 
 
-async function saveDataSummarize(videoId, format){
-  try {
-    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
-
-    format.last_summarized = Date.now();
-    const result = await global.db.collection('medias').updateOne(
-      {_id:new ObjectId(videoId)},
-      {$set:format}
-    )
-
-    console.log(`${result.modifiedCount} element updated in the database.`);
-  } catch (error) {
-    console.log('Error while updating element:', error);
-  }
-}
 const generateJson = async (messages,openai) => {
   const completion = await openai.createChatCompletion({
     model: process.env.COMPLETIONS_MODEL,

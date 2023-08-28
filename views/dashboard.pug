@@ -3,142 +3,162 @@ extends dashboard-base
 block mainContent
   a.display-4(href=`/dashboard/app/${mode}`) Home
   form#search(action=`/dashboard/app/${mode}`, method="GET", data-mode=mode, data-page=page, data-nsfw= user.nsfw)
-  .input-group.mb-3
-    input(type="hidden" name="page" id="page" value=page)
-    if mode == 4
-      select#category(type="text", name="category", class="form-control")
-    input#searchTerm(onfocus=mode==2?'searchSubreddits(this)':undefined ,type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
-    button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") 
-      i.fas.fa-search
-  .d-flex.mb-3
-    .form-check.form-switch.input-group-text.rounded-0.position-relative.border-0.p-0
-      label.form-check-label.badge.me-3.bg-danger.p-2(for="nsfw")
-        | NSFW
-        i.fas.fa-times.ms-2
-      input.form-check-input.position-absolute(type="checkbox", role="switch", id="nsfw", name="nsfw", style="z-index: 1;opacity:0;")
-    if searchTerm
-      a.badge.bg-dark.d-flex.align-items-center.text-white(href=`/dashboard/app/${mode}/fav?searchTerm=${searchTerm}`)
-        | Favorites
-        i.fas.fa-heart.ms-2
+    .input-group.mb-3
+      input(type="hidden" name="page" id="page" value=page)
+      if mode == 4
+        select#category(type="text", name="category", class="form-control")
+      input#searchTerm(onfocus=mode==2?'searchSubreddits(this)':undefined ,type="text", name="searchTerm", class="form-control", placeholder="Enter your search term", value=searchTerm, aria-label="Search")
+      button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") 
+        i.fas.fa-search
+    .d-flex.mb-3
+      .form-check.form-switch.input-group-text.rounded-0.position-relative.border-0.p-0
+        label.form-check-label.badge.me-3.bg-danger.p-2(for="nsfw")
+          | NSFW
+          i.fas.fa-times.ms-2
+        input.form-check-input.position-absolute(type="checkbox", role="switch", id="nsfw", name="nsfw", style="z-index: 1;opacity:0;")
+      if searchTerm
+        a.badge.bg-dark.d-flex.align-items-center.text-white(href=`/dashboard/app/${mode}/fav?searchTerm=${searchTerm}`)
+          | Favorites
+          i.fas.fa-heart.ms-2
   ul.list-group#subRedditSearchRes.bg-white.w-100.position-absolute.border.shadow(style="max-height: 50vh;overflow: auto;z-index: 3;display: contents;")
+  if result
+    #video-container
+      .row.row-cols-1.row-cols-sm-2.w-100.m-0
+        .col.px-0
+          #video-holder.sticky-video.px-0.mb-4.bg-transparent
+          block dynamicContent
+        .col
+          #result.d-none
+          #summary(style="display:none")
+            .content
+            #accordion.accordion
+            // Summarize Section
+            .accordion-item
+              h2.accordion-header#headingOne
+                button.btn.bg-white.px-3.accordion-button(type='button', data-bs-toggle='collapse', data-bs-target='#collapseOne') 要約する
+              #collapseOne.accordion-collapse.collapse.show(aria-labelledby='headingOne', data-bs-parent='#accordion')
+                .accordion-body
 
-  #video-container
-    .row.row-cols-1.row-cols-sm-2.w-100.m-0
-      .col.px-0
-        #video-holder.sticky-video.px-0.mb-4.bg-transparent
-        block dynamicContent
-      .col
-        #result.d-none
-        #summary.d-none.d-md-block
-          .content
-          #accordion.accordion
-          // Summarize Section
-          .accordion-item
-            h2.accordion-header#headingOne
-              button.btn.bg-white.px-3.accordion-button(type='button', data-bs-toggle='collapse', data-bs-target='#collapseOne') Summarize
-            #collapseOne.accordion-collapse.collapse.show(aria-labelledby='headingOne', data-bs-parent='#accordion')
-              .accordion-body
-
-                .row.row-cols-1.pe-0
-                  .col.p-3
-                    form.row#summarize.default.bg-white
-                      .row
-                        .form-group.col-6.my-3
-                          label.fw-bold.my-2(for='language') 言語
-                          select#language.form-control(name='language',required)
-                            option(value='japanese')
-                              i.faw.faw-flag-jp
-                              |  Japanese
-                            option(value='english')
-                              i.faw.faw-flag-us
-                              |  English
-                        .form-group.col-6.my-3
-                          label.fw-bold.my-2(for='postCount') 投稿数
-                          select#postCount.form-control(name='postCount', required)
-                              option(value='1') 1 投稿
-                              option(value='2') 2 投稿
-                              option(value='3') 3 投稿
-                              option(value='4') 4 投稿
-                              option(value='5') 5 投稿
-                        .form-group.col-6.my-3
-                          label.fw-bold.my-2(for='snsChoice') SNS選択
-                          select#snsChoice.form-control(name='snsChoice', required)
-                            option(value='twitter')
-                              |  Twitter
-                            option(value='instagram')
-                              |  Instagram
-                            option(value='facebook')
-                              |  Facebook
-                            option(value='linkedin')
-                              |  LinkedIn 
-                      .my-3
-                        button.btn.btn-primary.w-100(type='submit') 
-                          i.fas.fa-paper-plane.me-3
-                          | 生成する
-                // Your "Summarize" form content here
-          
-          // SNS Post Section
-          .accordion-item
-            h2.accordion-header#headingTwo
-               button.btn.bg-white.px-3.accordion-button.collapsed(type='button', data-bs-toggle='collapse', data-bs-target='#collapseTwo') SNS Post
-            #collapseTwo.accordion-collapse.collapse(aria-labelledby='headingTwo', data-bs-parent='#accordion')
-              .accordion-body
-                // Your "SNS Post" form content here
-                .row.row-cols-1.pe-0
-                  .col.p-3
-                    form.row#snsContent.default.bg-white
-                      .row
-                        .form-group.col-6.my-3
-                          label.fw-bold.my-2(for='language') 言語
-                          select#language.form-control(name='language',required)
-                            option(value='japanese')
-                              i.faw.faw-flag-jp
-                              |  Japanese
-                            option(value='english')
-                              i.faw.faw-flag-us
-                              |  English
-                        .form-group.col-6.my-3
-                          label.fw-bold.my-2(for='postCount') 投稿数
-                          select#postCount.form-control(name='postCount', required)
-                              option(value='1') 1 投稿
-                              option(value='2') 2 投稿
-                              option(value='3') 3 投稿
-                              option(value='4') 4 投稿
-                              option(value='5') 5 投稿
-                        .form-group.col-6.my-3
-                          label.fw-bold.my-2(for='snsChoice') SNS選択
-                          select#snsChoice.form-control(name='snsChoice', required)
-                            option(value='twitter')
-                              |  Twitter
-                            option(value='instagram')
-                              |  Instagram
-                            option(value='facebook')
-                              |  Facebook
-                            option(value='linkedin')
-                              |  LinkedIn 
-                      .my-3
-                        button.btn.btn-primary.w-100(type='submit') 
-                          i.fas.fa-paper-plane.me-3
-                          | 生成する
+                  .row.row-cols-1.pe-0
+                    .col.p-3
+                      form.row#video-summarize.default.bg-white
+                        .row
+                          .form-group.col-6.my-3
+                            label.fw-bold.my-2(for='language') 言語
+                            select#language.form-control(name='language',required)
+                              option(value='jp')
+                                i.faw.faw-flag-jp
+                                |  Japanese
+                              option(value='en')
+                                i.faw.faw-flag-us
+                                |  English
+                        .my-3
+                          button.btn.btn-primary.w-100(type='submit') 
+                            i.fas.fa-paper-plane.me-3
+                            | 生成する
+                      #result-summarize
+                  // Your "Summarize" form content here
+            
+            // SNS Post Section
+            .accordion-item
+              h2.accordion-header#headingTwo
+                button.btn.bg-white.px-3.accordion-button.collapsed(type='button', data-bs-toggle='collapse', data-bs-target='#collapseTwo') SNS投稿
+              #collapseTwo.accordion-collapse.collapse(aria-labelledby='headingTwo', data-bs-parent='#accordion')
+                .accordion-body
+                  // Your "SNS Post" form content here
+                  .row.row-cols-1.pe-0
+                    .col.p-3
+                      form.row#video-snsContent.default.bg-white
+                        .row
+                          .form-group.col-6.my-3
+                            label.fw-bold.my-2(for='language') 言語
+                            select#language.form-control(name='language',required)
+                              option(value='jp')
+                                i.faw.faw-flag-jp
+                                |  Japanese
+                              option(value='en')
+                                i.faw.faw-flag-us
+                                |  English
+                          .form-group.col-6.my-3
+                            label.fw-bold.my-2(for='postCount') 投稿数
+                            select#postCount.form-control(name='postCount', required)
+                                option(value='1') 1 投稿
+                                option(value='2') 2 投稿
+                                option(value='3') 3 投稿
+                                option(value='4') 4 投稿
+                                option(value='5') 5 投稿
+                          .form-group.col-6.my-3
+                            label.fw-bold.my-2(for='snsChoice') SNS選択
+                            select#snsChoice.form-control(name='snsChoice', required)
+                              option(value='twitter')
+                                |  Twitter
+                              option(value='instagram')
+                                |  Instagram
+                              option(value='facebook')
+                                |  Facebook
+                              option(value='linkedin')
+                                |  LinkedIn 
+                        .my-3
+                          button.btn.btn-primary.w-100(type='submit') 
+                            i.fas.fa-paper-plane.me-3
+                            | 生成する
                       #result-snsContent
-          
-          // Q&A Section
-          .accordion-item
-            h2.accordion-header#headingThree
-               button.btn.bg-white.px-3.accordion-button.collapsed(type='button', data-bs-toggle='collapse', data-bs-target='#collapseThree') Q&A
-            #collapseThree.accordion-collapse.collapse(aria-labelledby='headingThree', data-bs-parent='#accordion')
-              .accordion-body
-                // Your "Q&A" form content here
-          
-          // Importants Section
-          .accordion-item
-            h2.accordion-header#headingFour
-               button.btn.bg-white.px-3.accordion-button.collapsed(type='button', data-bs-toggle='collapse', data-bs-target='#collapseFour') Importants
-            #collapseFour.accordion-collapse.collapse(aria-labelledby='headingFour', data-bs-parent='#accordion')
-              .accordion-body
-                // Your "Importants" form content here
-  #mobile-toolbar.mb-3.d-block.d-md-none
+            
+            // Q&A Section
+            .accordion-item
+              h2.accordion-header#headingThree
+                button.btn.bg-white.px-3.accordion-button.collapsed(type='button', data-bs-toggle='collapse', data-bs-target='#collapseThree') Q&A（質問と回答）
+              #collapseThree.accordion-collapse.collapse(aria-labelledby='headingThree', data-bs-parent='#accordion')
+                .accordion-body
 
+                  .row.row-cols-1.pe-0
+                    .col.p-3
+                      form.row#video-qa.default.bg-white
+                        .row
+                          .form-group.col-6.my-3
+                            label.fw-bold.my-2(for='language') 言語
+                            select#language.form-control(name='language',required)
+                              option(value='jp')
+                                i.faw.faw-flag-jp
+                                |  Japanese
+                              option(value='en')
+                                i.faw.faw-flag-us
+                                |  English
+                        .my-3
+                          button.btn.btn-primary.w-100(type='submit') 
+                            i.fas.fa-paper-plane.me-3
+                            | 生成する
+                      #result-qa
+            
+            // Importants Section
+            .accordion-item
+              h2.accordion-header#headingFour
+                button.btn.bg-white.px-3.accordion-button.collapsed(type='button', data-bs-toggle='collapse', data-bs-target='#collapseFour') 重要事項
+              #collapseFour.accordion-collapse.collapse(aria-labelledby='headingFour', data-bs-parent='#accordion')
+                .accordion-body
+
+                  .row.row-cols-1.pe-0
+                    .col.p-3
+                      form.row#video-important.default.bg-white
+                        .row
+                          .form-group.col-6.my-3
+                            label.fw-bold.my-2(for='language') 言語
+                            select#language.form-control(name='language',required)
+                              option(value='jp')
+                                i.faw.faw-flag-jp
+                                |  Japanese
+                              option(value='en')
+                                i.faw.faw-flag-us
+                                |  English
+                        .my-3
+                          button.btn.btn-primary.w-100(type='submit') 
+                            i.fas.fa-paper-plane.me-3
+                            | 生成する
+                      #result-important
+
+    #mobile-toolbar.mb-3.d-block.d-md-none
+  else 
+    block dynamicContent
   if uniqueCurrentPages
     if uniqueCurrentPages.length
       ul

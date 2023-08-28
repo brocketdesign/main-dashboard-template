@@ -287,13 +287,10 @@ const fetchOpenAICompletion = async (messages, res) => {
         }
       });
 
-      let data = '';
 
       for await (const chunk of response.body) {
-        data += new TextDecoder('utf-8').decode(chunk);
+        parser.feed(new TextDecoder('utf-8').decode(chunk));
       }
-      
-      parser.feed(data);
       
       return fullCompletion;
 
@@ -327,6 +324,21 @@ async function initCategories(userId) {
     return [newCategory.id];
   }
 } 
+async function saveDataSummarize(videoId, format){
+  try {
+    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
+
+    format.last_summarized = Date.now();
+    const result = await global.db.collection('medias').updateOne(
+      {_id:new ObjectId(videoId)},
+      {$set:format}
+    )
+
+    console.log(`${result.modifiedCount} element updated in the database.`);
+  } catch (error) {
+    console.log('Error while updating element:', error);
+  }
+}
 
 module.exports = { 
   formatDateToDDMMYYHHMMSS, 
@@ -338,5 +350,6 @@ module.exports = {
   updateSameElements,
   getOpenaiTypeForUser,
   fetchOpenAICompletion,
-  initCategories
+  initCategories,
+  saveDataSummarize
 }

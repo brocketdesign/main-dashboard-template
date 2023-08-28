@@ -205,7 +205,8 @@ $(document).ready(function() {
     //Handle SideBAR
     onLargeScreen(handleSideBar)
     onSmallScreen(handleSideBar2)
-
+    
+    handleAccordions()
     handleBookEditing();
     handleScrollDownButton();
     handleCardClickable();
@@ -421,6 +422,7 @@ const handleCardClickable = () => {
             // Update the card body with the new video
             //$thisCard.prepend($video);
             $('#video-holder').html('')
+            $('#video-holder').data('id',id)
             $('#video-holder').append($video)//.append($thisCard.find('.tool-bar').clone()).append($thisCard.find('.card-title').clone().show())
             
             //scrollToTop();
@@ -441,17 +443,8 @@ const handleCardClickable = () => {
 
             $('#mobile-toolbar').append(cardClone.clone())
        
-            $('#summary .content').html('')
-            if(response && response.data && response.data.summary && response.data.summary.length > 0){
-                if($('#summary-content').length == 0){
-                    const initialCardHtml = `<div class="card mb-3" id="summary"><div class="card-body"></div></div>`;
-                    const initialCardHtmlMobile = `<div class="card mb-3" id="summary-content"><div class="card-body"></div></div>`;
-                    $('#summary .content').prepend(initialCardHtml);
-                    $('#mobile-toolbar').append(initialCardHtmlMobile);
-                }
-                $('#summary .card-body').append(response.data.summary)
-                $('#mobile-toolbar #summary-content .card-body').append(response.data.summary)
-            }
+            //displaySummary(response)
+            $('#summary').show()
    
               $('#video-container').show()
               //$thisCard.hide()
@@ -494,7 +487,19 @@ const handleCardClickable = () => {
       });
   });
 }
-
+function displaySummary(response) {
+    $('#summary .content').html('')
+    if(response && response.data && response.data.summary && response.data.summary.length > 0){
+        if($('#summary-content').length == 0){
+            const initialCardHtml = `<div class="card mb-3" id="summary"><div class="card-body"></div></div>`;
+            const initialCardHtmlMobile = `<div class="card mb-3" id="summary-content"><div class="card-body"></div></div>`;
+            $('#summary .content').prepend(initialCardHtml);
+            $('#mobile-toolbar').append(initialCardHtmlMobile);
+        }
+        $('#summary .card-body').append(response.data.summary)
+        $('#mobile-toolbar #summary-content .card-body').append(response.data.summary)
+    }
+}
 // Handling of download button clicking
 const handleDownloadButton = () => {
   $(document).on('click', '.download-button', function(event) {
@@ -1445,12 +1450,7 @@ function handleOpenaiForm(){
 
         // Constructing the GPT-3 prompt using the collected data
         const gpt3Prompt = `
-        I am looking to craft an engaging post for ${snsChoice}. 
-        The primary language of my audience is ${language}. Write the post in ${language}.
-        ${message!=''?`The core message I want to convey is: "${message}"`:''}. 
-        ${keywordsArray.length>0?`To give you more context, here are some keywords related to my post: ${keywordsArray.join(', ')}. `:''}
-        And, I'd like to possibly integrate hashtags.
-        Respond with the post only, no coments,no translation if not asked !
+        I am looking to craft an engaging post for ${snsChoice}. \nThe primary language of my audience is ${language}. Write the post in ${language}.\n${message!=''?`The core message I want to convey is: "${message}"`:''}. \n${keywordsArray.length>0?`To give you more context, here are some keywords related to my post: ${keywordsArray.join(', ')}. `:''}\n\nAnd, I'd like to possibly integrate hashtags.\n\nRespond with the post only, no coments,no translation if not asked !
         `;
         generateStream('sns',gpt3Prompt,data,function(response){
             for(let i = 1; i <= postCount; i++) {
@@ -1927,4 +1927,22 @@ function handleCopyButtons() {
 function handleShareButton(e) {
     const tweetText = $(e).closest('.card').find(`.card-body p`).text();
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url`)
+}
+function handleAccordions(){
+        $('.accordion-item').on('show.bs.collapse', function () {
+          // Get the id of the accordion that is about to be shown
+          const currentAccordionId = $(this).find('.accordion-collapse').attr('id');
+      
+          // Loop through all accordion items
+          $('.accordion-item').each(function () {
+            // Get the id of the current accordion item in the loop
+            const accordionId = $(this).find('.accordion-collapse').attr('id');
+      
+            // If the current accordion item in the loop is not the one that's about to be shown, hide it
+            if (accordionId !== currentAccordionId) {
+              $('#' + accordionId).collapse('hide');
+            }
+          });
+        });
+      
 }

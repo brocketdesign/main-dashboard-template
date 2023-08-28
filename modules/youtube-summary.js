@@ -57,7 +57,7 @@ async function summarizeVideo(user,videoId) {
   const checkSUmmary = await isSummarized (user,videoId)
   if (checkSUmmary){
     console.log('Video has already been summarized')
-    return {summary:checkSUmmary.summary}
+    //return {summary:checkSUmmary.summary}
   }
 
   console.log('Summarizing the video')

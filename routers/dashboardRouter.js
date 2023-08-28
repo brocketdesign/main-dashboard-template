@@ -207,7 +207,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
       } catch (error) {
         console.log(error)
       }
-      res.render(`search`, { user: req.user, searchTerm, scrapedData, scrapInfo, mode, page, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
+      res.render(`search`, { user: req.user, result:true, searchTerm, scrapedData, scrapInfo, mode, page, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
     
   } catch (error) {
     console.error('An error occurred:', error);
