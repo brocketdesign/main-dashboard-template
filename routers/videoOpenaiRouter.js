@@ -97,8 +97,8 @@ router.get('/stream/:type', async (req, res) => {
                     'en' :`I am looking to craft an engaging post for ${data.snsChoice}. \nThe primary language of my audience is ${data.language}. Write the post in ${data.language}.\n${data.message!=''?`The core message I want to convey is: "${chunks[i]}"`:''}. \n${data.keywordsArray && data.keywordsArray.length>0?`To give you more context, here are some keywords related to my post: ${data.keywordsArray.join(', ')}. `:''}\n\nAnd, I'd like to possibly integrate hashtags.\n\nRespond with the post only, no coments,no translation if not asked !`
                 },
                 'qa': {
-                    'jp': `以下の内容について、5つの質問とその回答を作成してください。\n\n${chunks[i]}\n\n質問と回答は明確で短いものにしてください。Markdown形式で回答してください。注: コメント、翻訳は明示的に要求されない限り不要です。`,
-                    'en': `Please create a Q&A consisting of 5 questions and their answers based on the following content:\n\n${chunks[i]}\n\nMake the questions and answers clear and concise. Respond using markdown. Note: Provide the post content only—no comments, no translations unless explicitly requested.`
+                    'jp': `以下の内容について、3つの質問とその回答を作成してください。\n\n${chunks[i]}\n\n質問と回答は明確で短いものにしてください。Markdown形式で回答してください。注: コメント、翻訳は明示的に要求されない限り不要です。`,
+                    'en': `Please create a Q&A consisting of 3 questions and their answers based on the following content:\n\n${chunks[i]}\n\nMake the questions and answers clear and concise. Respond using markdown. Note: Provide the post content only—no comments, no translations unless explicitly requested.`
                   },
                 'important': {
                 'jp': `以下の内容から重要なポイントを抽出してください。\n\n${chunks[i]}\n\n重要なポイントを箇条書きで明確にしてください。Markdown形式で回答してください。注: コメント、翻訳は明示的に要求されない限り不要です。`,

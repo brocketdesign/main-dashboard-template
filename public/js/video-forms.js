@@ -9,12 +9,7 @@ $(document).ready(function() {
         console.log(videoId)
 
         const $buttonContainer = $(this).find('button[type="submit"]')
-        // Check if the card has already been processed
-        if ($buttonContainer.hasClass('done')) {
-            handleFormResult(false, 'I am working here') 
-            console.log('Card is beeing processed.');
-            return;
-        }
+        if (shouldPreventSubmission($buttonContainer)) { return; }
 
         // Mark the card as done to avoid processing it again
         $buttonContainer.addClass('done');
@@ -27,9 +22,11 @@ $(document).ready(function() {
             processData: false, // Tell jQuery not to process data
             contentType: false, // Tell jQuery not to set contentType
             success: function(response) {
-                handleStream(response, function(message) {
 
-                    const containerID = `card-${response.insertedId}`;
+                let containerID
+                const sourceInstance = handleStream(response, function(message) {
+
+                    containerID = `card-${response.insertedId}`;
                     const item = message; // Replace with the appropriate value for "item"
                     const doc = response; // Replace with the appropriate value for "doc"
                 
@@ -47,27 +44,24 @@ $(document).ready(function() {
                     }
                 
                     $(`#result-summarize-temp`).append(message);
+                    $(`#${containerID} .card-body p`).append(message);
 
-                    watchAndConvertMarkdown(`#result-summarize-temp`, `#${containerID} .card-body p`); 
                 },function(endMessage){
                     console.log(endMessage)
-                    $spinner.hide()
-                    $buttonContainer.find('i').show();
-                    $buttonContainer.removeClass('done');
+                    watchAndConvertMarkdown(`#result-summarize-temp`, `#${containerID} .card-body p`); 
+                    resetButton($spinner,$buttonContainer)
                     $('#result-summarize-temp').remove()
                 });
+
+                handleGenerationStop(sourceInstance,$spinner,$buttonContainer)
             },
             error: function(error) {
                 console.error(error);
-                $spinner.hide()
-                $buttonContainer.find('i').show();
-                $buttonContainer.removeClass('done');
+                resetButton($spinner,$buttonContainer)
             },
             finally: function(error) {
                 console.error(error);
-                $spinner.hide()
-                $buttonContainer.find('i').show();
-                $buttonContainer.removeClass('done');
+                resetButton($spinner,$buttonContainer)
             }
         });
     });
@@ -82,12 +76,7 @@ $(document).ready(function() {
         console.log(videoId)
 
         const $buttonContainer = $(this).find('button[type="submit"]')
-        // Check if the card has already been processed
-        if ($buttonContainer.hasClass('done')) {
-            handleFormResult(false, 'I am working here') 
-            console.log('Card is beeing processed.');
-            return;
-        }
+        if (shouldPreventSubmission($buttonContainer)) { return; }
 
         // Mark the card as done to avoid processing it again
         $buttonContainer.addClass('done');
@@ -103,48 +92,49 @@ $(document).ready(function() {
             processData: false, // Tell jQuery not to process data
             contentType: false, // Tell jQuery not to set contentType
             success: function(response) {
+                let sourceInstances = {};
+                let containerID
+
                 for(let i = 1; i <= postCount; i++) {
-                    (function(index) {handleStream(response, function(message) {
-                        const containerID = `card-${response.insertedId}-${index}`;
-                        const item = message; // Replace with the appropriate value for "item"
-                        const doc = response; // Replace with the appropriate value for "doc"
-                    
-                        if($('#' + containerID).length == 0) {
-                            const initialCardHtml = designCard(containerID,doc,item)
-                            
-                        $('#result-snsContent').prepend(initialCardHtml);
-                        updateMoments();
-                        console.log(`Initial card created with id: card-${containerID}`);
-                        }
-                    
-                        $(`#${containerID} .card-body p`).append(message);
-                        },function(endMessage){
-                            console.log(endMessage)
-                            $spinner.hide()
-                            $buttonContainer.find('i').show();
-                            $buttonContainer.removeClass('done');
-                        });
-                  
+                    (function(index) {
+                        let source =  handleStream(response, function(message) {
+                            containerID = `card-${response.insertedId}-${index}`;
+                            const item = message; // Replace with the appropriate value for "item"
+                            const doc = response; // Replace with the appropriate value for "doc"
+                        
+                            if($('#' + containerID).length == 0) {
+                                const initialCardHtml = designCard(containerID,doc,item)
+                                
+                            $('#result-snsContent').prepend(initialCardHtml);
+                            updateMoments();
+                            console.log(`Initial card created with id: card-${containerID}`);
+                            }
+                        
+                            $(`#${containerID} .card-body p`).append(message);
+                            },function(endMessage){
+                                console.log(endMessage)
+                                resetButton($spinner,$buttonContainer)
+                            });
+                                
+                        // Store the source instance for this generation
+                        sourceInstances[`source-${index}`] = source;
                     })(i);
 
                 }
+
+                handleGenerationStop(sourceInstances,$spinner, $buttonContainer)
             },
             error: function(error) {
                 console.error(error);
-                $spinner.hide()
-                $buttonContainer.find('i').show();
-                $buttonContainer.removeClass('done');
+                resetButton($spinner,$buttonContainer)
             },
             finally: function(error) {
                 console.error(error);
-                $spinner.hide()
-                $buttonContainer.find('i').show();
-                $buttonContainer.removeClass('done');
+                resetButton($spinner,$buttonContainer)
             }
         });
     });
   
-    
     $('#video-qa').submit(function(event) {
         event.preventDefault();
 
@@ -155,12 +145,7 @@ $(document).ready(function() {
         console.log(videoId)
 
         const $buttonContainer = $(this).find('button[type="submit"]')
-        // Check if the card has already been processed
-        if ($buttonContainer.hasClass('done')) {
-            handleFormResult(false, 'I am working here') 
-            console.log('Card is beeing processed.');
-            return;
-        }
+        if (shouldPreventSubmission($buttonContainer)) { return; }
 
         // Mark the card as done to avoid processing it again
         $buttonContainer.addClass('done');
@@ -173,9 +158,10 @@ $(document).ready(function() {
             processData: false, // Tell jQuery not to process data
             contentType: false, // Tell jQuery not to set contentType
             success: function(response) {
-                handleStream(response, function(message) {
+                let containerID
+               const sourceInstance = handleStream(response, function(message) {
 
-                    const containerID = `card-${response.insertedId}`;
+                    containerID = `card-${response.insertedId}`;
                     const item = message; // Replace with the appropriate value for "item"
                     const doc = response; // Replace with the appropriate value for "doc"
                 
@@ -193,30 +179,28 @@ $(document).ready(function() {
                     }
                 
                     $(`#result-qa-temp`).append(message);
+                    $(`#${containerID} .card-body p`).append(message);
 
-                    watchAndConvertMarkdown(`#result-qa-temp`, `#${containerID} .card-body p`); 
                 },function(endMessage){
                     console.log(endMessage)
-                    $spinner.hide()
-                    $buttonContainer.find('i').show();
-                    $buttonContainer.removeClass('done');
+                    watchAndConvertMarkdown(`#result-qa-temp`, `#${containerID} .card-body p`); 
+                    resetButton($spinner,$buttonContainer)
                     $('#result-qa-temp').remove()
                 });
+
+                handleGenerationStop(sourceInstance,$spinner,$buttonContainer)
             },
             error: function(error) {
                 console.error(error);
-                $spinner.hide()
-                $buttonContainer.find('i').show();
-                $buttonContainer.removeClass('done');
+                resetButton($spinner,$buttonContainer)
             },
             finally: function(error) {
                 console.error(error);
-                $spinner.hide()
-                $buttonContainer.find('i').show();
-                $buttonContainer.removeClass('done');
+                resetButton($spinner,$buttonContainer)
             }
         });
     });
+
     $('#video-important').submit(function(event) {
             event.preventDefault();
     
@@ -227,13 +211,8 @@ $(document).ready(function() {
             console.log(videoId)
     
             const $buttonContainer = $(this).find('button[type="submit"]')
-            // Check if the card has already been processed
-            if ($buttonContainer.hasClass('done')) {
-                handleFormResult(false, 'I am working here') 
-                console.log('Card is beeing processed.');
-                return;
-            }
-    
+            if (shouldPreventSubmission($buttonContainer)) { return; }
+
             // Mark the card as done to avoid processing it again
             $buttonContainer.addClass('done');
             const $spinner = showSpinner($buttonContainer,'important')
@@ -245,9 +224,10 @@ $(document).ready(function() {
                 processData: false, // Tell jQuery not to process data
                 contentType: false, // Tell jQuery not to set contentType
                 success: function(response) {
-                    handleStream(response, function(message) {
+                    let containerID
+                    const sourceInstance = handleStream(response, function(message) {
     
-                        const containerID = `card-${response.insertedId}`;
+                        containerID = `card-${response.insertedId}`;
                         const item = message; // Replace with the appropriate value for "item"
                         const doc = response; // Replace with the appropriate value for "doc"
                     
@@ -265,32 +245,51 @@ $(document).ready(function() {
                         }
                     
                         $(`#result-important-temp`).append(message);
+                        $(`#${containerID} .card-body p`).append(message);
     
-                        watchAndConvertMarkdown(`#result-important-temp`, `#${containerID} .card-body p`); 
                     },function(endMessage){
                         console.log(endMessage)
-                        $spinner.hide()
-                        $buttonContainer.find('i').show();
-                        $buttonContainer.removeClass('done');
+                        watchAndConvertMarkdown(`#result-important-temp`, `#${containerID} .card-body p`); 
+                        resetButton($spinner,$buttonContainer)
                         $('#result-important-temp').remove()
                     });
+                    handleGenerationStop(sourceInstance,$spinner,$buttonContainer)
+
                 },
                 error: function(error) {
                     console.error(error);
-                    $spinner.hide()
-                    $buttonContainer.find('i').show();
-                    $buttonContainer.removeClass('done');
+                    resetButton($spinner,$buttonContainer)
                 },
                 finally: function(error) {
                     console.error(error);
-                    $spinner.hide()
-                    $buttonContainer.find('i').show();
-                    $buttonContainer.removeClass('done');
+                    resetButton($spinner,$buttonContainer)
                 }
             });
     });  
 });
 
-  function designCard(containerID,doc,item){
-    return `<div class="card mb-3" id="${containerID}" data-id="${doc._id}"><div class="card-top p-3 d-flex align-items-center justify-content-between"><div class="tools d-flex align-items-center"><a class="btn tool-button share mx-2" onclick="handleShareButton(this)" data-toggle="tooltip" title="Twitterでシェア"><i class="fas fa-share-alt"></i></a><badge class="btn tool-button tool-button-copy mx-2" data-toggle="tooltip" title="コピー"><i class="fas fa-copy"></i></badge></div><div class="text-end text-sm text-muted" style="font-size:12px"><div class="custom-date" data-value="${new Date()}"></div></div></div><div class="card-body py-0"><p>${item}</p></div></div>`;
-   }
+function handleGenerationStop(sourceInstance,$spinner,$buttonContainer){
+    $($buttonContainer).on('click',function(){
+        handleFormResult(false, 'AI 生成停止 ') 
+        stopStreams(sourceInstance)
+        resetButton($spinner,$buttonContainer)
+        $buttonContainer.addClass('stop')
+    })
+}
+function resetButton($spinner,$buttonContainer){
+    $spinner.hide()
+    $buttonContainer.find('i').show();
+    $buttonContainer.removeClass('done bg-danger').text('生成する')
+}
+function shouldPreventSubmission($buttonContainer) {
+    console.log($buttonContainer.html())
+    if ($buttonContainer.hasClass('stop')) {
+        console.log("Form submission prevented due to 'stop' class.");
+        $buttonContainer.removeClass('stop')
+        return true;
+    }
+    return false;
+}
+function designCard(containerID,doc,item){
+return `<div class="card mb-3" id="${containerID}" data-id="${doc._id}"><div class="card-top p-3 d-flex align-items-center justify-content-between"><div class="tools d-flex align-items-center"><a class="btn tool-button share mx-2" onclick="handleShareButton(this)" data-toggle="tooltip" title="Twitterでシェア"><i class="fas fa-share-alt"></i></a><badge class="btn tool-button tool-button-copy mx-2" data-toggle="tooltip" title="コピー"><i class="fas fa-copy"></i></badge></div><div class="text-end text-sm text-muted" style="font-size:12px"><div class="custom-date" data-value="${new Date()}"></div></div></div><div class="card-body py-0"><p>${item}</p></div></div>`;
+}

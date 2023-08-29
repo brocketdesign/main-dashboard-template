@@ -344,15 +344,14 @@ const handleFormResult = (isSuccess, message) => {
     let btnColor = isSuccess ? 'success' : 'danger';
     let btnSelector = `button[type="submit"]`;
 
-    $(btnSelector).removeClass('btn-success').addClass(`btn-${btnColor}`);
+    //$(btnSelector).removeClass('btn-success').addClass(`btn-${btnColor}`);
 
-    // Stop any ongoing animations and hide all alerts
     $("#front-alert .alert-success").stop().hide();
     $("#front-alert .alert-danger").stop().hide();
 
     $("#front-alert .alert-"+btnColor).text(message).fadeIn().delay(5000).fadeOut();
 
-    setTimeout(() => $(btnSelector).removeClass(`btn-${btnColor}`).addClass('btn-success'), 5000);
+    //setTimeout(() => $(btnSelector).removeClass(`btn-${btnColor}`).addClass('btn-success'), 5000);
 }
 
 // Handling of card clicking
@@ -1317,7 +1316,29 @@ function handleStream(response,callback,endCallback) {
         if (endCallback) endCallback(data);
         source.close();
     };
+
+    return source;
 }
+
+function stopStreams(sources) {
+    if (sources instanceof EventSource) {
+        // It's a single stream.
+        sources.close();
+        console.log("Single stream has been stopped.");
+    } else if (typeof sources === 'object' && sources !== null) {
+        // It's an object containing multiple streams.
+        for (let key in sources) {
+            if (sources[key] instanceof EventSource) {
+                sources[key].close();
+                console.log(`Stream ${key} has been stopped.`);
+            }
+        }
+    } else {
+        console.error("Invalid input provided to stopStreams.");
+    }
+}
+
+
 function handleWebSocket(insertedId){
     const ws = new WebSocket('ws://localhost:3000');
     const index = $('#result').find('.card').length
@@ -1819,13 +1840,14 @@ function iconAnimation(){
       
 }
 function showSpinner($buttonContainer,type) {
-    $buttonContainer.find('i').hide();
-    // Check if the spinner is already present, if not, create and append it to the card
+    //$buttonContainer.find('i').hide();
+
     if (!$buttonContainer.find('.spinner-border.for-'+type).length) {
         var $spinner = $('<div>').addClass(`spinner-border for-${type} spinner-border-sm mx-2`).attr('role', 'status');
         var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
         $spinner.append($span);
         $buttonContainer.prepend($spinner);
+        $buttonContainer.addClass('bg-danger').text('AI生成を停止')
     }
 
     // Show the spinner while the download is in progress
