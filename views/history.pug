@@ -1,7 +1,7 @@
 extends dashboard
 
 block dynamicContent
-  if user.nsfw != 'true'
+  if user.nsfw != 'true' && mode == 1
     - colclass='row-cols-1 row-cols-sm-2'
     - gridclass='col-12 col-sm-6'
   else 
@@ -27,7 +27,7 @@ block dynamicContent
                     span=data[query][0].query
       else
         p Your search history will be displayed here.
-    if  user.nsfw != 'true'
+    if  user.nsfw != 'true' && mode == 1
       .col.order-1.p-3
         h6 最新の生成結果
         hr.mb-4

@@ -20,7 +20,7 @@ block mainContent
         | Favorites
         i.fas.fa-heart.ms-2
   ul.list-group#subRedditSearchRes.bg-white.w-100.position-absolute.border.shadow(style="max-height: 50vh;overflow: auto;z-index: 3;display: contents;")
-  if result && mode != 4
+  if result && mode == 1
     #video-container
       .row.row-cols-1.row-cols-sm-2.w-100.m-0
         .col.px-0.order-1.my-3
