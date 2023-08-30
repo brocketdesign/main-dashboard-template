@@ -282,7 +282,7 @@ function resetButton($spinner,$buttonContainer){
     $buttonContainer.removeClass('done bg-danger').text('生成する')
 }
 function shouldPreventSubmission($buttonContainer) {
-    console.log($buttonContainer.html())
+    $buttonContainer.addClass('bg-danger').text('AI生成を停止')
     if ($buttonContainer.hasClass('stop')) {
         console.log("Form submission prevented due to 'stop' class.");
         $buttonContainer.removeClass('stop')

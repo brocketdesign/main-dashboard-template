@@ -993,6 +993,7 @@ router.post('/category/remove', async (req, res) => {
     res.status(500).json({ message: 'エラーが発生しました' }); // An error occurred
   }
 });
+
 // ルーターを定義して '/loadpage' への POST リクエストを処理します
 router.post('/loadpage', async (req, res) => {
 console.log('API request loadmore')
@@ -1000,7 +1001,7 @@ try {
     // リクエストボディをコンソールにログ
 
     const data = { 
-      nsfw: req.body.nsfw == 'true',
+      nsfw: req.user.nsfw == 'true',
       searchTerm: req.body.searchterm || req.body.searchTerm , 
       page: req.body.page ,
       mode: req.body.mode 

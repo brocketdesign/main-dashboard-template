@@ -1839,14 +1839,13 @@ function iconAnimation(){
       
 }
 function showSpinner($buttonContainer,type) {
-    //$buttonContainer.find('i').hide();
+    $buttonContainer.find('i').hide();
 
     if (!$buttonContainer.find('.spinner-border.for-'+type).length) {
         var $spinner = $('<div>').addClass(`spinner-border for-${type} spinner-border-sm mx-2`).attr('role', 'status');
         var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
         $spinner.append($span);
         $buttonContainer.prepend($spinner);
-        $buttonContainer.addClass('bg-danger').text('AI生成を停止')
     }
 
     // Show the spinner while the download is in progress
