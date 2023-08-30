@@ -23,3 +23,25 @@ function createCheckoutSession(e) {
     console.error('Error:', error);
   });
 }
+function updatePaymentMethod(e) {
+  const userId = $(e).data('user-id'); // Assuming the user ID is stored in data attributes
+
+  fetch('/payment/create-checkout-session-for-update', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      userId: userId,
+    })
+  })
+  .then(function (response) {
+    return response.json();
+  })
+  .then(function (session) {
+    return stripe.redirectToCheckout({ sessionId: session.id });
+  })
+  .catch(function (error) {
+    console.error('Error:', error);
+  });
+}

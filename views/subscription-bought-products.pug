@@ -19,3 +19,5 @@ block mainContent
           if subscription.isActive === true
             form(action="/payment/subscription/cancel/" + subscription.id, method="POST")
               button.btn.btn-danger(type="submit") キャンセル
+    button.btn.btn-primary(onclick="updatePaymentMethod(this)" data-user-id=user._id) Update Payment info
+  script(src='/js/stripe.js')

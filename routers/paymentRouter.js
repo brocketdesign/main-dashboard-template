@@ -202,4 +202,32 @@ router.post('/create-checkout-session', async (req, res) => {
 });
 
 
+// Update payment information
+router.post('/create-checkout-session-for-update', async (req, res) => {
+  const { userId } = req.body; // Get user ID from request body
+
+  try {
+    const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+    const stripeCustomerId = user.stripeCustomerId;
+
+    // Get the protocol (http or https) and the host from the request
+    const protocol = req.protocol;
+    const host = req.get('host');
+
+    // Create a Stripe Checkout session for updating the payment method
+    const session = await stripe.checkout.sessions.create({
+      customer: stripeCustomerId,
+      payment_method_types: ['card'],
+      mode: 'setup', // Setting mode to 'setup' for updating payment details
+      success_url: `${protocol}://${host}/payment/payment-update-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${protocol}://${host}/payment/payment-update-error`,
+      metadata: { userId: userId },  // Store userId in session metadata
+    });
+
+    res.json({ id: session.id });
+  } catch (err) {
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 module.exports = router;
