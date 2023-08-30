@@ -995,23 +995,24 @@ router.post('/category/remove', async (req, res) => {
 });
 // ルーターを定義して '/loadpage' への POST リクエストを処理します
 router.post('/loadpage', async (req, res) => {
-
+console.log('API request loadmore')
 try {
     // リクエストボディをコンソールにログ
 
     const data = { 
-      nsfw: req.body.nsfw == 'on',
+      nsfw: req.body.nsfw == 'true',
       searchTerm: req.body.searchterm || req.body.searchTerm , 
       page: req.body.page ,
       mode: req.body.mode 
     }
-
+    
     let scrapedData = await ManageScraper(
       data.searchTerm,
       data.nsfw,
       data.mode,
       req.user, 
-      data.page);
+      parseInt(data.page)
+      );
   
     // JSON 応答を送る
     res.status(200).json({

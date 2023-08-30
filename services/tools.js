@@ -99,7 +99,7 @@ async function translateText(text,lang) {
   return gptResponse.data.choices[0].text.trim();
 }
 async function fetchMediaUrls(url) {
-  console.log('Starting to fetch media URLs from:', url); // Log start
+  //console.log('Starting to fetch media URLs from:', url); // Log start
   const browser = await puppeteer.launch({
     headless: false,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
@@ -147,7 +147,7 @@ async function fetchMediaUrls(url) {
 
   await browser.close();
 
-  console.log('Finished fetching media URLs.'); // Log finish
+  //console.log('Finished fetching media URLs.'); // Log finish
   return images;
 }
 

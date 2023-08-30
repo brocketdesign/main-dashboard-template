@@ -5,29 +5,80 @@ block mainContent
   .d-flex.justify-content-between.mb-4
     p サブスクリプションを選んでください
     a.btn.btn-primary(type="button" href="/payment/subscription/bought-products") マイメンバーシップ
-  .row
-    .col-md-6
-      .card.border.pricing
-        .card-header.bg-white.py-3
-          p.text-uppercase.small.mb-2 
-            strong #{basicProductName}
-          h5.mb-0 ¥#{basicProductPrice}/月
-        .card-body
-          ul.list-group.list-group-flush
-            each val in basicProductDescription.split(',')
-              li.list-group-item #{val}
-        .card-footer.bg-white.py-3
-          button.btn.btn-primary(id="basic-checkout-button" type="button") 登録する
-    .col-md-6
-      .card.border.pricing
-        .card-header.bg-white.py-3
-          p.text-uppercase.small.mb-2 
-            strong #{premiumProductName}
-          h5.mb-0 ¥#{premiumProductPrice}/月
-        .card-body
-          ul.list-group.list-group-flush
-            each val in premiumProductDescription.split(',')
-              li.list-group-item #{val}
-        .card-footer.bg-white.py-3
-          button.btn.btn-primary(id="premium-checkout-button" type="button") 登録する
+
+  .row.justify-content-center.my-3
+    .col-auto
+      ul.nav.nav-tabs
+            li.nav-item
+                a.nav-link.acrive(href='#monthly' data-bs-toggle='tab') Monthly
+            li.nav-item
+                a.nav-link(href='#yearly' data-bs-toggle='tab') Yearly 
+  div.tab-content
+      div#monthly.tab-pane.fade.show.active
+          h3.text-center.my-3 1週間無料で利用可能
+          .row.row-cols-1.row-cols-md-3.mb-3.text-center.m-auto.justify-content-center
+            .col
+                .card.mb-4.rounded-3.shadow-sm
+                    .card-header.py-3
+                        h4.my-0.fw-normal Personal
+                        h6.mt-1.fw-normal ミニマムで始めてみたい方
+                    .card-body
+                        h1.card-title.pricing-card-title ¥2,980
+                        small.text-muted.fw-light /月
+                        ul.list-unstyled.mt-3.mb-4.text-start.ps-3
+                            li GPT-3.5/4を使用
+                            li 利用文字数：毎月5000文字
+                            li プロジェクト数：3つまで
+                            li ユーザー数：2名まで
+                            li 50種類以上のテンプレート
+                        button.w-100.btn.btn-lg.btn-primary(onclick="createCheckoutSession(this)" data-id="prod_JaEhEGeJwWMJsx" data-price="price_1NkbJ3C8xKGwQm6JCQRwLek4" type="button") 無料ではじめる
+            .col
+                .card.mb-4.rounded-3.shadow-sm.border-primary
+                    .card-header.py-3.text-white.bg-primary.border-primary
+                        h4.my-0.fw-normal Standard
+                        h6.mt-1.fw-normal 使用量を気にせず使いたい方
+                    .card-body
+                        h1.card-title.pricing-card-title ¥9,800
+                        small.text-muted.fw-light /月
+                        ul.list-unstyled.mt-3.mb-4.text-start.ps-3
+                            li GPT-3.5/4を使用
+                            li 利用文字数：毎月5000文字
+                            li プロジェクト数：3つまで
+                            li ユーザー数：2名まで
+                            li 50種類以上のテンプレート
+                        button.w-100.btn.btn-lg.btn-primary(onclick="createCheckoutSession(this)" data-id="prod_JaEgtLGBWmmqQa" data-price="price_1NkbOTC8xKGwQm6JyykXnZ5g" type="button") 無料ではじめる
+      div#yearly.tab-pane.fade
+          h3.text-center.my-3 1ヶ月無料
+          .row.row-cols-1.row-cols-md-3.mb-3.text-center.m-auto.justify-content-center
+            .col
+                .card.mb-4.rounded-3.shadow-sm
+                    .card-header.py-3
+                        h4.my-0.fw-normal Personal
+                        h6.mt-1.fw-normal ミニマムで始めてみたい方
+                    .card-body
+                        h1.card-title.pricing-card-title ¥32,780
+                        small.text-muted.fw-light /年
+                        ul.list-unstyled.mt-3.mb-4.text-start.ps-3
+                            li GPT-3.5/4を使用
+                            li 利用文字数：毎月5000文字
+                            li プロジェクト数：3つまで
+                            li ユーザー数：2名まで
+                            li 50種類以上のテンプレート
+                        button.w-100.btn.btn-lg.btn-primary(onclick="createCheckoutSession(this)" data-id="prod_JaEhEGeJwWMJsx" data-price="price_1NkbLdC8xKGwQm6J3XzkZKq2" type="button") 無料ではじめる
+            .col
+                .card.mb-4.rounded-3.shadow-sm.border-primary
+                    .card-header.py-3.text-white.bg-primary.border-primary
+                        h4.my-0.fw-normal Standard
+                        h6.mt-1.fw-normal 使用量を気にせず使いたい方
+                    .card-body
+                        h1.card-title.pricing-card-title ¥107,800
+                        small.text-muted.fw-light /年
+                        ul.list-unstyled.mt-3.mb-4.text-start.ps-3
+                            li GPT-3.5/4を使用
+                            li 利用文字数：毎月5000文字
+                            li プロジェクト数：3つまで
+                            li ユーザー数：2名まで
+                            li 50種類以上のテンプレート
+                        button.w-100.btn.btn-lg.btn-primary(onclick="createCheckoutSession(this)" data-id="prod_JaEgtLGBWmmqQa" data-price="price_1NkbOTC8xKGwQm6JfdLodSQO" type="button") 無料ではじめる
+  
   script(src='/js/stripe.js')

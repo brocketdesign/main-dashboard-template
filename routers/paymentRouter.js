@@ -67,8 +67,7 @@ router.get('/subscription/bought-products',ensureAuthenticated, async (req, res)
         return
       }
       const sub = await stripe.subscriptions.retrieve(req.user.subscriptionId);
-
-      console.log(sub)
+      const productName = await getProductName(req.user.subscriptionId)
 
       const options = {
         year: 'numeric',
@@ -79,11 +78,13 @@ router.get('/subscription/bought-products',ensureAuthenticated, async (req, res)
       
       const subscribedProducts = [{
         id: sub.id,
+        productName,
+        price:sub.plan.amount,
         startDate: new Date(sub.created * 1000).toLocaleDateString('ja-JP',options),
         nextPaymentDate: new Date(sub.current_period_end * 1000).toLocaleDateString('ja-JP',options),
         isActive: sub.status === 'active' // This can also be 'inactive', 'past_due', 'canceled', 'unpaid' etc. depending on your use case
       }]
-
+      console.log(subscribedProducts)
       // Render the bought products page with the list of product details
       res.render('subscription-bought-products', {user:req.user, subscriptions:subscribedProducts, title:"My memberships" });
   } catch (error) {
@@ -93,6 +94,26 @@ router.get('/subscription/bought-products',ensureAuthenticated, async (req, res)
   }
 });
 
+async function getProductName(subscriptionId) {
+  try {
+    // Fetch the subscription object from Stripe
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+    // Fetch the product ID from the subscription object
+    const productId = subscription.plan.product;
+
+    // Fetch the product object from Stripe using the product ID
+    const product = await stripe.products.retrieve(productId);
+
+    // Fetch the product name from the product object
+    const productName = product.name;
+
+    return productName;
+  } catch (err) {
+    console.error('An error occurred:', err);
+    return null;
+  }
+}
 router.get('/subscription-payment-success', async (req, res) => {
   const { session_id } = req.query;
 
@@ -156,10 +177,9 @@ router.post('/subscription/cancel/:subscriptionId', async (req, res) => {
 });
 
 router.post('/create-checkout-session', async (req, res) => {
-  const { product_id } = req.body;
+  const { product_id, price_id } = req.body;
 
   const product = await stripe.products.retrieve(product_id);
-  const defaultPriceId = product.default_price;
 
   // Get the protocol (http or https) and the host from the request
   const protocol = req.protocol;
@@ -168,9 +188,10 @@ router.post('/create-checkout-session', async (req, res) => {
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [{
-      price: defaultPriceId,
+      price: price_id,
       quantity: 1,
     }],
+    customer_email: req.user.email,  // Pre-fill the email field
     mode: 'subscription', 
     success_url: `${protocol}://${host}/payment/subscription-payment-success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${protocol}://${host}/payment/subscription-payment-error`,

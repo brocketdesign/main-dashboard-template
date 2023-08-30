@@ -1,21 +1,16 @@
 var stripe = Stripe('pk_test_51Grb83C8xKGwQm6J0yFqNpWwgFu8MF582uq74ktVViobsBzM2hjVT2fXFvW5JQwLQnoaAmXBWtGevNodYi0bT5uv00sjuMNw1n'); // Replace with your public key
 
-document.getElementById('basic-checkout-button').addEventListener('click', function () {
-  createCheckoutSession('prod_JaEhEGeJwWMJsx');
-});
-
-document.getElementById('premium-checkout-button').addEventListener('click', function () {
-  createCheckoutSession('prod_JaEgtLGBWmmqQa');
-});
-
-function createCheckoutSession(productId) {
+function createCheckoutSession(e) {
+  const productId = $(e).data('id')
+  const priceId = $(e).data('price')
   fetch('/payment/create-checkout-session', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      product_id: productId
+      product_id: productId,
+      price_id: priceId
     })
   })
   .then(function (response) {

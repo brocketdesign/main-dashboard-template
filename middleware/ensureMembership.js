@@ -5,7 +5,7 @@ const ensureMembership = async (req, res, next) => {
       if(!req.user.subscriptionId ){
         
         // If the user does not have an active subscription, redirect them to the subscription page
-        next();
+       
       }
       // Fetch the user's subscriptions from Stripe
       const subscriptions = await stripe.subscriptions.list({ customer: req.user.stripeCustomerID });
@@ -16,9 +16,8 @@ const ensureMembership = async (req, res, next) => {
       if (!hasActiveSubscription) {
         // If the user does not have an active subscription, redirect them to the subscription page
 
-        req.flash('error', 'You need a membership to access this page!')
+        //req.flash('error', 'You need a membership to access this page!')
 
-        return res.redirect('/payment/subscription/');
       }
 
       // If the user has an active subscription, proceed to the next middleware

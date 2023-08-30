@@ -74,18 +74,22 @@ $(document).ready(function() {
   
     }
     // Active Tab
-    if (document.querySelector('.nav-tabs')) {
-      let activeTab = localStorage.getItem('activeTab');
-      if(activeTab){
-        new bootstrap.Tab(document.querySelector(`a[href="${activeTab}"]`)).show();
-      }else{
-        new bootstrap.Tab(document.querySelector(`a[href="#personalInfo"]`)).show();
-      }
-        $('#updateProfile').fadeIn()
-      document.querySelectorAll('.nav-tabs a').forEach(t => t.addEventListener('shown.bs.tab', (e) => {
-          localStorage.setItem('activeTab', e.target.getAttribute('href'));
-      }));
+    if($('#updateProfile').length>0){
+        if (document.querySelector('.nav-tabs')) {
+            let activeTab = localStorage.getItem('activeTab');
+            if(activeTab){
+              new bootstrap.Tab(document.querySelector(`a[href="${activeTab}"]`)).show();
+            }else{
+              new bootstrap.Tab(document.querySelector(`a[href="#personalInfo"]`)).show();
+            }
+            $('#updateProfile').fadeIn()
+            document.querySelectorAll('.nav-tabs a').forEach(t => t.addEventListener('shown.bs.tab', (e) => {
+                localStorage.setItem('activeTab', e.target.getAttribute('href'));
+            }));
+          }
     }
+
+
 
     // Other event listeners
     $(document).on('click', '.alert-container', function() { $(this).fadeOut();  });
@@ -963,7 +967,7 @@ function updategridlayout(value) {
             const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchTerm=${data.searchterm?data.searchterm:data.searchTerm}&nsfw=${data.nsfw}`
             console.log(url)
             if(callback){callback()}
-            window.location=url
+           window.location=url
         },
         error: handleFormError
     });
@@ -1539,8 +1543,7 @@ function handleOpenaiForm(){
         const title = $('#title').val()
         const subtitle = $('#subtitle').val()
         const keywordsArray = formDataArray('keyword') ;
-        const postCount = $('#postCount').val()
-        const data = {language, title,subtitle,keywordsArray,postCount}
+        const data = {language, title,subtitle,keywordsArray}
         if(keywordsArray.length==0  || !title || !subtitle){
             alert('申し訳ありませんが、フォームを送信する前に全ての必須項目をご記入ください。')
             return
@@ -1551,7 +1554,7 @@ function handleOpenaiForm(){
 
         // Constructing the GPT-3 prompt using the collected data
         const gpt3Prompt = `
-        Write a chapter the following blog post :
+        Write a chapter for the following blog post :
         Language:  ${language}. 
         Title: "${title}"
         Subtitle: "${subtitle}"
@@ -1559,23 +1562,19 @@ function handleOpenaiForm(){
         Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
         `;        
         generateStream('article',gpt3Prompt,data,function(response){
-            for(let i = 1; i <= postCount; i++) {
-                (function(index) {
-                    handleStream(response, function(message) {
-                        const containerID = `card-${response.insertedId}-${index}`;
-                        if($('#'+containerID).length == 0) {   
-                            // Create an initial card with the insertedId as an identifier
-                            const initialCardHtml = `<div class="card mb-3"><div id="${containerID}" class="card-body"></div></div>`;
-                            const initialCardHtmlOutput = `<div class="card mb-3"><div id="${containerID}-output" class="card-body"></div></div>`;
-                            $('#result').prepend(initialCardHtml);
-                            $('#htmlOutput').prepend(initialCardHtmlOutput);
-                            console.log(`Initial card created with id: card-${containerID}`);
-                        }   
-                        watchAndConvertMarkdown(`#${containerID}`, `#${containerID}-output`); 
-                        $(`#${containerID}`).append(message);
-                    });
-                })(i);
-            }
+            handleStream(response, function(message) {
+                const containerID = `card-${response.insertedId}`;
+                if($('#'+containerID).length == 0) {   
+                    // Create an initial card with the insertedId as an identifier
+                    const initialCardHtml = `<div class="card mb-3"><div id="${containerID}" class="card-body"></div></div>`;
+                    const initialCardHtmlOutput = `<div class="card mb-3"><div id="${containerID}-output" class="card-body"></div></div>`;
+                    $('#result').prepend(initialCardHtml);
+                    $('#htmlOutput').prepend(initialCardHtmlOutput);
+                    console.log(`Initial card created with id: card-${containerID}`);
+                }   
+                watchAndConvertMarkdown(`#${containerID}`, `#${containerID}-output`); 
+                $(`#${containerID}`).append(message);
+            });
 
             $spinner.hide();
             $buttonContainer.find('i').show();

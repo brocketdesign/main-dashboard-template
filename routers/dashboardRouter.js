@@ -188,7 +188,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
       page = parseInt(page) || 1
     
       console.log(`Dashboard mode ${mode} requested`);
-    
+
       if(!searchTerm){
         res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
         return
@@ -201,8 +201,8 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
 
       let scrapInfo  
       try {
-        scrapInfo = req.user.scrapInfo.find(info => info.url === searchTerm);
-        console.log({scrapInfo})
+        const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
+        scrapInfo = userInfo.scrapInfo.find(info => info.url === searchTerm);
       } catch (error) {
         console.log(error)
       }

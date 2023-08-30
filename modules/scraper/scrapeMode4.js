@@ -11,21 +11,20 @@ async function scrapeMode4(site, mode, nsfw, page) {
         let post = postResponse.data[0];
         let postUrl = post.link;
         
-        console.log(`Fetched post with ID: ${post.id}`);
+        //console.log(`Fetched post with ID: ${post.id}`);
     
         let postMediaResponse = await axios.get(`https://${site}/wp-json/wp/v2/media?parent=${post.id}`);
         let postMedia = postMediaResponse.data;
-        console.log(`Fetched ${postMedia.length} media items for post ID: ${post.id}`);
+        //console.log(`Fetched ${postMedia.length} media items for post ID: ${post.id}`);
     
         if (postMedia.length <= 2) {
             const additionalMediaUrls = await fetchMediaUrls(postUrl);
             postMedia = postMedia.concat(additionalMediaUrls);
-            console.log(postMedia.length)
         }          
         const dirPath = path.join(__dirname, '..', '..', 'public', 'downloads', 'downloaded_images');
         if (!fs.existsSync(dirPath)) {
             fs.mkdirSync(dirPath, { recursive: true });
-            console.log(`Created directory: ${dirPath}`);
+            //console.log(`Created directory: ${dirPath}`);
         }
 
         let mediaObjects = await Promise.all(postMedia.map(async (media) => {
@@ -50,7 +49,7 @@ async function scrapeMode4(site, mode, nsfw, page) {
                     source: mediaUrl,
                 };
             } catch (error) {
-                console.log(error);
+                console.log('Error with medial download ');
                 return;
             }
         }));
@@ -66,10 +65,11 @@ async function scrapeMode4(site, mode, nsfw, page) {
           })); 
 
         const combinedResults = mediaObjects.map((media, index) => ({
+            ...media,
             link: media.filePath.replace(/.*public/, ''),
             source: media.source,
         }));
-        console.log(combinedResults.slice(0,2))
+
         return combinedResults;
 }
 

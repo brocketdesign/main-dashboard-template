@@ -11,12 +11,11 @@ block mainContent
       .card.mt-3
         .card-body
           h5.card-title #{subscription.productName}
-          p.card-text #{subscription.id}
           ul.list-group.list-group-flush
-            li.list-group-item サブスクリプションID: #{subscription.id}
-            li.list-group-item ステータス: #{subscription.isActive}
+            li.list-group-item ステータス: #{subscription.isActive == true ? '有効':'無効'}
             li.list-group-item 開始日: #{subscription.startDate}
             li.list-group-item 次回支払い日: #{subscription.nextPaymentDate}
+            li.list-group-item 価格: #{subscription.price}¥/月
           if subscription.isActive === true
             form(action="/payment/subscription/cancel/" + subscription.id, method="POST")
               button.btn.btn-danger(type="submit") キャンセル
