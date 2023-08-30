@@ -178,7 +178,7 @@ router.post('/subscription/cancel/:subscriptionId', async (req, res) => {
 
 router.post('/create-checkout-session', async (req, res) => {
   const { product_id, price_id } = req.body;
-
+  
   const product = await stripe.products.retrieve(product_id);
 
   // Get the protocol (http or https) and the host from the request
