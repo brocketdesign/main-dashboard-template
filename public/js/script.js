@@ -1967,3 +1967,17 @@ function handleAccordions(){
         });
       
 }
+function cancelSubscription(subscriptionID){
+
+    const confirmation = confirm("メンバーシップを削除してもよろしいですか？");
+
+    if (confirmation) {
+        $.ajax({
+            url: `/payment/subscription/cancel/`+subscriptionID,
+            type: 'POST',
+            success: handleFormSuccess,
+            error: handleFormError
+        });
+    }
+    
+}

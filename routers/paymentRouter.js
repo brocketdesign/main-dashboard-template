@@ -114,35 +114,59 @@ async function getProductName(subscriptionId) {
     return null;
   }
 }
+
 router.get('/subscription-payment-success', async (req, res) => {
+  console.log("Entering /subscription-payment-success");
+  
   const { session_id } = req.query;
 
   if (!session_id) {
-    res.redirect('/'); // Or wherever you want to redirect if there is no session ID
+    console.log("No session ID. Redirecting...");
+    res.redirect('/');
     return;
   }
 
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-    const subscription = await stripe.subscriptions.retrieve(session.subscription);
-    
-    console.log(subscription)
-
-    const userId = session.metadata.userId;  // Retrieve userId from session metadata
-    const subscriptionId = session.subscription;  // Retrieve subscriptionId from session
-
-    console.log(userId,subscriptionId)
-
-    // Store the subscription ID with the user document in your MongoDB collection
-    await global.db.collection('users').updateOne(
-      { _id: new ObjectId(userId) },
-      { 
-        $set: { subscription, subscriptionId, stripeCustomerID: subscription.customer  } 
-      }
-    );
+  console.log(`Retrieving session for ID: ${session_id}`);
+  const session = await stripe.checkout.sessions.retrieve(session_id);
+  const newSubscription = await stripe.subscriptions.retrieve(session.subscription);
   
+  console.log("Session and Subscription:");
+  console.log(session);
+  console.log(newSubscription);
 
-  res.render('subscription-payment-success', { user:req.user, subscription }); 
+  const userId = session.metadata.userId;
+  const newSubscriptionId = session.subscription;
+
+  console.log(`UserID and New SubscriptionID: ${userId}, ${newSubscriptionId}`);
+
+  console.log(`Fetching user from database with UserID: ${userId}`);
+  const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+
+  console.log("User from database:");
+  console.log(user);
+
+  if (user && user.subscriptionId) {
+    console.log(`Deleting old subscription: ${user.subscriptionId}`);
+    await stripe.subscriptions.del(user.subscriptionId);
+  }
+
+  console.log("Updating user with new subscription details in database");
+  await global.db.collection('users').updateOne(
+    { _id: new ObjectId(userId) },
+    { 
+      $set: { 
+        subscription: newSubscription, 
+        subscriptionId: newSubscriptionId, 
+        stripeCustomerID: newSubscription.customer  
+      } 
+    }
+  );
+
+  console.log("Exiting /subscription-payment-success");
+  
+  res.render('subscription-payment-success', { user: req.user, subscription: newSubscription }); 
 });
+
 
 router.get('/subscription-payment-error', (req, res) => {
   res.render('subscription-payment-error',{user:req.user}); // Render the login template
@@ -163,17 +187,18 @@ router.post('/subscription/cancel/:subscriptionId', async (req, res) => {
           $unset: { subscriptionId: "" }
         }
       );
-      req.flash('info', 'Your subscription has been successfully canceled.');
+      res.status(200).json({status:'success', message:'ご契約は正常にキャンセルされました。'})
     } else {
       // The subscription wasn't canceled for some reason
-      req.flash('error', 'There was a problem canceling your subscription. Please try again.');
+      res.status(200).json({status:'error', message:'ご契約のキャンセルに問題が発生しました。もう一度お試しください。'})
+
     }
   } catch (error) {
     console.error(`Failed to cancel subscription ${subscriptionId}:`, error);
-    req.flash('error', 'There was a problem canceling your subscription. Please try again.');
+    res.status(200).json({status:'error', message:'ご契約のキャンセルに問題が発生しました。もう一度お試しください。'})
+
   }
 
-  res.redirect('/payment/subscription/bought-products');
 });
 
 router.post('/create-checkout-session', async (req, res) => {

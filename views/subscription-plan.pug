@@ -1,0 +1,128 @@
+.card.shadow-0.border
+    .card-body(class= !user ? 'bg-light' : 'bg-white')
+        .my-2.d-flex.align-items-center
+            span.me-2.tag.border.border-dark.px-3.py-2.rounded 
+                span Powered by 
+                span.fw-bold stripe
+            h5.fw-bold  RAKUBUNでは、料金のお支払いに「Stripe」を導入しています。
+        p.text-sm.f-muted 「Stripe」は、業界団体が定める最も厳しい基準にも準拠。世界各国の規制当局が設けるライセンスも取得しています。（PCI DSS レベル1認証など）ご入力いただいたカード情報は、RAKUBUNのシステムには一切経由せず、決済システム「Stripe」のシステムに直接登録されますのでご安心してご利用ください。
+.row.justify-content-center.my-3
+    .col-auto
+        ul.nav.nav-tabs
+                li.nav-item
+                    a.nav-link(href='#monthly' data-bs-toggle='tab') Monthly
+                li.nav-item
+                    a.nav-link.active(href='#yearly' data-bs-toggle='tab') Yearly 
+    div.tab-content
+        div#monthly.tab-pane.fade
+            h3.text-center.my-3 1週間無料
+            .row.row-cols-1.row-cols-md-3.mb-3.text-center.m-auto.justify-content-center
+                .col
+                    .card.mb-4.rounded-3.shadow-sm.border
+                        .card-header.py-3.bg-white
+                            h4.my-0.fw-bold Personal
+                            h6.mt-1.fw-normal ミニマムで始めてみたい方
+                        .card-body
+                            h1.card-title.pricing-card-title ¥2,980
+                            small.text-muted.fw-light /月
+                            ul.list-unstyled.mt-3.mb-4.text-start.ps-3
+                                li GPT-3.5/4を使用
+                                li 利用文字数：毎月5000文字
+                                li プロジェクト数：3つまで
+                                li ユーザー数：2名まで
+                                li 50種類以上のテンプレート
+                            if user
+                                button.w-100.btn.btn-lg.btn-primary(onclick="createCheckoutSession(this)" data-id="prod_JaEhEGeJwWMJsx" data-price="price_1NkbJ3C8xKGwQm6JCQRwLek4" type="button") 無料ではじめる
+                            else 
+                                a.btn.w-100.btn.btn-lg.btn-primary(href="/user/signup" type="button") 無料ではじめる
+                .col
+                    .card.mb-4.rounded-3.shadow-sm.border-primary
+                        .card-header.py-3.text-white.bg-primary.border-primary
+                            h4.my-0.fw-bold Standard
+                            h6.mt-1.fw-normal 使用量を気にせず使いたい方
+                        .card-body
+                            h1.card-title.pricing-card-title ¥9,800
+                            small.text-muted.fw-light /月
+                            ul.list-unstyled.mt-3.mb-4.text-start.ps-3
+                                li GPT-3.5/4を使用
+                                li 利用文字数：毎月5000文字
+                                li プロジェクト数：3つまで
+                                li ユーザー数：2名まで
+                                li 50種類以上のテンプレート
+                            if user
+                                button.w-100.btn.btn-lg.btn-primary(onclick="createCheckoutSession(this)" data-id="prod_JaEgtLGBWmmqQa" data-price="price_1NkbOTC8xKGwQm6JyykXnZ5g" type="button") 無料ではじめる
+                            else 
+                                a.btn.w-100.btn.btn-lg.btn-primary(href="/user/signup" type="button") 無料ではじめる
+        div#yearly.tab-pane.fade.show.active
+            h3.text-center.my-3 1ヶ月お得
+            .row.row-cols-1.row-cols-md-3.mb-3.text-center.m-auto.justify-content-center
+                .col
+                    .card.mb-4.rounded-3.shadow-sm
+                        .card-header.py-3
+                            h4.my-0.fw-bold Personal
+                            h6.mt-1.fw-normal ミニマムで始めてみたい方
+                        .card-body
+                            h1.card-title.pricing-card-title ¥32,780
+                            small.text-muted.fw-light /年
+                            ul.list-unstyled.mt-3.mb-4.text-start.ps-3
+                                li GPT-3.5/4を使用
+                                li 利用文字数：毎月5000文字
+                                li プロジェクト数：3つまで
+                                li ユーザー数：2名まで
+                                li 50種類以上のテンプレート
+                            if user
+                                button.w-100.btn.btn-lg.btn-primary(onclick="createCheckoutSession(this)" data-id="prod_JaEhEGeJwWMJsx" data-price="price_1NkbLdC8xKGwQm6J3XzkZKq2" type="button") 無料ではじめる
+                            else 
+                                a.btn.w-100.btn.btn-lg.btn-primary(href="/user/signup" type="button") 無料ではじめる
+                .col
+                    .card.mb-4.rounded-3.shadow-sm.border-primary
+                        .card-header.py-3.text-white.bg-primary.border-primary
+                            h4.my-0.fw-bold Standard
+                            h6.mt-1.fw-normal 使用量を気にせず使いたい方
+                        .card-body
+                            h1.card-title.pricing-card-title ¥107,800
+                            small.text-muted.fw-light /年
+                            ul.list-unstyled.mt-3.mb-4.text-start.ps-3
+                                li GPT-3.5/4を使用
+                                li 利用文字数：毎月5000文字
+                                li プロジェクト数：3つまで
+                                li ユーザー数：2名まで
+                                li 50種類以上のテンプレート
+                            if user
+                                button.w-100.btn.btn-lg.btn-primary(onclick="createCheckoutSession(this)" data-id="prod_JaEgtLGBWmmqQa" data-price="price_1NkbOTC8xKGwQm6JfdLodSQO" type="button") 無料ではじめる
+                            else 
+                                a.btn.w-100.btn.btn-lg.btn-primary(href="/user/signup" type="button") 無料ではじめる
+    h3 よくある質問
+    div#accordionExample.accordion
+        //- First accordion item
+        div.card.my-3
+            div#headingOne.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseOne' aria-expanded='true' aria-controls='collapseOne')
+                h2.mb-0
+                    button.btn.btn-link
+                       | SAKUBUNの料金プランは、ワークスペースごとの料金になりますか？
+            div#collapseOne.collapse(aria-labelledby='headingOne' data-bs-parent='#accordionExample')
+                div.card-body
+                    | SAKUBUNのプランはアカウントごとではなく、ワークスペースごとのお支払いとなっております。
+                    | そのため、1つのプランで適用されるワークスペースは1つのみです。
+                    | もし複数のワークスペースを有料プランで利用したい場合、対応するワークスペースすべてのプランをアップグレードする必要があります。
+        //- Second accordion item
+        div.card.my-3
+            div#headingTwo.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseTwo' aria-expanded='false' aria-controls='collapseTwo')
+                h2.mb-0
+                    button.btn.btn-link
+                      | 途中でプランを切り替えた場合、未使用のクレジットの扱いはどうなりますか？
+            div#collapseTwo.collapse(aria-labelledby='headingTwo' data-bs-parent='#accordionExample')
+                div.card-body
+                    | クレジットが残っていた場合でも、リセットされます。
+                    | 未使用のクレジットは繰越されませんのでご注意ください。
+
+        //- Third accordion item
+        div.card.my-3
+            div#headingThree.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseThree' aria-expanded='false' aria-controls='collapseThree')
+                h2.mb-0
+                    button.btn.btn-link
+                       | 契約期間中に解約した場合、返金可能ですか？
+            div#collapseThree.collapse(aria-labelledby='headingThree' data-bs-parent='#accordionExample')
+                div.card-body
+                    | 月払い/年払いともに返金を承っておりません。
+                    | ただし、「年払いプラン」から別の「年払いプラン」に変更頂く場合、未使用分の差額の返金が可能ですので、下記までお問い合わせください。

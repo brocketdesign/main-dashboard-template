@@ -1,12 +1,13 @@
 extends dashboard-base
 
 block mainContent
-  h1 いらっしゃいませ、#{user.username}さん！
-  p メンバーシップ
   if !subscriptions.length
     p アクティブなメンバーシップはありません。
+    a.btn.btn-primary(href="/payment/subscription" data-user-id=user._id) メンバーシップを選んでください
   else
-    h3 マイメンバーシップ
+    .d-flex.justify-content-between
+        h3 マイメンバーシップ
+        button.btn.btn-primary(onclick="updatePaymentMethod(this)" data-user-id=user._id) 支払い方法を更新
     each subscription in subscriptions
       .card.mt-3
         .card-body
@@ -17,7 +18,6 @@ block mainContent
             li.list-group-item 次回支払い日: #{subscription.nextPaymentDate}
             li.list-group-item 価格: #{subscription.price}¥/月
           if subscription.isActive === true
-            form(action="/payment/subscription/cancel/" + subscription.id, method="POST")
-              button.btn.btn-danger(type="submit") キャンセル
-    button.btn.btn-primary(onclick="updatePaymentMethod(this)" data-user-id=user._id) Update Payment info
+            .text-end
+              button.btn.btn-danger(type="submit" onclick=`cancelSubscription("${subscription.id}")`) キャンセル
   script(src='/js/stripe.js')
