@@ -42,24 +42,21 @@ async function searchSubreddits(query) {
 
 
     // Collecting results
-    const result = parsedData.data.children.map(async item => {
+    const result = parsedData.data.children.map(item => {
+
+      if(item.data.over18 == undefined){
+        return null;
+      }
       const obj = {
         title: item.data.title,
         url: item.data.url,
         r18: item.data.over18,
       };
-
-      // If the subreddit does not exist in the database, insert it
-      const existingSubreddit = await global.db.collection('subreddits').findOne({ 'title': obj.title });
-      if (!existingSubreddit) {
-        await global.db.collection('subreddits').insertOne(obj);
-      }
-
       return obj;
-    });
-
-    // Resolving the promise with the result
-    return await Promise.all(result);
+      
+    }).filter(item => item !== null);
+    
+    return result;
 
   } catch (err) {
     // Logging the error and rejecting the promise

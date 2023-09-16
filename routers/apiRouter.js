@@ -6,7 +6,7 @@ const ensureAuthenticated = require('../middleware/authMiddleware');
 const {
   formatDateToDDMMYYHHMMSS,
   saveData, 
-  translateText, 
+  downloadVideo, 
   updateSameElements,
   fetchOpenAICompletion,
   initCategories,
@@ -164,8 +164,6 @@ router.post('/openai/custom/:type', upload.fields([{ name: 'pdf1' }, { name: 'pd
   res.status(500).send('Internal server error');
   }
 });
-
-
 
 router.get('/openai/stream/:type', async (req, res) => {
   const type = req.params.type;
@@ -368,6 +366,7 @@ router.get('/openai/summarize', async (req, res) => {
       res.end();
   }
 });
+
 // Define the /openai/ebook route
 router.post('/openai/ebook', async (req, res) => {
   console.log('Received request to /openai/ebook');
@@ -586,6 +585,29 @@ router.get('/video', async (req, res) => {
 const ytdl = require('ytdl-core');
 const ffmpeg = require('fluent-ffmpeg');
 
+
+router.post('/downloadFileFromURL', async (req, res) => {
+
+  try{
+    const url = req.body.url;
+    const itemID = req.body.itemID
+    const item = await global.db.collection('medias').findOne({ _id: new ObjectId(itemID) })
+    console.log(item)
+    if(item.filePath){
+      res.json({url:item.filePath.replace('public','')})
+      return
+    }
+    const filePath = generateFilePathFromUrl(process.env.DOWNLOAD_DIRECTORY,url)
+    console.log(`Page URL : ${url}`)
+    const videoSource = await downloadVideo(url, filePath, itemID);
+    console.log(`Downloaded : ${filePath}`)
+    res.json({url:filePath.replace('public','')})
+  }catch(error){
+    console.log(error)
+  }
+
+});  
+
 router.post('/dl', async (req, res) => {
   const video_id = req.body.video_id;
   const title = req.body.title || 'vid';
@@ -613,12 +635,8 @@ router.post('/dl', async (req, res) => {
     if (url.includes('youtube.com')) {
       download_directory = download_directory+'/youtube';
     }
-    // Get file name from the URL
-    const fileExtension = getFileExtension(url)
-    let extension = getFileExtension(url) == '' ? '.mp4':fileExtension;
-    let sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, ''); // This will keep only alphanumeric characters
-    let fileName = `${sanitizedTitle}_${Date.now()}${extension}`;
-    let filePath = path.join(download_directory, fileName);
+
+    const filePath = generateFilePathFromUrl(download_directory,url,title)
 
     // Create download folder if it doesn't exist
     await fs.promises.mkdir(download_directory, { recursive: true });
@@ -644,7 +662,15 @@ router.post('/dl', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+function generateFilePathFromUrl(download_directory,url,title='dl'){
+  // Get file name from the URL
+  const fileExtension = getFileExtension(url)
+  let extension = getFileExtension(url) == '' ? '.mp4':fileExtension;
+  let sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, ''); // This will keep only alphanumeric characters
+  let fileName = `${sanitizedTitle}_${Date.now()}${extension}`;
+  let filePath = path.join(download_directory, fileName);
+  return filePath
+}
 async function downloadFileFromURL(filePath,url) {
   // If it's not a YouTube video, download it directly
   const response = await axios.get(url, { responseType: 'stream', maxContentLength: 10 * 1024 * 1024 });
@@ -747,7 +773,11 @@ router.get('/reddit/:subreddit', async (req, res) => {
 router.get('/searchSubreddits', async (req, res)=> {
   const db = req.app.locals.db;
   let query=req.query.query;
-  res.send(await searchSubreddits(query))
+  console.log(req.user.nsfw)
+  let result = await searchSubreddits(query)
+  result=result.filter(item => item.r18.toString() == req.user.nsfw.toString())
+
+  res.send(result)
 })
 
 // API routers for generative image AI

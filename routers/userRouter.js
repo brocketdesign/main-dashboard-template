@@ -98,8 +98,8 @@ router.get('/login', (req, res) => {
   res.render('user-login'); // Render the login template
 });
 
-router.post('/login', passport.authenticate('local', { failureRedirect: '/user/login', failureFlash: 'Invalid username or password.' }), (req, res) => {
-  req.user.nsfw = false
+router.post('/login', passport.authenticate('local', { failureRedirect: '/user/login', failureFlash: 'Invalid username or password.' }), async (req, res) => {
+  const userID = req.user._id
   req.flash('info', 'You are now logged in!');
   res.redirect('/dashboard');
 });

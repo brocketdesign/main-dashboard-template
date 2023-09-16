@@ -6,7 +6,7 @@ const path = require('path');
 const axios = require('axios'); // You'll need to install axios: npm install axios
 const { createParser } = require('eventsource-parser');
 const fetch = require('node-fetch');
-
+const https = require('https');
 
 // Initialize OpenAI with your API key
 const configuration = new Configuration({
@@ -53,36 +53,6 @@ async function saveData(user, documentId, update){
   } catch (error) {
     console.log('Element not founded in medias collections');
   }
-  
-   try {
-     const { elementIndex, foundElement } = await findElementIndex(user, documentId);
- 
-     if (elementIndex === -1) {
-       console.log('Element with video_id not found.');
-       return;
-     }
- 
-     const userId = user._id;
-     const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-     const AllData = userInfo.scrapedData || [];
-     AllData[elementIndex] = Object.assign({}, AllData[elementIndex], update);
- 
-     const result = await global.db.collection('users').updateOne(
-       { _id: new ObjectId(userId) },
-       { $set: { scrapedData: AllData } }
-     );
-
-     if(result.matchedCount > 0){
-      console.log(`Updated the database `,update)
-     }else{
-      console.log('Could not update the database')
-     }
-
-     return true
-   } catch (error) {
-      console.log(error)
-      console.log('Could not save the data in the user data')
-   }
    return false
 }
 
@@ -339,6 +309,65 @@ async function saveDataSummarize(videoId, format){
     console.log('Error while updating element:', error);
   }
 }
+async function downloadVideo(url, filePath, itemID) {
+    let browser;
+    let videoSrc;
+
+    try {
+        browser = await puppeteer.launch({
+            headless: true,
+            executablePath: '/usr/bin/google-chrome'
+        });
+
+        const page = await browser.newPage();
+        
+        await page.goto(url);
+        await page.waitForSelector('#scrollableDiv video');
+
+        // Extract the video src
+        videoSrc = await page.$eval('#scrollableDiv video', video => video.getAttribute('src'));
+
+        // Get the video content encoded as Base64
+        const videoBase64 = await page.evaluate(async (videoSrc) => {
+            return await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', videoSrc, true);
+                xhr.responseType = 'arraybuffer';
+
+                xhr.onload = function() {
+                    if (this.status >= 200 && this.status < 300) {
+                        const base64 = btoa(
+                            new Uint8Array(this.response).reduce((data, byte) => data + String.fromCharCode(byte), '')
+                        );
+                        resolve(base64);
+                    } else {
+                        reject(new Error(`Failed with status: ${this.status}`));
+                    }
+                };
+                xhr.onerror = () => reject(new Error('XHR request failed'));
+                xhr.send();
+            });
+        }, videoSrc);
+
+        // Convert Base64 to Buffer and save to a file
+        fs.writeFileSync(filePath, Buffer.from(videoBase64, 'base64'));
+
+        try {
+          const result = await global.db.collection('medias').updateOne(
+              { _id: new ObjectId(itemID) },
+              { $set: { filePath: filePath } }
+          );
+          console.log(`Element updated: ${result.modifiedCount}`);
+      } catch (error) {
+          console.error("Error updating the database:", error);
+      }
+
+    } catch (error) {
+        console.error("Error:", error);
+    } finally {
+        if (browser) await browser.close();
+    }
+}
 
 module.exports = { 
   formatDateToDDMMYYHHMMSS, 
@@ -351,5 +380,6 @@ module.exports = {
   getOpenaiTypeForUser,
   fetchOpenAICompletion,
   initCategories,
-  saveDataSummarize
+  saveDataSummarize,
+  downloadVideo
 }

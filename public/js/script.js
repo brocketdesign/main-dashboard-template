@@ -223,6 +223,7 @@ $(document).ready(function() {
     handleGridRange();
     handleLoadMore();
     handleResetFormSubmission();
+    handleIframe()
     feather.replace()
 });
 function scrollBottomWindow(){
@@ -996,7 +997,7 @@ function searchSubreddits(el) {
   
       // Adding 'wait' class to the element
       $(el).addClass('wait')
-  
+      $('#subRedditSearchRes').empty();
       // Implementing a delay using setTimeout
       setTimeout(async () => {
   
@@ -1980,4 +1981,54 @@ function cancelSubscription(subscriptionID){
         });
     }
     
+}
+
+function handleIframe(){
+    $(document).on('click','.iframe-button',function(){
+        var targetURL = $(this).data('url')
+        const itemID = $(this).data('id')
+        const $thisCard = $(`.card.info-container[data-id=${itemID}]`)
+        const $spinner = generateSpinnerCard($thisCard)
+        $(this).hide()
+        $spinner.show()
+    // Show the spinner while the download is in progress
+      $thisCard.find('.card-body-over').show();
+        $.ajax({
+            type: "POST",
+            url: "/api/downloadFileFromURL",
+            data: { url: targetURL,itemID },
+            success: function(response) {
+                console.log("Success:", response);
+                var $video = $('<video>').attr({
+                    src: response.url,
+                    autoplay: true,
+                    width:"100%",
+                    controls: false,
+                    loop:true,
+                    playsinline: true
+                }).on('loadeddata', function() {
+                  // Code to be executed when the video is ready to play
+                  console.log('Video ready to play');
+                  handleMasonry()
+              });
+                $(`img.card-img-top[data-id=${itemID}]`).before($video)
+                $(`img.card-img-top[data-id=${itemID}]`).hide()
+                $spinner.hide()
+            },
+            error: function(error) {
+                console.error("Error:", error);
+            }
+        });
+
+    })
+}
+function generateSpinnerCard($thisCard){
+    // Check if the spinner is already present, if not, create and append it to the card
+    if (!$thisCard.find('.spinner-border').length) {
+        var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute bg-dark').css({inset:"0px", margin:"auto"}).attr('role', 'status');
+        var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
+        $spinner.append($span);
+        $thisCard.find('.card-body-over').append($spinner);
+    }
+    return $thisCard.find('.spinner-border')
 }

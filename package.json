@@ -32,7 +32,7 @@
     "path": "^0.12.7",
     "pdf-parse": "^1.1.1",
     "pug": "^3.0.2",
-    "puppeteer": "^20.9.0",
+    "puppeteer": "^21.2.1",
     "redgifs-dl": "github:losparviero/redgifs-dl",
     "redgifs-downloader": "^2.1.1",
     "request-promise-native": "^1.0.9",
@@ -43,7 +43,7 @@
     "wordpress": "^1.4.2",
     "ws": "^8.13.0",
     "youtube-transcript": "^1.0.6",
-    "ytdl-core": "^4.11.5"
+    "ytdl-core": "^4.9.1"
   },
   "scripts": {
     "start": "xvfb-run nodemon app.js"
