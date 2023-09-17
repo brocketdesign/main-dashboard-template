@@ -49,25 +49,20 @@ async function ManageScraper(url, nsfw, mode, user, page) {
   })); 
 
 
-let insertCount = 0;
 
 if (scrapedData && scrapedData.length > 0) {
-  
+
   for (const item of scrapedData) {
       if (item.source) {
-        insertCount++;
         await global.db.collection('medias').updateOne({'source':item.source}, { $set: item }, { upsert: true });
       }
       if (item.url) {
-        insertCount++;
-        await global.db.collection('medias').updateOne({'url':item.source}, { $set: item }, { upsert: true });
+        await global.db.collection('medias').updateOne({'url':item.url}, { $set: item }, { upsert: true });
       }
       if (item.link) {
-        insertCount++;
-        await global.db.collection('medias').updateOne({'link':item.source}, { $set: item }, { upsert: true });
+        await global.db.collection('medias').updateOne({'link':item.link}, { $set: item }, { upsert: true });
       }
   }
-  console.log(`The actual number of items inserted or updated: ${insertCount}`);
 }
 
   
@@ -139,4 +134,6 @@ async function updateUserScrapInfo(user,url,page){
     );
   }
 }
+
+
 module.exports = ManageScraper;
