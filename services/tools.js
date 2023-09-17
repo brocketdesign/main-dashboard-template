@@ -316,7 +316,7 @@ async function downloadVideo(url, filePath, itemID) {
     try {
         browser = await puppeteer.launch({
             headless: true,
-            executablePath: '/usr/bin/google-chrome'
+            //executablePath: '/usr/bin/google-chrome'
         });
 
         const page = await browser.newPage();

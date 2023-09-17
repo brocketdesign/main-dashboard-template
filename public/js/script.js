@@ -1955,6 +1955,7 @@ function handleIframe(){
                 var $video = $('<video>').attr({
                     src: response.url,
                     autoplay: true,
+                    muted:true,
                     width:"100%",
                     controls: false,
                     loop:true,
