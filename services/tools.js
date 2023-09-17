@@ -122,26 +122,6 @@ async function fetchMediaUrls(url) {
 }
 
 async function findDataInMedias(userId, query, categoryId = null) {
-  // Retrieve the current user's data
-  const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-  await initCategories(userId)
-  // If a specific category ID is provided, use it
-  // Otherwise, find the "All" category within the user's categories
-  let categoryToUse;
-  if (categoryId) {
-    categoryToUse = user.categories && user.categories.find(cat => cat.id.toString() === categoryId.toString());
-    if (!categoryToUse) {
-      throw new Error('指定されたカテゴリが見つかりませんでした'); // Specified category not found
-    }
-  } else {
-    categoryToUse = user.categories && user.categories.find(cat => cat.name === 'All');
-    if (!categoryToUse) {
-      throw new Error('カテゴリ「All」が見つかりませんでした'); // Category "All" not found
-    }
-  }
-
-  // Add the category ID to the query
-  query.categories = { $in: [categoryToUse.id.toString()] };
 
   // Find the medias that match the query
   const medias = await global.db.collection('medias').find(query).toArray();
