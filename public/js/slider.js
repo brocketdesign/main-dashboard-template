@@ -38,9 +38,10 @@ $(document).ready(function() {
       };
     }).get();
 
-    $('.custom-carousel-item[data-mode="3"] img, .custom-carousel-item[data-mode="2"] img, .custom-carousel-item[data-mode="4"] img').on('click', function() {
+    $('.custom-carousel-item[data-mode="3"] .card-body-over, .custom-carousel-item[data-mode="4"] .card-body-over ')
+    .on('click', function() {
     var clickedImageIndex = images.findIndex(function(image) {
-      return image.img === $(this).attr('src');
+      return image.img === $(this).closest('.custom-carousel-item').find('img').attr('src');
     }.bind(this));
 
     $('#slickCarousel').empty();

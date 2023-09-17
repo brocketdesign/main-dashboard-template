@@ -11,35 +11,36 @@ block dynamicContent
           .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
             .card.info-container(class=`card-clickable-${mode}`, style="cursor:pointer", data-id=data._id, data-title=data.title)
               .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                  if data.link.includes('redgif')
-                    button.iframe-button.btn.btn-dark.shadow-0(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
+                  if data.link && data.link.includes('redgif')
+                    button.iframe-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
                       i.fas.fa-play
-              .card-top.py-2.px-3.position-absolute
-                .d-flex.justify-content-between
-                    button.delete-button.btn.btn-dark.hover(type="button", style="display:none")
+                  else
+                    if mode == '1'  
+                      button.play-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'')
+                        i.fas.fa-play
+
+              .card-top.py-2.px-3.position-absolute.hover(style="display:none")
+                .d-flex.justify-content-start.flex-column
+                    button.delete-button.btn.btn-dark.border.border-white.my-1(type="button", data-id=data._id)
                         i.fas.fa-trash-alt
+                    if !fav
+                      button.download-button.btn.btn-dark.shadow.border.border-white.my-1(type="button", class=data.isdl?'done':'')
+                        i.fas.fa-heart
+                    a.source.btn.btn-dark.border.border-white.my-1(target="_blank", href=data.source||data.link||data.webm||data.url)
+                      i.fas.fa-link
+
               if mode == 2
                 if data.link.includes('redgif')
                     img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", src=data.thumb, alt=data.title )
                 else 
-                    img.card-img-top(type="button", style="object-fit:cover;height: 100%;min-height:200px", src=data.link, alt=data.title )
+                    img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=data.link, alt=data.title )
               else
-                  img.card-img-top(type="button", style="object-fit:cover;height: 100%;min-height:200px", src=data.url || data.imageUrl || data.link, alt=data.title,  data.imageUrl=data.imageUrl?data.imageUrl:undefined )
-              .card-body.py-1.px-3.w-100.position-absolute.hover(style="bottom: 0;display:none")
-                .d-flex.justify-content-between.tool-bar.py-2
-                  button.download-button.btn.btn-dark.shadow-0(type="button", class=data.isdl?'done':'')
-                    i.fas.fa-heart
-                  a.source.btn.shadow-0.text-white(target="_blank", href=data.source||data.link||data.webm||data.url)
-                    i.fas.fa-link
-                  button.info-button.btn.btn-dark.shadow-0.text-white.p-0.d-none(type="button")
-                    i.fas.fa-info
-                  if mode == 1
-                    button.summarize-button.btn.btn-dark.shadow-0.text-white.p-0.d-none(type="button")
-                      i.fas.fa-plane
-                p.card-title.text-white.bg-dark.border-white.border.p-3(style="display:none")= data.title
+                  img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=data.url || data.imageUrl || data.link, alt=data.title,  data.imageUrl=data.imageUrl?data.imageUrl:undefined )
+              
+              p.card-title.text-white.bg-dark.border-white.border.p-3(style="display:none")= data.title 
   else
     p ここには何もありません！
-  if scrapedData.length > 0 
+  if scrapedData.length > 0 && !fav
     .d-flex.justify-content-center.w-100.p-3
       a.btn.btn-dark.border(type="button",class=page<=1?'d-none':'', href=`/dashboard/app/${mode}?page=${page>1?page-1:''}&searchTerm=${searchTerm}&nsfw=${user.nsfw}`)        
         i.fas.fa-angle-left.me-3
@@ -61,8 +62,8 @@ block dynamicContent
         #slickCarousel-tool-bar.info-container.d-flex.flex-column.justify-content-center.position-absolute(style="z-index: 3;top:0;bottom: 0;")
           button.btn.slider-delete-button.p-3.text-white(type="button")
               i.fas.fa-trash-alt
-          button.btn.download-button.p-3.text-white(type="button")
-            i.fas.fa-heart
+          if !fav
+            button.btn.download-button.p-3.text-white(type="button")
+              i.fas.fa-heart
           a.source.p-3.text-white(target="_blank" href="#")
               i.fas.fa-link
-  script(src="/js/slider.js")

@@ -18,11 +18,11 @@ block dynamicContent
               .card.hover(style="overflow: hidden;", data-query=query)
                 .card-top.py-2.px-3.position-absolute
                   .d-flex.justify-content-between
-                      button.delete-button-history.btn.btn-dark.border-white.border.hover.shadow.p-0(type="button", style="display:none")
+                      button.delete-button-history.btn.btn-dark.border-white.border.hover.shadow(type="button", style="display:none")
                           i.fas.fa-trash-alt
                 .card-body.row.p-0.rounded
                   each item in data[query]
-                    if item.link.includes('redgif')
+                    if item.link && item.link.includes('redgif')
                       img.col-6.p-0(style="width:50%;height:75px;object-fit:cover", data-id=item.video_id, src=item.thumb ,  alt=item.title)
                     else
                       img.col-6.p-0(style="width:50%;height:75px;object-fit:cover", data-id=item.video_id, src=item.url || item.imageUrl || item.thumb || item.link ,  alt=item.title)

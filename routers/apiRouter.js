@@ -592,12 +592,12 @@ router.post('/downloadFileFromURL', async (req, res) => {
     const url = req.body.url;
     const itemID = req.body.itemID
     const item = await global.db.collection('medias').findOne({ _id: new ObjectId(itemID) })
-    console.log(item)
+
     if(item.filePath){
       res.json({url:item.filePath.replace('public','')})
       return
     }
-    const filePath = generateFilePathFromUrl(process.env.DOWNLOAD_DIRECTORY,url)
+    const {fileName,filePath} = generateFilePathFromUrl(process.env.DOWNLOAD_DIRECTORY,url)
     console.log(`Page URL : ${url}`)
     const videoSource = await downloadVideo(url, filePath, itemID);
     console.log(`Downloaded : ${filePath}`)
@@ -636,7 +636,7 @@ router.post('/dl', async (req, res) => {
       download_directory = download_directory+'/youtube';
     }
 
-    const filePath = generateFilePathFromUrl(download_directory,url,title)
+    const {fileName,filePath} = generateFilePathFromUrl(download_directory,url,title)
 
     // Create download folder if it doesn't exist
     await fs.promises.mkdir(download_directory, { recursive: true });
@@ -669,7 +669,7 @@ function generateFilePathFromUrl(download_directory,url,title='dl'){
   let sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, ''); // This will keep only alphanumeric characters
   let fileName = `${sanitizedTitle}_${Date.now()}${extension}`;
   let filePath = path.join(download_directory, fileName);
-  return filePath
+  return {fileName,filePath}
 }
 async function downloadFileFromURL(filePath,url) {
   // If it's not a YouTube video, download it directly
@@ -773,7 +773,7 @@ router.get('/reddit/:subreddit', async (req, res) => {
 router.get('/searchSubreddits', async (req, res)=> {
   const db = req.app.locals.db;
   let query=req.query.query;
-  console.log(req.user.nsfw)
+
   let result = await searchSubreddits(query)
   result=result.filter(item => item.r18.toString() == req.user.nsfw.toString())
 

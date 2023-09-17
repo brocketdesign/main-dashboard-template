@@ -246,11 +246,11 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
     let medias = await findDataInMedias(req.user._id, query_obj);
     console.log(`Found ${medias.length} element(s).`)
     medias = getUniqueElementBySource(medias)
-    res.render(`search`, { user: req.user,result:true, searchTerm, scrapedData:medias.reverse(), mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+    res.render(`search`, { user: req.user,result:true,fav:true, searchTerm, scrapedData:medias, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 
   }catch(err){
     console.log(err)
-    res.render(`search`, { user: req.user, searchTerm, scrapedData:[], mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+    res.render(`search`, { user: req.user, searchTerm,fav:true, scrapedData:[], mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 
   }
   

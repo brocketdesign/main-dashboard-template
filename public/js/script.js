@@ -153,7 +153,7 @@ $(document).ready(function() {
     $('.card img').on('error', function() { 
         var videoId = $(this).data('id');
         console.log('Image load error for: ',videoId)
-        $(`.card[data-id=${videoId}]`).remove()
+        $(`.card[data-id=${videoId}]`).addClass('border border-danger')
         handleMasonry()
     });
     
@@ -361,12 +361,12 @@ const handleFormResult = (isSuccess, message) => {
 
 // Handling of card clicking
 const handleCardClickable = () => {
-    $(`.card-clickable-1 img`)
-    .click(function() {
-    const $thisCard = $(this).parent()
+    $(`.play-button`)
+    .click(function(event) {
+    event.stopPropagation();
+    const $thisCard = $(this).closest('.card.info-container')
     var id = $thisCard.data('id');
     var isdl = $thisCard.data('isdl');
-
     console.log('Clicked card ID:', id);
     console.log('isdl: ',isdl)
 
@@ -377,12 +377,12 @@ const handleCardClickable = () => {
       }
 
       //Reset all the other cards
-      $(`.card-clickable-1`).each(function(){
+      $(`.card.info-container`).each(function(){
         $(this).removeClass('done')
       })
+      $(this).hide()
       // Mark the card as done to avoid processing it again
       $thisCard.addClass('done');
-
       // Check if the spinner is already present, if not, create and append it to the card
       if (!$thisCard.find('.spinner-border .for-strm').length) {
           var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute bg-dark').css({inset:"0px", margin:"auto"}).attr('role', 'status');
@@ -402,12 +402,10 @@ const handleCardClickable = () => {
 
         // Hide the spinner
 
-        $thisCard.find('.card-body-over').hide();
         $spinner.hide();
+        $thisCard.find('.card-body-over').remove()
           // Assuming the response from the API is a JSON object with a 'url' property
           if (response && response.url) {
-              console.log('Received video URL:', response.url);
-
               // Replace the image with an autoplay video
               var $video = $('<video>').attr({
                   src: response.url,
@@ -416,62 +414,16 @@ const handleCardClickable = () => {
                   controls: true,
                   playsinline: true
               }).on('loadeddata', function() {
-                // Code to be executed when the video is ready to play
-                console.log('Video ready to play');
-                //handleMasonry()
+                handleMasonry()
             });
-            console.log('Video element created:', $video);
-            //$thisCard.find('.card-img-top').remove()
-            
+
+            $thisCard.find(`img.card-img-top`).before($video)
+            $thisCard.find(`img.card-img-top`).hide()
             // Update the card body with the new video
             //$thisCard.prepend($video);
             $('#video-holder').html('')
             $('#video-holder').data('id',id)
-            $('#video-holder').append($video)//.append($thisCard.find('.tool-bar').clone()).append($thisCard.find('.card-title').clone().show())
-            
-            //scrollToTop();
-
-            $('#mobile-toolbar').html('')
-            const cardClone = $thisCard.clone()
-            cardClone.find('.card-top').remove()
-            cardClone.find('img').remove()
-            cardClone.find('.card-title').text().length > 0 ? cardClone.find('.card-title').show() : cardClone.find('.card-title').hide()
-            cardClone.find('.card-body-over').remove()
-            cardClone.find('.card-body').show()
-            cardClone.find('.card-body').removeClass('position-absolute px-3')
-            cardClone.find('.text-white').each(function(){
-                $(this).removeClass('text-white')
-            })
-
-            $('#video-holder').append(cardClone)
-
-            $('#mobile-toolbar').append(cardClone.clone())
-       
-            //displaySummary(response)
-            $('#summary').show()
-   
-              $('#video-container').show()
-              //$thisCard.hide()
-              handleMasonry()
-              console.log('Video added to card body.');
-
-              //Add related
-              if(response.related){
-                $('#related').html('')
-                $cardContainer = $('.card.card-clickable-1').clone()
-                for(item in response.related){
-                    $spinner = $cardContainer.find('.spinner-border');
-                    $spinner.hide()
-                    $cardContainer.addClass('item m-2').style('width','18rem')
-                    $cardContainer.attr('data-id',item._id).attr('data-title',item.alt)
-                    $cardContainer.find('src').attr('src',item.imageUrl)
-                    $cardContainer.find('a.source').attr('href',item.href)
-                    $cardContainer.find('p.card-title').text(item.alt)
-                    
-                    $('#related').append($cardContainer)
-                }
-                handleCardClickable()
-              }
+        
 
             if (isdl==false && response.url.includes('http')) {
                 // Add the download button
@@ -893,14 +845,14 @@ function updategridlayout(value) {
     if($('#range').data('mode')==1 && $(window).width() <= 768){
         $('#grid-range').val(1);
         updategridlayout(1)
-        $('#range').hide()
-        return
+        //$('#range').hide()
+        //return
     }
     if($('#range').data('mode')== 1 && $(window).width() > 768){
         $('#grid-range').val(2);
         updategridlayout(2)
-        $('#range').hide()
-        return
+        //$('#range').hide()
+        //return
     }
     // Check if the local variable exists
     var rangeState = localStorage.getItem('rangeState');
@@ -1984,7 +1936,8 @@ function cancelSubscription(subscriptionID){
 }
 
 function handleIframe(){
-    $(document).on('click','.iframe-button',function(){
+    $(document).on('click','.iframe-button',function(event){
+        event.stopPropagation();
         var targetURL = $(this).data('url')
         const itemID = $(this).data('id')
         const $thisCard = $(`.card.info-container[data-id=${itemID}]`)

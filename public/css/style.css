@@ -6,9 +6,7 @@ main#dashboard {
   font-size: 12px;
   display:none;
 }
-#video-holder i,#video-holder.spinner-border {
-  color: black !important;
-}
+
 #video-holder .card-title, #mobile-toolbar .card-title{
   color:white;
 }
