@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const { ObjectId } = require('mongodb');
 const { 
   findDataInMedias,
-  sanitizeData,
+  updateSameElements,
   initCategories 
 } = require('../services/tools')
 // Helper function to find user and update their scraped data
@@ -49,28 +49,24 @@ async function ManageScraper(url, nsfw, mode, user, page) {
   })); 
 
 
-// Initialize a counter variable named 'insertCount' to 0.
-// This counter will keep track of the number of items inserted or updated in the database.
 let insertCount = 0;
 
-// Check if 'scrapedData' exists and if it contains one or more items.
 if (scrapedData && scrapedData.length > 0) {
   
-  // Loop through each item in the 'scrapedData' array.
   for (const item of scrapedData) {
-    
-    // Use the 'updateOne' method on the 'medias' collection in MongoDB.
-    // This method will either update an existing item that matches 'item'
-    // or insert 'item' as a new document if no matching document is found.
-    // '$set: item' specifies the fields and values that should be updated or inserted.
-    // 'upsert: true' allows the method to insert a new document if no match is found.
-    await global.db.collection('medias').updateOne(item, { $set: item }, { upsert: true });
-    
-    // Increment the counter by 1 each time an item is either updated or inserted.
-    insertCount++;
+      if (item.source) {
+        insertCount++;
+        await global.db.collection('medias').updateOne({'source':item.source}, { $set: item }, { upsert: true });
+      }
+      if (item.url) {
+        insertCount++;
+        await global.db.collection('medias').updateOne({'url':item.source}, { $set: item }, { upsert: true });
+      }
+      if (item.link) {
+        insertCount++;
+        await global.db.collection('medias').updateOne({'link':item.source}, { $set: item }, { upsert: true });
+      }
   }
-
-  // Output the total number of items that were either updated or inserted.
   console.log(`The actual number of items inserted or updated: ${insertCount}`);
 }
 

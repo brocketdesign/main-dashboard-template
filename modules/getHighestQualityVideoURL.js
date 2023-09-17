@@ -11,7 +11,6 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
 
     if(foundElement.filePath){
-      console.log('The element has already been downloaded', foundElement)
       updateSameElements(foundElement,{isdl:true,isdl_data:new Date(),filePath:foundElement.filePath})
       return foundElement.filePath.replace('public','')
     }

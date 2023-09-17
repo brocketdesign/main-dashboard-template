@@ -198,7 +198,6 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
     
       await initCategories(req.user._id)
       let scrapedData = await ManageScraper(searchTerm,nsfw,mode,req.user, page);
-
       let scrapInfo  
       try {
         const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
@@ -403,7 +402,11 @@ function mapArrayHistory(medias) {
       }
     }
   });
-
-  return queryMap; // Return an object with one set of data for each query, containing the items for the highest page
+  for (let key in queryMap) {
+    if (queryMap[key].length === 0) {
+        delete queryMap[key];
+    }
+}
+  return queryMap
 }
 module.exports = router;
