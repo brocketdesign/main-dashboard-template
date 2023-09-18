@@ -3,7 +3,7 @@ const puppeteer = require('puppeteer');
 const ytdl = require('ytdl-core');
 const { saveData, updateSameElements } = require('../services/tools')
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
-
+const axios = require('axios');
 async function getHighestQualityVideoURL(video_id, user, stream = true) {
   try {
     const userId = user._id;
@@ -33,10 +33,36 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
 
 async function searchVideo(videoDocument, user, stream) {
   const videoLink = videoDocument.link; // Assuming 'link' field contains the video link
-  return videoLink.includes('youtube') ? 
-    await searchVideoYoutube(videoDocument, user, stream) : await searchVideoUrl(videoDocument, user);
+  console.log(videoLink)
+  if( videoLink.includes('youtube') ){
+    return await searchVideoYoutube(videoDocument, user, stream)
+  }
+  if( videoLink.includes('spankbang') ){
+    return await searchVideoUrl(videoDocument, user);
+  }
+  if( videoLink.includes('xvideos') ){
+    return await searchVideoUrlAPI(videoDocument, user);
+  }
 }
-
+async function searchVideoUrlAPI(videoDocument,user){
+  return await getJSON(`https://appsdev.cyou/xv-ph-rt/api/?site_id=xvideos&video_id=${videoDocument.video_id}`,user)
+}
+const getJSON = async (url,user) => {
+  try {
+    const response = await axios.get(url);
+    
+    // Ensure the response is in JSON format.
+    if (response.headers['content-type'].includes('application/json')) {
+      const link = response.data.mp4.high != 	"" ? response.data.mp4.high : response.data.mp4.low
+      console.log(link)
+      return link;
+    } else {
+      throw new Error('Response is not in JSON format');
+    }
+  } catch (error) {
+    throw error;
+  }
+};
 async function searchVideoUrl( videoDocument, user) {
 
   videoURL = videoDocument.link
@@ -59,7 +85,6 @@ async function searchVideoUrl( videoDocument, user) {
   });
 
   await page.goto(videoURL, { waitUntil: 'networkidle2' });
-  await page.waitForTimeout(1000);
 
   await browser.close();
 

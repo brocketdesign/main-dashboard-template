@@ -5,13 +5,13 @@ const {
   updateSameElements,
   initCategories 
 } = require('../services/tools')
+const scrapeMode1 = require(`./scraper/scrapeMode1`);
 // Helper function to find user and update their scraped data
 async function findAndUpdateUser(userId, newScrapedData = null) {
   const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
   if (!user) console.log('User not found in the database.');
   return user;
 }
-
 async function ManageScraper(url, nsfw, mode, user, page) {
   console.log('Manage Scraper:' ,{url, nsfw, mode, page})
   const scrapeMode = require(`./scraper/scrapeMode${mode}`);
