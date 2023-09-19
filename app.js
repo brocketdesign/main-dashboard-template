@@ -16,11 +16,11 @@ const path = require('path'); // Add path module
 const ip = require('ip');
 const bcrypt = require('bcrypt');
 const app = express();
-const WebSocketRouter = require('./routers/WebSocketRouter');
+const WebSocket = require('./routers/WebSocket');
 const server = http.createServer(app);
 
 // Attach the WebSocket server to the HTTP server
-WebSocketRouter(server);
+WebSocket(server);
 
 const port = process.env.PORT || 3000;
 
@@ -125,19 +125,19 @@ function startServer() {
       app.set('views', './views');
 
       // Define your routers
-      const indexRouter = require('./routers/indexRouter');
-      const apiRouter = require('./routers/apiRouter');
-      const videoOpenaiRouter = require('./routers/videoOpenaiRouter');
-      const userRouter = require('./routers/userRouter');
-      const dashboardRouter= require('./routers/dashboardRouter');
-      const paymentRouter = require('./routers/paymentRouter');
+      const index = require('./routers/index');
+      const api = require('./routers/api');
+      const videoOpenai = require('./routers/videoOpenai');
+      const user = require('./routers/user');
+      const dashboard = require('./routers/dashboard');
+      const payment = require('./routers/payment');
 
-      app.use('/', indexRouter); // Use the index router for '/'
-      app.use('/api', apiRouter); // Use the API router for '/api'
-      app.use('/api/openai-video', videoOpenaiRouter); 
-      app.use('/user', userRouter); // Use the user router for '/user'
-      app.use('/payment', paymentRouter);
-      app.use('/dashboard', dashboardRouter);
+      app.use('/', index); // Use the index router for '/'
+      app.use('/api', api); // Use the API router for '/api'
+      app.use('/api/openai-video', videoOpenai); 
+      app.use('/user', user); // Use the user router for '/user'
+      app.use('/payment', payment);
+      app.use('/dashboard', dashboard);
 
 
 
