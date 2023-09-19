@@ -40,6 +40,9 @@ async function searchVideo(videoDocument, user, stream) {
   if( videoLink.includes('spankbang') ){
     return await searchVideoUrl(videoDocument, user);
   }
+  if( videoLink.includes('missav') ){
+    return await searchVideoUrl(videoDocument, user);
+  }
   if( videoLink.includes('xvideos') ){
     return await searchVideoUrlAPI(videoDocument, user);
   }

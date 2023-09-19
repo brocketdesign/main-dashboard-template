@@ -80,7 +80,7 @@ const scrapeWebsite = (query, mode, nsfw, url, pageNum) => {
 }
 
 
-const chrome_scrapeWebsite1 = (query, mode, nsfw, url, pageNum) => {
+const scrapeWebsite1 = (query, mode, nsfw, url, pageNum) => {
   return new Promise(async (resolve, reject) => {
     try {
       if(url){
@@ -127,46 +127,49 @@ const chrome_scrapeWebsite1 = (query, mode, nsfw, url, pageNum) => {
   });
 }
 
-const scrapeWebsite1 = async (query, mode, nsfw, url, pageNum) => {
-  try {
-    if (url) {
-      url = url.includes('http') ? url : `https://www.xvideos.com/?k=${url}&p=${pageNum}`;
-    } else {
-      url = process.env.DEFAULT_URL;
-    }
-
-    const { data: html } = await axios.get(url);
-
-    const $ = cheerio.load(html);
-
-    const scrapedData = $('#content .thumb-block').map((i, el) => {
-      try {
-        const item = $(el);
-        const thumb = item.find('.thumb');
-        const link = 'https://www.xvideos.com/'+thumb.find('a').attr('href');
-        const video_id = item.attr("data-id");
-        const imageUrl = thumb.find('img').attr('data-src');
-        const alt = item.find('.thumb-under .title a').attr('title');
-        const currentPage = url;
-
-        if (!video_id) {
-          return null;
-        }
-        
-        return { video_id, imageUrl, alt, link, currentPage, query, mode, nsfw , extractor:'spankbang'};
-      } catch (error) {
-        console.log(error);
-        return null;
+const scrapeWebsite2 = (query, mode, nsfw, url, pageNum) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if(url){
+        url = url.includes('http') ? url : `https://missav.com/ja/search/${url}?page=${pageNum}`;
       }
-    }).get();
 
-    return scrapedData.filter(Boolean);  // To filter out any null values
+      const browser = await puppeteer.launch({
+        headless: false,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+      });
 
-  } catch (error) {
-    throw error;
-  }
-};
+      const page = await browser.newPage();
+      await page.goto(url, { waitUntil: 'networkidle2' });
 
+      const scrapedData = await page.evaluate((url, query, mode, nsfw) => {
+        const items = Array.from(document.querySelectorAll('.thumbnail.group'));
+        const data = items.map(item => {
+          try {
+            const link = item.querySelector('a').getAttribute('href');
+            const video_id = item.querySelector('video.preview').getAttribute("id").replace('preview-','');
+            const imageUrl = item.querySelector('img').getAttribute('src');
+            const alt = item.querySelector('img').getAttribute('alt')
+            const currentPage = url;
+            if(!video_id){
+              return
+            }
+            return { video_id, imageUrl, alt, link ,currentPage, query, mode, nsfw, extractor:'missav' };
+          } catch (error) {
+            console.log(error)
+          }
+        });
+        return data;
+      }, url, query, mode, nsfw);
+
+      await browser.close();
+
+      resolve(scrapedData);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 async function scrapeMode1(url, mode, nsfw, page) {
   query = url 
   try {
@@ -178,8 +181,8 @@ async function scrapeMode1(url, mode, nsfw, page) {
 
     const [result1, result2] = await Promise.all([
       scrapeWebsite(query, mode, nsfw, url, page),
-      //scrapeWebsite1(query, mode, nsfw, url, page),
-      chrome_scrapeWebsite1(query, mode, nsfw, url, page)
+      scrapeWebsite1(query, mode, nsfw, url, page),
+      //scrapeWebsite2(query, mode, nsfw, url, page)
     ]);
     
     const data = result1.concat(result2);

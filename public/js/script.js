@@ -19,13 +19,19 @@ const previewImage = (imageInput, imagePreview) => {
 const inputTrigger = (inputElement, triggerElement) => {
     triggerElement.addEventListener('click', () => inputElement.click());
 }
+let msnry;
 const handleMasonry = () => {
     if(document.querySelector('.masonry-container')){
-        new Masonry('.masonry-container', {
-            itemSelector: '.masonry-item',
+        msnry = new Masonry('.masonry-container', {
+            itemSelector: '.masonry-item:not([style*="display: none"])', 
             columnWidth: '.masonry-item',
             percentPosition: true
         });
+    }
+}
+const updateMasonryLayout = () => {
+    if (msnry) {
+        msnry.layout();
     }
 }
 // Masonry setup
@@ -224,7 +230,8 @@ $(document).ready(function() {
     handleLoadMore();
     handleResetFormSubmission();
     handleIframe()
-    feather.replace()
+    
+    initializeExtractor();
 });
 function scrollBottomWindow(){
     $('html, body').animate({ scrollTop: $(document).height() }, 'fast', function() {
@@ -1985,4 +1992,60 @@ function generateSpinnerCard($thisCard){
         $thisCard.find('.card-body-over').append($spinner);
     }
     return $thisCard.find('.spinner-border')
+}
+
+function initializeExtractor() {
+    const extractors = listExtractors();
+    showExtractors(extractors);
+    attachExtractorSortEvent();
+}
+
+function attachExtractorSortEvent() {
+    $(document).on('click', '#extractors .extractor', function() {
+        const baseExtractor = $(this).data('extractor');
+        filterByExtractor(baseExtractor);
+    });
+}
+
+function filterByExtractor(baseExtractor) {
+    const carouselContainer = $('.custom-carousel-container');
+    const carouselItems = carouselContainer.find('.grid-item');
+    
+    carouselItems.hide();
+    carouselItems.each(function() {
+        const extractor = $(this).data('extractor');
+        if (extractor === baseExtractor || baseExtractor == false) {
+            $(this).show();
+            // Move the element to the beginning of .custom-carousel-container
+            $(this).prependTo(carouselContainer);
+        }
+    });
+
+    // Update Masonry layout after changes
+    updateMasonryLayout();
+    
+}
+
+
+function showExtractors(extractors) {
+    const extractorContainer = $('#extractors');
+    
+    extractors.forEach(extractor => {
+        extractorContainer.append(`<button class="btn btn-primary extractor mx-2" data-extractor="${extractor}">${extractor}</button>`);
+    });
+}
+
+function listExtractors() {
+    const extractors = [];
+    const carouselItems = $('.custom-carousel-container .grid-item');
+    
+    carouselItems.each(function() {
+        const extractor = $(this).data('extractor');
+        if (extractor && !extractors.includes(extractor)) {
+            extractors.push(extractor);
+        }
+    });
+
+    console.log({ extractors });
+    return extractors;
 }
