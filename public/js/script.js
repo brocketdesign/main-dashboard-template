@@ -21,6 +21,7 @@ const inputTrigger = (inputElement, triggerElement) => {
 }
 let msnry;
 const handleMasonry = () => {
+    
     if(document.querySelector('.masonry-container')){
         msnry = new Masonry('.masonry-container', {
             itemSelector: '.masonry-item:not([style*="display: none"])', 
@@ -160,7 +161,7 @@ $(document).ready(function() {
         var videoId = $(this).data('id');
         console.log('Image load error for: ',videoId)
         $(`.card[data-id=${videoId}]`).addClass('border border-danger')
-        handleMasonry()
+        updateMasonryLayout
     });
     
     $('.card img').on('load', function() { 
@@ -169,12 +170,12 @@ $(document).ready(function() {
         // Check image size and remove if smaller than 500x500
         if (this.naturalWidth < 500 || this.naturalHeight < 500) {
             $(`.card[data-id=${videoId}]`).remove();
-            handleMasonry();
+            updateMasonryLayout();
         }
     });    
     
     $('.card img').on('load', function() { 
-        handleMasonry()
+        updateMasonryLayout()
     });
     $(".card").on('mouseenter', function(){
         $(this).find('.hover').show();
@@ -421,7 +422,7 @@ const handleCardClickable = () => {
                   controls: true,
                   playsinline: true
               }).on('loadeddata', function() {
-                handleMasonry()
+                updateMasonryLayout()
             });
 
             $thisCard.find(`img.card-img-top`).before($video)
@@ -804,7 +805,7 @@ const handleHiding = (videoId) => {
         data: { element_id: videoId },
         success: function(response) {
             $container.remove()
-            handleMasonry()
+            updateMasonryLayout()
             handleFormResult(true,response.message)
             // Handle the success response
             console.log(response);
@@ -821,7 +822,7 @@ const handleHidingHistory = (query) => {
         method: 'POST',
         data: { query: query },
         success: function(response) {
-            handleMasonry()
+            updateMasonryLayout()
             handleFormResult(true,response.message)
             // Handle the success response
             console.log(response);
@@ -844,7 +845,7 @@ function updategridlayout(value) {
   
     // Add the new col- class to each grid item
     $('.grid-item').addClass(colClass);
-    handleMasonry()
+    updateMasonryLayout()
   }
   
   
@@ -1970,7 +1971,7 @@ function handleIframe(){
                 }).on('loadeddata', function() {
                   // Code to be executed when the video is ready to play
                   console.log('Video ready to play');
-                  handleMasonry()
+                  updateMasonryLayout()
               });
                 $(`img.card-img-top[data-id=${itemID}]`).before($video)
                 $(`img.card-img-top[data-id=${itemID}]`).hide()
