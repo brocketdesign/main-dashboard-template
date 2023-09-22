@@ -54,9 +54,7 @@ async function scrapeMode3(query, mode, nsfw, url, page) {
       return await searchGoogleImage(query, mode, nsfw, url, page);
     }
     console.log('Operating a NSFW search');
-    const data1 = await searchPorn(query, mode, nsfw, url, page);
-    const data2 = await searchGoogleImage(query, mode, !nsfw, url, page);
-    const data = data1.concat(data2)
+    const data = await searchPorn(query, mode, nsfw, url, page);
     return data;
   } catch (error) {
     console.log('Error occurred while scraping and saving data:', error);
