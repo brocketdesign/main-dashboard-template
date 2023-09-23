@@ -7,9 +7,15 @@ block mainContent
       input(type="hidden" name="page" id="page" value=page)
       if mode == 4
         select#category(type="text", name="category", class="form-control")
-      input#searchTerm(onfocus=mode==2?'searchSubreddits(this)':undefined ,type="text", name="searchTerm", class="form-control", placeholder="検索キーワードを入力してください", value=searchTerm, aria-label="Search")
+      input#searchTerm(data-mode=mode ,type="text", name="searchTerm", class="form-control", placeholder="検索キーワードを入力してください", value=searchTerm, aria-label="Search")
       button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") 
         i.fas.fa-search
+
+    ul.list-group#subRedditSearchRes.bg-white.w-100.position-absolute.shadow(style="max-height: 50vh;overflow: auto;z-index: 3;right: 0;;")
+    #loadingSpinner.list-group-item.loading.text-center.w-100.position-absolute.p-3.bg-white(style="display: none;z-index: 3;")
+      div.loader.spinner-border
+        span.visually-hidden Loading ...
+
     .d-flex.mb-3
       .form-check.form-switch.input-group-text.rounded-0.position-relative.border-0.p-0
         label.form-check-label.badge.me-3.bg-danger.p-2(for="nsfw")
@@ -19,7 +25,6 @@ block mainContent
       a.badge.bg-dark.d-flex.align-items-center.text-white(href=`/dashboard/app/${mode}/fav?searchTerm=${searchTerm?searchTerm:''}`)
         | Favorites
         i.fas.fa-heart.ms-2
-  ul.list-group#subRedditSearchRes.bg-white.w-100.position-absolute.border.shadow(style="max-height: 50vh;overflow: auto;z-index: 3;display: contents;")
   if result && mode == 1
     block dynamicContent
   else 

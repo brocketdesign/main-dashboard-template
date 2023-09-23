@@ -300,8 +300,8 @@ router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (r
 
     console.log(`Found ${medias.length} items.`)
     const data = mapArrayHistory(medias)
-    const userOpenAi = await mapArrayOpenai(req.user)
-    res.render('history', { user: req.user,userOpenAi, data, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
+    //const userOpenAi = await mapArrayOpenai(req.user)
+    res.render('history', { user: req.user, data, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
 
   } catch (error) {
     console.log(error);

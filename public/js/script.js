@@ -216,6 +216,8 @@ $(document).ready(function() {
     handleOpenaiForm();
     handleMemo();
 
+    enableSubRedit()
+
     //Handle SideBAR
     onLargeScreen(handleSideBar)
     onSmallScreen(handleSideBar2)
@@ -952,70 +954,121 @@ function updategridlayout(value) {
         }
     }); 
 }
+function enableSubRedit(){
+        // Listen for focus event on the input element with id "searchTerm"
+        $('#searchTerm').on('focus', function() {
+          // Check the value of the 'data-mode' attribute
+          const dataMode = $(this).attr('data-mode');
+          
+          // Log the focus event and the value of the 'data-mode' attribute
+          console.log('Input is focused.');
+          console.log(`data-mode attribute value: ${dataMode}`);
+          
+          // Check if data-mode attribute is equal to "2"
+          if(dataMode === '2') {
+            console.log('Input is focused and data-mode is 2.');
+            searchSubreddits()
+          }
+        });
+      
+        // Listen for keyup event to capture when something is being typed
+        $('#searchTerm').on('keyup', function() {
+          // Check the value of the 'data-mode' attribute
+          const dataMode = $(this).attr('data-mode');
+      
+          // Log that something is being typed and the value of the 'data-mode' attribute
+          console.log('Something is being typed.');
+          console.log(`data-mode attribute value: ${dataMode}`);
+      
+          // Check if data-mode attribute is equal to "2"
+          if(dataMode === '2') {
+            console.log('Something is being typed and data-mode is 2.');
+            searchSubreddits()
+          }
+        });
+}
+// Initialize the spinner and add it to #searchRes
+$('#subRedditSearchRes').append(`
+  <li id="loadingSpinner" class="list-group-item loading text-center p-3" style="display: none;">
+    <div class="loader spinner-border">
+      <span class="visually-hidden">Loading ...</span>
+    </div>
+  </li>
+`);
 
 // Function to search subreddits
-function searchSubreddits(el) {
-    // Checking if the element does not have a 'wait' class
-    if (!$(el).hasClass('wait')) {
-  
-      // Adding 'wait' class to the element
-      $(el).addClass('wait')
-      $('#subRedditSearchRes').empty();
-      // Implementing a delay using setTimeout
-      setTimeout(async () => {
-  
-        // Clearing the content of 'searchRes' and adding a loading indicator
-        $('#searchRes').empty().append(`
-          <li class="list-group-item loading text-center p-3">
-            <div class="loader spinner-border">
-              <span class="visually-hidden">Loading ...</span>
-            </div>
-          </li>
-        `);
-  
-        // Getting the search key from the element's value
-        const key = $(el).val();
-  
-        // Forming the API URL
-        const apiUrl = `/api/searchSubreddits?query=${key}`;
-  
-        // Checking if key is not empty and is more than 0 characters long
-        if (key && key.length > 0) {
-  
-          // Fetching data from the API
-          try {
-            const response = await $.get(apiUrl);
-  
-            // Mapping over the response data and forming the content
-            const content = response.map(element => {
-              const url = encodeURIComponent(`https://www.reddit.com${element['url']}new/.json?count=25&after=`);
-              return `
-                <li class="list-group-item btn text-start">
-                  <span data-title="${element['title']}" data-url="${url}" data-value="${element['url']}" onclick="searchFor(this)">
-                    ${element['title']}
-                  </span>
-                  <span class="bg-danger badge float-end r18 ${element.r18}">
-                    R18
-                  </span>
-                </li>
-              `;
-            }).join('');
-            // Removing the loading indicator and appending the content
-            $('#subRedditSearchRes').append(content);
-          } catch (error) {
-            console.error(error);
-          }
-        } else {
-          // If key is empty, clearing the content of 'searchRes'
-          $('#subRedditSearchRes').empty();
-        }
-  
-        // Removing the 'wait' class from the element
-        $(el).removeClass('wait');
-  
-      }, 1000);
+async function searchSubreddits() {
+  const searchTermEl = $('#searchTerm');
+  const subRedditSearchResEl = $('#subRedditSearchRes');
+  const loadingSpinnerEl = $('#loadingSpinner');
+
+  // Checking if the element does not have a 'wait' class
+  if (!searchTermEl.hasClass('wait')) {
+    console.log('Search started.');
+    
+    // Adding 'wait' class to prevent multiple requests
+    searchTermEl.addClass('wait');
+    
+    // Clearing previous results
+    subRedditSearchResEl.empty();
+    
+    // Show loading spinner
+    loadingSpinnerEl.show();
+
+    // Getting the search term from the input
+    const key = searchTermEl.val();
+
+    // Forming the API URL
+    const apiUrl = `/api/searchSubreddits?query=${key}`;
+    
+    if (!key || key.length <= 0) {
+      console.log('Search term is empty or too short.');
+      
+      // Hide loading spinner
+      loadingSpinnerEl.hide();
+      
+      // Remove wait class
+      searchTermEl.removeClass('wait');
+      return;
     }
+
+    try {
+      // Fetching data from the API
+      const response = await $.get(apiUrl);
+
+      // Hide loading spinner
+      loadingSpinnerEl.hide();
+
+      // Create content from API response
+      const content = response.map(element => {
+        const url = encodeURIComponent(`https://www.reddit.com${element['url']}new/.json?count=25&after=`);
+        return `
+          <li class="list-group-item btn text-start">
+            <span data-title="${element['title']}" data-url="${url}" data-value="${element['url']}" onclick="searchFor(this)">
+              ${element['title']}
+            </span>
+            <span class="bg-danger badge float-end r18 ${element.r18}">
+              R18
+            </span>
+          </li>
+        `;
+      }).join('');
+      
+      // Append new content
+      subRedditSearchResEl.append(content);
+      console.log('Search completed.');
+
+    } catch (error) {
+      console.error('Error in API call:', error);
+    } finally {
+      // Remove the 'wait' class to allow new requests
+      searchTermEl.removeClass('wait');
+    }
+  } else {
+    console.log('Waiting for the previous request to complete.');
   }
+}
+
 function handleBookEditing(){
     $('#edit-book textarea').on('input', function() {
         $(this).css('height', 'auto');

@@ -10,7 +10,7 @@ async function searchSubreddits(query) {
     let url = `https://www.reddit.com/api/subreddit_autocomplete_v2.json?query=${query}&include_over_18=true&after=`;
 
     // Accessing the scraping info in the database to get 'after' value
-    const scrapingInfo = await global.db.collection('subreddits').findOne({ 'scraping_info': true });
+    let scrapingInfo = await global.db.collection('subreddits').findOne({ 'scraping_info': true });
 
     // Initializing 'after' value
     let after = '';

@@ -564,7 +564,7 @@ router.post('/submit/:sectionName', ensureAuthenticated, (req, res) => {
 router.get('/video', async (req, res) => {
   try {
     const { videoId } = req.query;
-    
+    console.log(`Loadind video : ${videoId}`)
     const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
     // Call the function to get the highest quality video URL for the provided id
     const url = await getHighestQualityVideoURL(videoId,req.user);
@@ -597,7 +597,7 @@ router.post('/downloadFileFromURL', async (req, res) => {
       res.json({url:item.filePath.replace('public','')})
       return
     }
-    const {fileName,filePath} = generateFilePathFromUrl(process.env.DOWNLOAD_DIRECTORY,url)
+    const {fileName,filePath} = generateFilePathFromUrl('public/downloads/',url)
     console.log(`Page URL : ${url}`)
     const videoSource = await downloadVideo(url, filePath, itemID);
     console.log(`Downloaded : ${filePath}`)
@@ -631,7 +631,7 @@ router.post('/dl', async (req, res) => {
 
     console.log('Downloading from URL:', url);
 
-    let download_directory = process.env.DOWNLOAD_DIRECTORY
+    let download_directory = 'public/downloads'
     if (url.includes('youtube.com')) {
       download_directory = download_directory+'/youtube';
     }
@@ -642,13 +642,20 @@ router.post('/dl', async (req, res) => {
     await fs.promises.mkdir(download_directory, { recursive: true });
 
     const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
-
+    let done = false
     if (url.includes('youtube.com')) {
+      done = true
       await downloadYoutubeVideo(download_directory,filePath,foundElement.video_id)
-    } else {
+    } 
+    if(url.includes('redgifs.com')){
+      done = true
+      await downloadVideo(url, filePath, video_id);
+    }
+    if(!done){
       await downloadFileFromURL(filePath,url)
     }
 
+    
     // After the file is downloaded, do the same things for both YouTube videos and other types of files
 
     console.log('File downloaded:', fileName);
