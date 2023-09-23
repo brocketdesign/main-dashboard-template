@@ -19,10 +19,13 @@ const previewImage = (imageInput, imagePreview) => {
 const inputTrigger = (inputElement, triggerElement) => {
     triggerElement.addEventListener('click', () => inputElement.click());
 }
-let msnry;
+let msnry = null ;
 const handleMasonry = () => {
     
-    if(document.querySelector('.masonry-container')){
+    if(
+        document.querySelector('.masonry-container')
+        && window.innerWidth >= YOUR_LARGE_SCREEN_BREAKPOINT
+    ){
         msnry = new Masonry('.masonry-container', {
             itemSelector: '.masonry-item:not([style*="display: none"])', 
             columnWidth: '.masonry-item',
@@ -169,8 +172,8 @@ $(document).ready(function() {
         
         // Check image size and remove if smaller than 500x500
         if (this.naturalWidth < 500 || this.naturalHeight < 500) {
-            $(`.card[data-id=${videoId}]`).remove();
-            updateMasonryLayout();
+            //$(`.card[data-id=${videoId}]`).remove();
+            //updateMasonryLayout();
         }
     });    
     
