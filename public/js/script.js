@@ -2021,7 +2021,7 @@ function handleIframe(){
                     autoplay: true,
                     muted:true,
                     width:"100%",
-                    controls: false,
+                    controls: true,
                     loop:true,
                     playsinline: true
                 }).on('loadeddata', function() {
