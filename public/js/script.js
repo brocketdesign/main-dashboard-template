@@ -2027,7 +2027,8 @@ function handleIframe(){
                 }).on('loadeddata', function() {
                   // Code to be executed when the video is ready to play
                   console.log('Video ready to play');
-                  updateMasonryLayout()
+                  $thisCard.find('.card-body-over').removeClass('d-flex').hide()
+                  //updateMasonryLayout()
               });
                 $(`img.card-img-top[data-id=${itemID}]`).before($video)
                 $(`img.card-img-top[data-id=${itemID}]`).hide()
