@@ -1,7 +1,56 @@
 const { ObjectId } = require('mongodb');
 const axios = require('axios');
+const puppeteer = require('puppeteer');
 
-async function scrapeAndSaveDataMode2(url, mode, nsfw, page, filter = 'images') {
+async function scrapeMode2(url, mode, nsfw, page, filter = 'images'){
+  const data1 = await scrapeReddit(url, mode, nsfw, page, filter = 'images');
+  const data2 = await scrapeScrolller(url, mode, nsfw, page)
+  console.log(data2)
+  const data = data1.concat(data2)
+  return data
+}
+const scrapeScrolller = (subreddit, mode, nsfw, page) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const url = `https://scrolller.com${subreddit}/`;
+
+      const browser = await puppeteer.launch({
+        headless: false,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+      });
+
+      const page = await browser.newPage();
+      await page.goto(url, { waitUntil: 'networkidle2' });
+      await page.evaluate(() => {
+        window['SCROLLLER_BETA_1:CONFIRMED_NSFW'] = true;
+      });
+
+      const scrapedData = await page.evaluate((url, subreddit, mode, nsfw) => {
+        const items = Array.from(document.querySelectorAll('.vertical-view__item-container'));
+        const data = items.map(item => {
+          try {
+            const link = 'https://scrolller.com'+item.querySelector('a').getAttribute('href');
+            const video_id = new ObjectId();
+            const imageUrl = item.querySelector('img').getAttribute('src');
+            const currentPage = url;
+  
+            return { video_id, imageUrl, link ,currentPage, query:subreddit, subreddit, mode, nsfw, extractor:'scrolller' };
+          } catch (error) {
+            console.log(error)
+          }
+        });
+        return data;
+      }, url, subreddit, mode, nsfw);
+
+      await browser.close();
+      
+      resolve(scrapedData);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+async function scrapeReddit(url, mode, nsfw, page, filter = 'images') {
   if (!url) return false;
 
   const subreddit = url;
@@ -72,6 +121,7 @@ function processResults(result, subreddit, afterId, page) {
       video_id: generateRandomID(8),
       afterId,
       page,
+      extractor:'reddit' 
     }));
 }
 
@@ -93,4 +143,4 @@ function generateRandomID(length) {
   return randomID;
 }
 
-module.exports = scrapeAndSaveDataMode2;
+module.exports = scrapeMode2;
