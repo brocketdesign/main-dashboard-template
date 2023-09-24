@@ -32,8 +32,8 @@ block dynamicContent
                       i.fas.fa-link
 
               if mode == 2
-                if data.link.includes('redgif')
-                    img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", src=data.thumb, alt=data.title )
+                if data.link.includes('redgif') || data.link.includes('scrolller')
+                    img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", src=data.thumb , alt=data.title )
                 else 
                     img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=data.link, alt=data.title )
               else
