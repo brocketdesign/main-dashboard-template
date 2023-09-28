@@ -1,12 +1,11 @@
 const { ObjectId } = require('mongodb');
 const puppeteer = require('puppeteer');
 const ytdl = require('ytdl-core');
-const { saveData, updateSameElements } = require('../services/tools')
+const { saveData, updateSameElements, lessThan24Hours, isMedia } = require('../services/tools')
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 const axios = require('axios');
 async function getHighestQualityVideoURL(video_id, user, stream = true) {
   try {
-    const userId = user._id;
     
     const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
 
@@ -15,12 +14,16 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
       return foundElement.filePath.replace('public','')
     }
     
+    if(lessThan24Hours(foundElement.last_scraped)){
+      return foundElement.highestQualityURL
+    }
+
     if (foundElement.mode == "3") {
       await saveData(user, foundElement,{filePath:foundElement.url})
       return foundElement.url; 
     }
     if (foundElement.mode == "2" || foundElement.mode == "4") {
-      return foundElement.link; 
+      return isMedia(foundElement.link) ? foundElement.link : foundElement.thumb; 
     }
 
     return await searchVideo(foundElement, user, stream);
@@ -72,7 +75,7 @@ async function searchVideoUrl( videoDocument, user) {
   if(!videoDocument.link.includes('http')){
     videoURL = `${process.env.DEFAULT_URL}${videoDocument.link}`;
   }
-  console.log('Video URL to scrape:', videoURL);
+  //console.log('Video URL to scrape:', videoURL);
 
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
@@ -95,7 +98,7 @@ async function searchVideoUrl( videoDocument, user) {
 
   updateSameElements(videoDocument, {highestQualityURL:highestQualityURL,last_scraped:new Date()})
   
-  console.log('Highest Quality URL:', highestQualityURL);
+  //console.log('Highest Quality URL:', highestQualityURL);
   return highestQualityURL;
 }
 

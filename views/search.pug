@@ -1,11 +1,6 @@
 extends dashboard
 
 block dynamicContent
-  label.form-label.d-none(for="grid") 1行あたりの要素数
-  div#range(data-mode=mode)
-    input.form-range(type="range" id="grid-range" min="1" max="4" value="3")
-  #extractors.d-flex.my-3
-    button.btn.btn-primary.extractor.mx-2(data-extractor="false") All
   if scrapedData.length > 0 
     .masonry-container.row.custom-carousel-container
       each data in scrapedData
@@ -26,18 +21,23 @@ block dynamicContent
                     button.delete-button.btn.btn-dark.border.border-white.my-1(type="button", data-id=data._id)
                         i.fas.fa-trash-alt
                     if !fav
-                      button.download-button.btn.btn-dark.shadow.border.border-white.my-1(type="button", class=data.isdl?'done':'')
-                        i.fas.fa-heart
+                      if data.link && data.link.includes('redgif')
+                        button.iframe-button.fav.btn.btn-dark.shadow.border.border-white.my-1(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
+                          i.fas.fa-heart
+                      else
+                        button.download-button.btn.btn-dark.shadow.border.border-white.my-1(type="button", class=data.isdl?'done':'')
+                          i.fas.fa-heart
                     a.source.btn.btn-dark.border.border-white.my-1(target="_blank", href=data.source||data.link||data.webm||data.url)
                       i.fas.fa-link
 
               if mode == 2
+                - favsrc = data.filePath && data.filePath.includes('.mp4') ? false : data.filePath
                 if data.link.includes('redgif') || data.link.includes('scrolller')
-                    img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", src=data.thumb , alt=data.title )
+                    img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", src=favsrc || data.thumb , alt=data.title )
                 else 
-                    img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=data.link, alt=data.title )
+                    img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=favsrc || data.link, alt=data.title )
               else
-                  img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=data.url || data.imageUrl || data.link, alt=data.title,  data.imageUrl=data.imageUrl?data.imageUrl:undefined )
+                  img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=favsrc || data.url || data.imageUrl || data.link, alt=data.title,  data.imageUrl=data.imageUrl?data.imageUrl:undefined )
               
               p.card-title.text-white.bg-dark.border-white.border.p-3(style="display:none")= data.title 
   else

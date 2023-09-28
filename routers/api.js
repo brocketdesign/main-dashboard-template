@@ -10,7 +10,8 @@ const {
   updateSameElements,
   fetchOpenAICompletion,
   initCategories,
-  saveDataSummarize
+  saveDataSummarize,
+  generateFilePathFromUrl
 } = require('../services/tools')
 const pdfToChunks = require('../modules/pdf-parse')
 const multer = require('multer');
@@ -559,6 +560,10 @@ router.post('/submit/:sectionName', ensureAuthenticated, (req, res) => {
       res.status(500).json({ error: err });
     });
 });
+router.get('/downloading', async (req, res) => {
+  const data = await global.db.collection('medias').find({isdl:false}).toArray()
+  res.json({ data });
+});
 
 // Define a route to handle video requests
 router.get('/video', async (req, res) => {
@@ -601,6 +606,8 @@ router.post('/downloadFileFromURL', async (req, res) => {
     console.log(`Page URL : ${url}`)
     const videoSource = await downloadVideo(url, filePath, itemID);
     console.log(`Downloaded : ${filePath}`)
+
+    updateSameElements(item,{filePath:filePath.replace('public',''), isdl:true,isdl_end:new Date()})
     res.json({url:filePath.replace('public','')})
   }catch(error){
     console.log(error)
@@ -608,149 +615,7 @@ router.post('/downloadFileFromURL', async (req, res) => {
 
 });  
 
-router.post('/dl', async (req, res) => {
-  const video_id = req.body.video_id;
-  const title = req.body.title || 'vid';
-  console.log('File download requested for video_id:', video_id);
 
-  try {
-
-    const url = await getHighestQualityVideoURL(video_id,req.user,false);
-
-    if (!url) {
-      console.log('Video URL not found for video_id:', video_id);
-      res.status(404).json({ error: 'Video URL not found.' });
-      return;
-    }
-
-    if(!url.includes('http')){
-      saveData(req.user, video_id, {isdl:true})
-      res.status(200).json({ message: 'ダウンロードされました' });
-      return;
-    }
-
-    console.log('Downloading from URL:', url);
-
-    let download_directory = 'public/downloads'
-    if (url.includes('youtube.com')) {
-      download_directory = download_directory+'/youtube';
-    }
-
-    const {fileName,filePath} = generateFilePathFromUrl(download_directory,url,title)
-
-    // Create download folder if it doesn't exist
-    await fs.promises.mkdir(download_directory, { recursive: true });
-
-    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
-    let done = false
-    if (url.includes('youtube.com')) {
-      done = true
-      await downloadYoutubeVideo(download_directory,filePath,foundElement.video_id)
-    } 
-    if(url.includes('redgifs.com')){
-      done = true
-      await downloadVideo(url, filePath, video_id);
-    }
-    if(!done){
-      await downloadFileFromURL(filePath,url)
-    }
-
-    
-    // After the file is downloaded, do the same things for both YouTube videos and other types of files
-
-    console.log('File downloaded:', fileName);
-
-    updateSameElements(foundElement,{filePath:filePath.replace('public',''), isdl:true,isdl_data:new Date()})
-    // Send a success status response after the file is downloaded
-    res.status(200).json({ message: 'アイテムが成功的に保存されました。' });
-
-  } catch (err) {
-    console.log('Error occurred while downloading file:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-function generateFilePathFromUrl(download_directory,url,title='dl'){
-  // Get file name from the URL
-  const fileExtension = getFileExtension(url)
-  let extension = getFileExtension(url) == '' ? '.mp4':fileExtension;
-  let sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, ''); // This will keep only alphanumeric characters
-  let fileName = `${sanitizedTitle}_${Date.now()}${extension}`;
-  let filePath = path.join(download_directory, fileName);
-  return {fileName,filePath}
-}
-async function downloadFileFromURL(filePath,url) {
-  // If it's not a YouTube video, download it directly
-  const response = await axios.get(url, { responseType: 'stream', maxContentLength: 10 * 1024 * 1024 });
-  console.log('Received response for URL:', url);
-
-  const writer = fs.createWriteStream(filePath);
-  response.data.pipe(writer);
-
-  await new Promise((resolve, reject) => {
-    writer.on('finish', resolve);
-    writer.on('error', reject);
-  });
-}
-
-async function downloadYoutubeVideo(download_directory,filePath,video_id) {
-  const info = await ytdl.getInfo(video_id);
-  //console.log(info.formats);
-
-  const videoFormat = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
-  const audioFormat = ytdl.chooseFormat(info.formats.filter(format => !format.videoCodec), { quality: 'highestaudio' });
-  
-  // Define temporary file paths
-  let videoFilePath = path.join(download_directory, `video_${Date.now()}.mp4`);
-  let audioFilePath = path.join(download_directory, `audio_${Date.now()}.mp4`);
-
-  // Download video
-  const videoDownload = ytdl.downloadFromInfo(info, { format: videoFormat });
-  videoDownload.pipe(fs.createWriteStream(videoFilePath));
-
-  // Download audio
-  const audioDownload = ytdl.downloadFromInfo(info, { format: audioFormat });
-  audioDownload.pipe(fs.createWriteStream(audioFilePath));
-
-  // Wait for both downloads to finish
-  await Promise.all([
-    new Promise((resolve, reject) => {
-      videoDownload.on('end', resolve);
-      videoDownload
-      .on('error', (err) => {
-        console.error('Error occurred while videoDownload files:', err);
-        reject(err);
-      });
-    }),
-    new Promise((resolve, reject) => {
-      audioDownload.on('end', resolve);
-      audioDownload
-      .on('error', (err) => {
-        console.error('Error occurred while audioDownload files:', err);
-        reject(err);
-      });
-    })
-  ]);
-
-
-  // Merge video and audio files
-  await new Promise((resolve, reject) => {
-    ffmpeg()
-      .input(videoFilePath)
-      .input(audioFilePath)
-      .outputOptions('-map', '0:v', '-map', '1:a')
-      .saveToFile(filePath) // Adding .mp4 extension
-      .on('end', resolve)
-      .on('error', (err, stdout, stderr) => {
-        console.error('Error occurred while merging files:', err, stderr);
-        reject(err);
-      });
-  });
-
-  // Delete temporary files
-  fs.unlinkSync(videoFilePath);
-  fs.unlinkSync(audioFilePath);
-
-}
 // Endpoint for fetching data from Reddit based on the subreddit and filter parameters
 router.get('/reddit/:subreddit', async (req, res) => {
   const { subreddit } = req.params;
@@ -894,7 +759,6 @@ router.post('/hide', async (req, res) => {
     const element = await global.db.collection('medias').findOne({ _id: new ObjectId(element_id) });
     const source = element.source; // ソースの取得 (Assuming 'source' is the field you want to match)
 
-    console.log({source})
     if(source && source != undefined){
       // 同じソースを持つすべてのエレメントを更新する (Update all elements with the same source)
       const result = await global.db.collection('medias').updateMany(

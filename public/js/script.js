@@ -456,6 +456,44 @@ const handleCardClickable = () => {
       });
   });
 }
+function displayMedia(url,id){
+    $thisCard = $(`.card.info-container[data-id=${id}]`)
+
+    if(url.includes('.mp4') && $thisCard.find('video').length == 0){
+        console.log('displayvideo',{url,id})
+        $thisCard.find('.card-body-over').remove()
+        var $video = $('<video>').attr({
+            src: url,
+            autoplay: true,
+            width:"100%",
+            controls: true,
+            playsinline: true
+        }).on('loadeddata', function() {
+          updateMasonryLayout()
+      });
+      $thisCard.find(`img.card-img-top`).before($video)
+      $thisCard.find(`img.card-img-top`).hide()
+      $thisCard.find(`.play-button`).hide()
+    }
+    $thisCard.find(`img.card-img-top`).attr('src',url)
+    $thisCard.find(`.play-button`).hide()
+}
+// jQuery function to make a GET request to '/api/downloading'
+function getDownloadData() {
+    // Use jQuery's $.get method to make the GET request
+    $.get("/api/downloading", function(data) {
+      // Log the data returned from the server
+      console.log("Data: ", {data});
+    })
+    .fail(function(error) {
+      // Log any errors if the request fails
+      console.log("Error: ", error);
+    });
+  }
+  
+  // Call the function to make the request
+  getDownloadData();
+  
 function displaySummary(response) {
     $('#summary .content').html('')
     if(response && response.data && response.data.summary && response.data.summary.length > 0){
@@ -506,16 +544,14 @@ const handleDownloadButton = () => {
       $spinner.show();
 
       // Make a request to download the video
-      $.post('/api/dl', { video_id: id ,title}, function(response) {
+      $.post('http://192.168.10.115:3100/api/dl', { video_id: id ,title}, function(response) {
         console.log('Download API Response:', response);
-
+        displayMedia(response.url,id)
         $spinner.remove();
 
         if(!$buttonContainer.find('i').length){
           $buttonContainer.append(DLicon)
-        }
-        console.log('download successful.');
-        handleFormResult(true, response.message)    
+        }  
         
       }).fail(function() {
 
@@ -646,9 +682,9 @@ function nsfwUpdateData(nsfw,callback) {
 
 function handleNSFWlabel(nsfw){
     if(nsfw === true ){
-        $('label[for="nsfw"]').addClass('bg-danger').removeClass('bg-dark')
+        $('label[for="nsfw"]').addClass('btn-danger').removeClass('btn-dark')
     }else{
-        $('label[for="nsfw"]').removeClass('bg-danger').addClass('bg-dark')
+        $('label[for="nsfw"]').removeClass('btn-danger').addClass('btn-dark')
     }
     
 }
@@ -2006,7 +2042,11 @@ function handleIframe(){
         const itemID = $(this).data('id')
         const $thisCard = $(`.card.info-container[data-id=${itemID}]`)
         const $spinner = generateSpinnerCard($thisCard)
-        $(this).hide()
+        if(!$(this).hasClass('fav')){
+            $(this).hide()
+        }else{
+            $(this).find('i').addClass('text-danger')
+        }
         $spinner.show()
     // Show the spinner while the download is in progress
       $thisCard.find('.card-body-over').show();

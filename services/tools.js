@@ -146,7 +146,7 @@ function sanitizeData(scrapedData,query) {
 
 async function updateItemsByField(fieldName, fieldValue, query) {
   const itemsWithSameLink = await global.db.collection('medias').find({ [fieldName]: fieldValue }).toArray();
-  console.log(`Found ${itemsWithSameLink.length} item(s) with the same ${fieldName} `, fieldValue);
+  //console.log(`Found ${itemsWithSameLink.length} item(s) with the same ${fieldName} `, fieldValue);
 
   for (let item of itemsWithSameLink) {
       await global.db.collection('medias').updateOne({ _id: new ObjectId(item._id) }, { $set: query });
@@ -348,6 +348,129 @@ async function downloadVideo(url, filePath, itemID) {
         if (browser) await browser.close();
     }
 }
+function lessThan24Hours(date) {
+  // Get the current date and time
+  const currentDate = new Date();
+
+  // Parse the input date to a Date object
+  const inputDate = new Date(date);
+
+  // Calculate the time difference in milliseconds
+  const timeDifference = currentDate - inputDate;
+
+  // Calculate the time difference in hours
+  const timeDifferenceInHours = timeDifference / (1000 * 60 * 60);
+
+  // Log the time difference in hours
+  //console.log(`Time difference in hours: ${timeDifferenceInHours}`);
+
+  // Check if the time difference is less than 24 hours
+  if (timeDifferenceInHours < 24) {
+      return true;
+  } else {
+      return false;
+  }
+}
+function generateFilePathFromUrl(download_directory,url,title='dl'){
+  // Get file name from the URL
+  const fileExtension = getFileExtension(url)
+  let extension = getFileExtension(url) == '' ? '.mp4':fileExtension;
+  let sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, ''); // This will keep only alphanumeric characters
+  let fileName = `${sanitizedTitle}_${Date.now()}${extension}`;
+  let filePath = path.join(download_directory, fileName);
+  return {fileName,filePath}
+}
+async function downloadFileFromURL(filePath,url) {
+  // If it's not a YouTube video, download it directly
+  const response = await axios.get(url, { responseType: 'stream', maxContentLength: 10 * 1024 * 1024 });
+  //console.log('Received response for URL:', url);
+
+  const writer = fs.createWriteStream(filePath);
+  response.data.pipe(writer);
+
+  await new Promise((resolve, reject) => {
+    writer.on('finish', resolve);
+    writer.on('error', reject);
+  });
+}
+async function downloadYoutubeVideo(download_directory,filePath,video_id) {
+  const info = await ytdl.getInfo(video_id);
+  //console.log(info.formats);
+
+  const videoFormat = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
+  const audioFormat = ytdl.chooseFormat(info.formats.filter(format => !format.videoCodec), { quality: 'highestaudio' });
+  
+  // Define temporary file paths
+  let videoFilePath = path.join(download_directory, `video_${Date.now()}.mp4`);
+  let audioFilePath = path.join(download_directory, `audio_${Date.now()}.mp4`);
+
+  // Download video
+  const videoDownload = ytdl.downloadFromInfo(info, { format: videoFormat });
+  videoDownload.pipe(fs.createWriteStream(videoFilePath));
+
+  // Download audio
+  const audioDownload = ytdl.downloadFromInfo(info, { format: audioFormat });
+  audioDownload.pipe(fs.createWriteStream(audioFilePath));
+
+  // Wait for both downloads to finish
+  await Promise.all([
+    new Promise((resolve, reject) => {
+      videoDownload.on('end', resolve);
+      videoDownload
+      .on('error', (err) => {
+        console.error('Error occurred while videoDownload files:', err);
+        reject(err);
+      });
+    }),
+    new Promise((resolve, reject) => {
+      audioDownload.on('end', resolve);
+      audioDownload
+      .on('error', (err) => {
+        console.error('Error occurred while audioDownload files:', err);
+        reject(err);
+      });
+    })
+  ]);
+
+
+  // Merge video and audio files
+  await new Promise((resolve, reject) => {
+    ffmpeg()
+      .input(videoFilePath)
+      .input(audioFilePath)
+      .outputOptions('-map', '0:v', '-map', '1:a')
+      .saveToFile(filePath) // Adding .mp4 extension
+      .on('end', resolve)
+      .on('error', (err, stdout, stderr) => {
+        console.error('Error occurred while merging files:', err, stderr);
+        reject(err);
+      });
+  });
+
+  // Delete temporary files
+  fs.unlinkSync(videoFilePath);
+  fs.unlinkSync(audioFilePath);
+
+}
+function getFileExtension(urlString) {
+  const parsedUrl = new URL(urlString);
+  const pathname = parsedUrl.pathname;
+  const filename = path.basename(pathname);
+  const fileExtension = path.extname(filename);
+  return fileExtension;
+}
+function isMedia(url) {
+  // Define the regular expression pattern to match media file extensions
+  const mediaExtensionsPattern = /\.(jpg|jpeg|png|gif|bmp|webp|svg|mp3|wav|ogg|mp4|webm|flac)$/i;
+
+  // Use the RegExp test method to check if the URL matches the pattern
+  const isMediaUrl = mediaExtensionsPattern.test(url);
+
+  // Log the result for debugging purposes
+  //console.log(`Is the URL a media file?: ${isMediaUrl}`);
+
+  return isMediaUrl;
+}
 
 module.exports = { 
   formatDateToDDMMYYHHMMSS, 
@@ -361,5 +484,11 @@ module.exports = {
   fetchOpenAICompletion,
   initCategories,
   saveDataSummarize,
-  downloadVideo
+  downloadVideo,
+  lessThan24Hours,
+  generateFilePathFromUrl,
+  downloadFileFromURL,
+  isMedia,
+  downloadYoutubeVideo,
+  getFileExtension
 }

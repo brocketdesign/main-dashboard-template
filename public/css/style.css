@@ -10,7 +10,7 @@ main#dashboard {
 #video-holder .card-title, #mobile-toolbar .card-title{
   color:white;
 }
-.done.download-button i {
+.done.download-button i,.done.iframe-button i {
   color:red !important;
 }
 .masonry-container .download-button i,.masonry-container .spinner-border  {
