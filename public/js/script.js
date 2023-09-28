@@ -1032,78 +1032,84 @@ $('#subRedditSearchRes').append(`
   </li>
 `);
 
-// Function to search subreddits
+let debounceTimeout; // To hold debounce timer
+
 async function searchSubreddits() {
   const searchTermEl = $('#searchTerm');
   const subRedditSearchResEl = $('#subRedditSearchRes');
   const loadingSpinnerEl = $('#loadingSpinner');
 
-  // Checking if the element does not have a 'wait' class
-  if (!searchTermEl.hasClass('wait')) {
-    console.log('Search started.');
-    
-    // Adding 'wait' class to prevent multiple requests
-    searchTermEl.addClass('wait');
-    
-    // Clearing previous results
-    subRedditSearchResEl.empty();
-    
-    // Show loading spinner
-    loadingSpinnerEl.show();
+  clearTimeout(debounceTimeout); // Clear the existing timer if function is invoked again quickly
 
-    // Getting the search term from the input
-    const key = searchTermEl.val();
-
-    // Forming the API URL
-    const apiUrl = `/api/searchSubreddits?query=${key}`;
-    
-    if (!key || key.length <= 0) {
-      console.log('Search term is empty or too short.');
-      
-      // Hide loading spinner
-      loadingSpinnerEl.hide();
-      
-      // Remove wait class
-      searchTermEl.removeClass('wait');
-      return;
+  debounceTimeout = setTimeout(async () => {
+    // Checking if the element does not have a 'wait' class
+    if (!searchTermEl.hasClass('wait')) {
+      console.log('Search started.');
+  
+      // Adding 'wait' class to prevent multiple requests
+      searchTermEl.addClass('wait');
+  
+      // Clearing previous results
+      subRedditSearchResEl.empty();
+  
+      // Show loading spinner
+      loadingSpinnerEl.show();
+  
+      // Getting the search term from the input
+      const key = searchTermEl.val();
+  
+      // Forming the API URL
+      const apiUrl = `/api/searchSubreddits?query=${key}`;
+  
+      if (!key || key.length <= 0) {
+        console.log('Search term is empty or too short.');
+  
+        // Hide loading spinner
+        loadingSpinnerEl.hide();
+  
+        // Remove wait class
+        searchTermEl.removeClass('wait');
+        return;
+      }
+  
+      try {
+        // Fetching data from the API
+        const response = await $.get(apiUrl);
+  
+        // Hide loading spinner
+        loadingSpinnerEl.hide();
+  
+        // Create content from API response
+        const content = response.map(element => {
+          const url = encodeURIComponent(`https://www.reddit.com${element['url']}new/.json?count=25&after=`);
+          return `
+            <li class="list-group-item btn text-start">
+              <span data-title="${element['title']}" data-url="${url}" data-value="${element['url']}" onclick="searchFor(this)">
+                ${element['title']}
+              </span>
+              <span class="bg-danger badge float-end r18 ${element.r18}">
+                R18
+              </span>
+            </li>
+          `;
+        }).join('');
+  
+        // Append new content
+        subRedditSearchResEl.append(content);
+        console.log('Search completed.');
+  
+      } catch (error) {
+        console.error('Error in API call:', error);
+      } finally {
+        // Remove the 'wait' class to allow new requests
+        searchTermEl.removeClass('wait');
+      }
+    } else {
+      console.log('Waiting for the previous request to complete.');
     }
-
-    try {
-      // Fetching data from the API
-      const response = await $.get(apiUrl);
-
-      // Hide loading spinner
-      loadingSpinnerEl.hide();
-
-      // Create content from API response
-      const content = response.map(element => {
-        const url = encodeURIComponent(`https://www.reddit.com${element['url']}new/.json?count=25&after=`);
-        return `
-          <li class="list-group-item btn text-start">
-            <span data-title="${element['title']}" data-url="${url}" data-value="${element['url']}" onclick="searchFor(this)">
-              ${element['title']}
-            </span>
-            <span class="bg-danger badge float-end r18 ${element.r18}">
-              R18
-            </span>
-          </li>
-        `;
-      }).join('');
-      
-      // Append new content
-      subRedditSearchResEl.append(content);
-      console.log('Search completed.');
-
-    } catch (error) {
-      console.error('Error in API call:', error);
-    } finally {
-      // Remove the 'wait' class to allow new requests
-      searchTermEl.removeClass('wait');
-    }
-  } else {
-    console.log('Waiting for the previous request to complete.');
-  }
+  }, 300); // Wait for 300 ms before making the API request
 }
+
 
 function handleBookEditing(){
     $('#edit-book textarea').on('input', function() {
