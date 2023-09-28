@@ -8,8 +8,13 @@ block dynamicContent
     - colclass='row-cols-1'
     - gridclass='col-12 col-sm-3'
   .row.w-100.m-0(class=colclass)
+  
     .col.order-1.p-3
-      h6 最新の検索
+      h3 Category 
+      for category in categories 
+        a.btn.btn-primary.m-2(href=`/dashboard/app/${mode}/?searchTerm=${category.name}&page=1`)=category.name
+    .col.order-1.p-3
+      h3 最新の検索
       hr.mb-4
       if data
         .masonry-container.row.custom-carousel-container

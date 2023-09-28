@@ -84,7 +84,7 @@ const scrapeWebsite1 = (query, mode, nsfw, url, pageNum) => {
   return new Promise(async (resolve, reject) => {
     try {
       if(url){
-        url = url.includes('http') ? url : `https://www.xvideos.com/?k=${url}&p=${pageNum}`;
+        url = url.includes('http') ? url : `https://www.xvideos.com/?k=${url}&sort=relevance&quality=hd&p=${pageNum}`;
       }else{
         url = process.env.DEFAULT_URL;
       }

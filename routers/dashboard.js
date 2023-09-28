@@ -235,7 +235,6 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
       isdl:true,
     }
     if(!searchTerm){
-      console.log('Should see all')
       query_obj = {
         mode:mode,
         nsfw:nsfw,
@@ -297,11 +296,11 @@ router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (r
       nsfw: nsfw,
       hide_query: { $exists: false },
     }, categoryId);
-
-    console.log(`Found ${medias.length} items.`)
     const data = mapArrayHistory(medias)
     //const userOpenAi = await mapArrayOpenai(req.user)
-    res.render('history', { user: req.user, data, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
+    const categories = await global.db.collection('category').find({nsfw}).toArray()
+    
+    res.render('history', { user: req.user, data, categories, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
 
   } catch (error) {
     console.log(error);

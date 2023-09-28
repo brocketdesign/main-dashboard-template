@@ -13,6 +13,7 @@ const {
   saveDataSummarize,
   generateFilePathFromUrl
 } = require('../services/tools')
+const pornCategories = require('../services/categories')
 const pdfToChunks = require('../modules/pdf-parse')
 const multer = require('multer');
 const searchSubreddits = require('../modules/search.subreddits')

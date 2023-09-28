@@ -7,14 +7,16 @@ block dynamicContent
         if data._id
           .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode,data-extractor=data.extractor, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
             .card.info-container(class=`card-clickable-${mode}`, style="cursor:pointer", data-id=data._id, data-title=data.title)
-              .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                  if data.link && data.link.includes('redgif')
-                    button.iframe-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
-                      i.fas.fa-play
-                  else
-                    if mode == '1'  
-                      button.play-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'')
+
+              if mode != 3
+                .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
+                    if data.link && data.link.includes('redgif')
+                      button.iframe-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
                         i.fas.fa-play
+                    else
+                      if mode == '1'  
+                        button.play-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'')
+                          i.fas.fa-play
 
               .card-top.py-2.px-3.position-absolute.hover(style="display:none;top:25%;bottom:25%;")
                 .d-flex.justify-content-center.flex-column(style="height:100%")
@@ -35,10 +37,12 @@ block dynamicContent
                 if data.link.includes('redgif') || data.link.includes('scrolller')
                     img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", src=favsrc || data.thumb , alt=data.title )
                 else 
-                    img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=favsrc || data.link, alt=data.title )
+                  img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=favsrc || data.link, alt=data.title )
               else
-                  img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=favsrc || data.url || data.imageUrl || data.link, alt=data.title,  data.imageUrl=data.imageUrl?data.imageUrl:undefined )
-              
+                if data.webm 
+                  - favsrc = data.filePath && data.filePath.includes('.webm') ? data.filePath : data.webm
+                  video(src=favsrc controls loop)
+
               p.card-title.text-white.bg-dark.border-white.border.p-3(style="display:none")= data.title 
   else
     p ここには何もありません！

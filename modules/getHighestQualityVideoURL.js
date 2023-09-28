@@ -19,8 +19,8 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     }
 
     if (foundElement.mode == "3") {
-      await saveData(user, foundElement,{filePath:foundElement.url})
-      return foundElement.url; 
+      const medialink = foundElement.webm || foundElement.url
+      return medialink; 
     }
     if (foundElement.mode == "2" || foundElement.mode == "4") {
       return isMedia(foundElement.link) ? foundElement.link : foundElement.thumb; 

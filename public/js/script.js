@@ -459,7 +459,7 @@ const handleCardClickable = () => {
 function displayMedia(url,id){
     $thisCard = $(`.card.info-container[data-id=${id}]`)
 
-    if(url.includes('.mp4') && $thisCard.find('video').length == 0){
+    if((url.includes('.mp4') || url.includes('.webm')) && $thisCard.find('video').length == 0){
         console.log('displayvideo',{url,id})
         $thisCard.find('.card-body-over').remove()
         var $video = $('<video>').attr({
@@ -480,15 +480,26 @@ function displayMedia(url,id){
 }
 // jQuery function to make a GET request to '/api/downloading'
 function getDownloadData() {
+    $('#download-list').toggle()
+    $('#download-list').html('')
+    if($('#download-list').is(':visible')){
     // Use jQuery's $.get method to make the GET request
-    $.get("/api/downloading", function(data) {
-      // Log the data returned from the server
-      console.log("Data: ", {data});
-    })
-    .fail(function(error) {
-      // Log any errors if the request fails
-      console.log("Error: ", error);
-    });
+    $.get("/api/downloading", function(response) {
+        // Log the data returned from the server
+        if(response.data.length == 0){
+            $('#download-list').append(`<li class="list-group-item text-start"><span>Nothing in the download queue</span></i>`)
+            return
+        }
+        for(item of response.data){
+            $('#download-list').append(`<li class="list-group-item text-start"><div class="row"><div class="col-4" style="background-image: url('${item.imageUrl}');background-size: cover;"></div><div class="col-8">${item.alt}</div></div></i>`)
+        }
+      })
+      .fail(function(error) {
+        // Log any errors if the request fails
+        console.log("Error: ", error);
+      });
+    }
+
   }
   
   // Call the function to make the request

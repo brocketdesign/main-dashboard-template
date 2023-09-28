@@ -18,18 +18,19 @@ block mainContent
         span.visually-hidden Loading ...
 
     
-  if scrapedData
+  if searchTerm
     label.form-label.d-none(for="grid") 1行あたりの要素数
     div#range(data-mode=mode)
       input.form-range(type="range" id="grid-range" min="1" max="4" value="3")
-    ul#download-list.list-group
+  
   .row
-    if scrapedData 
+    if searchTerm
       #extractors.d-flex.my-3.col
         button.btn.btn-primary.extractor.mx-2(data-extractor="false") All
-    #downloading.my-3.col.d-flex.justify-content-end
+    .my-3.col.d-flex.justify-content-end
       button.btn.btn-primary.me-2(type='button' onclick="getDownloadData()")
         i.fas.fa-download
+        ul#download-list.list-group.position-fixed.m-3.shadow(style="bottom: 0;right:0;width: 20%;z-index:99")
       a.btn.btn-primary.me-2(href=`/dashboard/app/${mode}/fav?searchTerm=${searchTerm?searchTerm:''}`)
         i.fas.fa-heart
       .d-flex
