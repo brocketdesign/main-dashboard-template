@@ -177,10 +177,15 @@ router.get('/app/news', ensureAuthenticated, ensureMembership, async (req, res) 
     res.status(500).send('Error retrieving news.');
   }
 });
+// Function to check if the browser is Safari
+const isSafari = (userAgent) => {
+  return /^((?!chrome|android).)*safari/i.test(userAgent);
+};
 
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) => {
 
+  const userAgent = req.headers['user-agent'];
   try {
       const { mode } = req.params; // Get the 'mode' parameter from the route URL
       let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
@@ -205,8 +210,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
       } catch (error) {
         console.log(error)
       }
-      console.log(scrapedData)
-      res.render(`search`, { user: req.user, result:true, searchTerm, scrapedData, scrapInfo, mode, page, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
+      res.render(`search`, { user: req.user, result:true, isSafari:isSafari(userAgent), searchTerm, scrapedData, scrapInfo, mode, page, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
     
   } catch (error) {
     console.error('An error occurred:', error);
@@ -218,6 +222,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
 router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, res) => {
 
   console.log('Dashboard page requested');
+  const userAgent = req.headers['user-agent'];
   const { mode } = req.params; // Get the 'mode' parameter from the route URL
   let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
   nsfw = req.user.nsfw === 'true'?true:false
@@ -245,7 +250,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
     let medias = await findDataInMedias(req.user._id, query_obj);
     console.log(`Found ${medias.length} element(s).`)
     medias = getUniqueElementBySource(medias)
-    res.render(`search`, { user: req.user,result:true,fav:true, searchTerm, scrapedData:medias, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+    res.render(`search`, { user: req.user,result:true,fav:true, searchTerm,  isSafari:isSafari(userAgent), scrapedData:medias, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 
   }catch(err){
     console.log(err)

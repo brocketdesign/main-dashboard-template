@@ -459,8 +459,7 @@ const handleCardClickable = () => {
 function displayMedia(url,id){
     $thisCard = $(`.card.info-container[data-id=${id}]`)
 
-    if((url.includes('.mp4') || url.includes('.webm')) && $thisCard.find('video').length == 0){
-        console.log('displayvideo',{url,id})
+    if((url.includes('.mp4') || url.includes('.webm')) && $thisCard.find('video').length == 0 && !$thisCard.find('img.card-img-top').attr('src').includes('.gif')){
         $thisCard.find('.card-body-over').remove()
         var $video = $('<video>').attr({
             src: url,
@@ -474,6 +473,10 @@ function displayMedia(url,id){
       $thisCard.find(`img.card-img-top`).before($video)
       $thisCard.find(`img.card-img-top`).hide()
       $thisCard.find(`.play-button`).hide()
+      return
+    }
+    if($thisCard.find('img.card-img-top').attr('src').includes('.gif')){
+        return
     }
     $thisCard.find(`img.card-img-top`).attr('src',url)
     $thisCard.find(`.play-button`).hide()
@@ -2164,3 +2167,43 @@ function listExtractors() {
     console.log({ extractors });
     return extractors;
 }
+function displaySrc(el) {
+    const $card = $(el).closest('.card.info-container');
+    const $over = $(el).closest('.card-body-over')
+    const $img = $card.find('img.card-img-top');
+    const $spinner = generateSpinnerCard($card);
+    $spinner.show();
+  
+    // Check if the element has already been processed
+    if ($img.attr('data-processed') === 'true') {
+      console.log('Element already processed. Skipping.');
+      $spinner.hide(); // Hide spinner if element is already processed
+      return;
+    }
+  
+    // Get the value of the data-src attribute
+    const dataSrc = $img.attr('data-src');
+  
+    // Log the data-src value
+    console.log(`data-src value: ${dataSrc}`);
+  
+    if (dataSrc) {
+      // Set the src attribute to the value of data-src
+      $img.attr('src', dataSrc);
+  
+      // Mark the element as processed
+      $img.attr('data-processed', 'true');
+  
+      console.log('Successfully transferred data-src to src.');
+      $spinner.hide(); // Hide spinner after processing
+      $over.hide()
+      $(el).hide()
+    } else {
+      console.log('data-src attribute not found.');
+      $spinner.hide(); // Hide spinner if data-src not found
+      $over.hide()
+      $(el).hide()
+    }
+  }
+  
+  
