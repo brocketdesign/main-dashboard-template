@@ -210,6 +210,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
       } catch (error) {
         console.log(error)
       }
+      console.log({favoriteCountry:req.user.favoriteCountry})
       res.render(`search`, { user: req.user, result:true, isSafari:isSafari(userAgent), searchTerm, scrapedData, scrapInfo, mode, page, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
     
   } catch (error) {

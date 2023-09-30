@@ -48,8 +48,8 @@
     "ytdl-core": "^4.9.1"
   },
   "scripts": {
-    "go": "xvfb-run node serverdl.js",
-    "start": "nodemon app.js"
+    "start": "xvfb-run node serverdl.js",
+    "go": "nodemon app.js"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

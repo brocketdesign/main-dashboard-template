@@ -210,6 +210,9 @@ $(document).ready(function() {
         // Replace the content of the element with the converted HTML
         $(this).html(htmlContent);
     });
+      
+
+    handleSelectCountry()
     handleCopyButtons()
     updateMoments();
     enableTrackScroll();
@@ -359,6 +362,7 @@ const handleFormError = (jqXHR, textStatus, errorThrown) => {
 }
 
 const handleFormResult = (isSuccess, message) => {
+    isSuccess = !!(isSuccess == true || isSuccess == 'success') 
     let btnColor = isSuccess ? 'success' : 'danger';
     let btnSelector = `button[type="submit"]`;
 
@@ -2088,7 +2092,7 @@ function handleIframe(){
                   // Code to be executed when the video is ready to play
                   console.log('Video ready to play');
                   $thisCard.find('.card-body-over').removeClass('d-flex').hide()
-                  //updateMasonryLayout()
+                  updateMasonryLayout()
               });
                 $(`img.card-img-top[data-id=${itemID}]`).before($video)
                 $(`img.card-img-top[data-id=${itemID}]`).hide()
@@ -2205,5 +2209,23 @@ function displaySrc(el) {
       $(el).hide()
     }
   }
-  
-  
+
+  function updateUserFvoriteCountry(country) {
+    $.post('/api/update-country',{country},function(response){
+        handleFormResult(response.status,response.message)
+    })
+  }
+  function selectCountry(){
+    $('#select-country').toggle().toggleClass('d-flex')
+  }
+  function handleSelectCountry() {
+    // Using jQuery to listen for changes on the dropdown
+    $('#countryDropdown').change(function() {
+        const selectedCountry = $(this).val();
+        updateUserFvoriteCountry(selectedCountry)
+    });
+
+    $('#select-country .close').on('click',function(){
+        $('#select-country').hide().removeClass('d-flex')
+    })
+}

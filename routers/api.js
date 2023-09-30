@@ -545,6 +545,34 @@ router.post('/post-article', async (req, res) => {
   }
 });
 
+// Update user's favorite country
+router.post('/update-country', ensureAuthenticated, async (req, res) => {
+  try {
+    // Get the country from the request body
+    const { country } = req.body;
+    // Get the user ID from the request object
+    const userId = new ObjectId(req.user._id);
+
+    // Update the user's favorite country in the database
+    const result = await global.db.collection('users').updateOne(
+      { _id: userId },
+      { $set: { favoriteCountry: country } }
+    );
+
+    // Check if the update was successful
+    if (result.modifiedCount === 1) {
+      //console.log(`Successfully updated favorite country for user with ID: ${userId}`);
+      res.json({ status: 'success', message: 'Favorite country updated successfully' });
+    } else {
+      //console.log(`Failed to update favorite country for user with ID: ${userId}`);
+      res.json({ status: 'error', message: 'Failed to update favorite country' });
+    }
+  } catch (error) {
+    console.log(`An error occurred while updating favorite country: ${error}`);
+    res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+  }
+});
+
 router.post('/submit/:sectionName', ensureAuthenticated, (req, res) => {
   const sectionName = req.params.sectionName;
   const formData = req.body;

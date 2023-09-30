@@ -33,7 +33,7 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     return scrapedData
   }
   
-  scrapedData = await scrapeMode(url, mode, nsfw, page);
+  scrapedData = await scrapeMode(url, mode, nsfw, page, user);
   console.log(`Scrape data and found ${scrapedData.length} elements.`)
 
   const categories = await initCategories(userId)

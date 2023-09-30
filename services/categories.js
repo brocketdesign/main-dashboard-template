@@ -26,27 +26,7 @@ async function initializeCategories(categoriesArray,nsfw) {
   }
 }
 
-﻿let pornCategories = [
-  "big tits",
-  "huge boobs",
-  "giant tits",
-  "massive breasts",
-  "monster tits",
-  "jumbo jugs",
-  "super sized titties",
-  "enormous knockers",
-  "gigantic melons",
-  "huge boobed babes",
-  "big tit pornstars",
-  "34D breasts",
-  "DD cups",
-  "H cup tits",
-  "J cup tits",
-  "K cup tits",
-  "L cup tits",
-  "M cup tits",
-  "N cup tits"
-];
+﻿let pornCategories = ﻿["Missionary", "Doggy Style", "Cowgirl", "69", "Reverse Cowgirl", "Spoons", "Face Down Doggie", "Standing Up Against a Wall", "Woman on Top", "Man on Top", "Side by Side", "Girl on Girl", "Boy on Boy", "The Coach", "The Pretzel", "The Scissors", "The Saddle", "The Spreader"];
 
 // Initialize the categories
 initializeCategories(pornCategories,true)

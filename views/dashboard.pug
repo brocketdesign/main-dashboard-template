@@ -3,6 +3,26 @@ extends dashboard-base
 block mainContent
   a.display-4(href=`/dashboard/app/${mode}`) Home
 
+  #select-country.position-fixed.justify-content-center.align-items-center.bg-dark(style='display:none;inset:0;z-index: 99;')
+    .card(style="width: 50vw;")
+      .card-top.text-end
+        .me-3.mt-2.close(style="cursor:pointer")
+          i.fas.fa-times
+      .card-body 
+        p.current Current country : #{user.favoriteCountry}
+        select(name="country", id="countryDropdown")
+          option(value="") Select a country
+          option(value="US") United States
+          option(value="CN") China
+          option(value="IN") India
+          option(value="ID") Indonesia
+          option(value="PK") Pakistan
+          option(value="BR") Brazil
+          option(value="NG") Nigeria
+          option(value="BD") Bangladesh
+          option(value="RU") Russia
+          option(value="JP") Japan
+
   form#search(action=`/dashboard/app/${mode}`, method="GET", data-mode=mode, data-page=page, data-nsfw= user.nsfw)
     .input-group.mb-3
       input(type="hidden" name="page" id="page" value=page)
@@ -33,6 +53,8 @@ block mainContent
         ul#download-list.list-group.position-fixed.m-3.shadow(style="bottom: 0;right:0;width: 20%;z-index:99")
       a.btn.btn-primary.me-2(href=`/dashboard/app/${mode}/fav?searchTerm=${searchTerm?searchTerm:''}`)
         i.fas.fa-heart
+      button.btn.btn-primary.me-2(onclick='selectCountry()')
+        i.fas.fa-globe
       .d-flex
         .form-check.form-switch.input-group-text.rounded-0.position-relative.border-0.p-0
           label.form-check-label.btn.me-2.btn-danger.p-2.text-center(for="nsfw")

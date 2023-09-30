@@ -33,7 +33,7 @@ const searchYoutube = async (query, url, mode, nsfw, page) => {
   return result;
 }
 
-const scrapeWebsite = (query, mode, nsfw, url, pageNum) => {
+const scrapeWebsite = (query, mode, nsfw, url, pageNum, user) => {
   return new Promise(async (resolve, reject) => {
     try {
       if(url){
@@ -48,7 +48,21 @@ const scrapeWebsite = (query, mode, nsfw, url, pageNum) => {
       });
 
       const page = await browser.newPage();
+
+      // get the cookie value from the page's cookies object
+      const cookies = await page.cookies();
+      const coeCookie = cookies.find((cookie) => cookie.name === 'coe');
+      
+      // set the cookie with the updated value
+      
+      await page.setCookie({
+        name: 'coe',
+        value: user.favoriteCountry || process.env.COUNTRY,
+        domain: '.spankbang.com' // specify the domain where the cookie should be set
+      });
+      
       await page.goto(url, { waitUntil: 'networkidle2' });
+      
 
       const scrapedData = await page.evaluate((url, query, mode, nsfw) => {
         const items = Array.from(document.querySelectorAll('#container .video-list .video-item'));
@@ -78,7 +92,6 @@ const scrapeWebsite = (query, mode, nsfw, url, pageNum) => {
     }
   });
 }
-
 
 const scrapeWebsite1 = (query, mode, nsfw, url, pageNum) => {
   return new Promise(async (resolve, reject) => {
@@ -170,7 +183,8 @@ const scrapeWebsite2 = (query, mode, nsfw, url, pageNum) => {
     }
   });
 }
-async function scrapeMode1(url, mode, nsfw, page) {
+
+async function scrapeMode1(url, mode, nsfw, page, user) {
   query = url 
   try {
     if(nsfw!='undefined' && !nsfw){
@@ -180,7 +194,7 @@ async function scrapeMode1(url, mode, nsfw, page) {
     console.log('Operating a NSFW search');
 
     const [result1, result2] = await Promise.all([
-      scrapeWebsite(query, mode, nsfw, url, page),
+      scrapeWebsite(query, mode, nsfw, url, page, user),
       scrapeWebsite1(query, mode, nsfw, url, page),
       //scrapeWebsite2(query, mode, nsfw, url, page)
     ]);
