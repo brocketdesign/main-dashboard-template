@@ -464,6 +464,7 @@ function displayMedia(url,id){
     $thisCard = $(`.card.info-container[data-id=${id}]`)
 
     if((url.includes('.mp4') || url.includes('.webm')) && $thisCard.find('video').length == 0 && !$thisCard.find('img.card-img-top').attr('src').includes('.gif')){
+        
         $thisCard.find('.card-body-over').remove()
         var $video = $('<video>').attr({
             src: url,
@@ -2080,22 +2081,7 @@ function handleIframe(){
             data: { url: targetURL,itemID },
             success: function(response) {
                 console.log("Success:", response);
-                var $video = $('<video>').attr({
-                    src: response.url,
-                    autoplay: true,
-                    muted:true,
-                    width:"100%",
-                    controls: true,
-                    loop:true,
-                    playsinline: true
-                }).on('loadeddata', function() {
-                  // Code to be executed when the video is ready to play
-                  console.log('Video ready to play');
-                  $thisCard.find('.card-body-over').removeClass('d-flex').hide()
-                  updateMasonryLayout()
-              });
-                $(`img.card-img-top[data-id=${itemID}]`).before($video)
-                $(`img.card-img-top[data-id=${itemID}]`).hide()
+                displayMedia(response.url,itemID)
                 $spinner.hide()
             },
             error: function(error) {
