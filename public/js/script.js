@@ -423,20 +423,7 @@ const handleCardClickable = () => {
         $thisCard.find('.card-body-over').remove()
           // Assuming the response from the API is a JSON object with a 'url' property
           if (response && response.url) {
-              // Replace the image with an autoplay video
-              var $video = $('<video>').attr({
-                  src: response.url,
-                  autoplay: true,
-                  width:"100%",
-                  controls: true,
-                  playsinline: true
-              }).on('loadeddata', function() {
-                updateMasonryLayout()
-            });
-
-            $thisCard.find(`img.card-img-top`).before($video)
-            $thisCard.find(`img.card-img-top`).hide()
-            // Update the card body with the new video
+            displayMedia(response.url,id)
             //$thisCard.prepend($video);
             $('#video-holder').html('')
             $('#video-holder').data('id',id)
@@ -463,6 +450,10 @@ const handleCardClickable = () => {
 function displayMedia(url,id){
     $thisCard = $(`.card.info-container[data-id=${id}]`)
 
+    if($thisCard.find('img.card-img-top').attr('src').includes('.gif') || url.includes('.jpg')){
+        return
+    }
+
     if((url.includes('.mp4') || url.includes('.webm')) && $thisCard.find('video').length == 0 && !$thisCard.find('img.card-img-top').attr('src').includes('.gif')){
         
         $thisCard.find('.card-body-over').remove()
@@ -480,9 +471,7 @@ function displayMedia(url,id){
       $thisCard.find(`.play-button`).hide()
       return
     }
-    if($thisCard.find('img.card-img-top').attr('src').includes('.gif')){
-        return
-    }
+    
     $thisCard.find(`img.card-img-top`).attr('src',url)
     $thisCard.find(`.play-button`).hide()
 }

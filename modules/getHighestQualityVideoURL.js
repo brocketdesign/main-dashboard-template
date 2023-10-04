@@ -22,7 +22,7 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
       const medialink = foundElement.webm || foundElement.url
       return medialink; 
     }
-    if (foundElement.mode == "2" || foundElement.mode == "4") {
+    if (foundElement.mode == "4") {
       return isMedia(foundElement.link) ? foundElement.link : foundElement.thumb; 
     }
 
@@ -36,7 +36,7 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
 
 async function searchVideo(videoDocument, user, stream) {
   const videoLink = videoDocument.link; // Assuming 'link' field contains the video link
-  console.log(videoLink)
+
   if( videoLink.includes('youtube') ){
     return await searchVideoYoutube(videoDocument, user, stream)
   }
@@ -49,7 +49,43 @@ async function searchVideo(videoDocument, user, stream) {
   if( videoLink.includes('xvideos') ){
     return await searchVideoUrlAPI(videoDocument, user);
   }
+  if( videoLink.includes('scrolller') ){
+    return await searchVideoScroller(videoDocument, user);
+  }
 }
+
+async function searchVideoScroller(videoDocument, user) {
+  const videoURL = videoDocument.link;
+  const browser = await puppeteer.launch({ headless: true });
+  const defaultPage = await browser.newPage();
+
+  try {
+    await defaultPage.goto(videoURL, { waitUntil: 'networkidle2' });
+    await defaultPage.evaluate(() => localStorage.setItem('SCROLLLER_BETA_1:CONFIRMED_NSFW', true));
+    const page = await browser.newPage();
+    await page.goto(videoURL, { waitUntil: 'networkidle2' });
+    //await page.reload();
+    console.log('Open new page and wait for video')
+    await page.waitForSelector('video', { timeout: 10000 });
+
+    const highestQualityURL = await page.$eval('video', video => {
+      if (video.src) return video.src;
+      const source = video.querySelector('source');
+      return source ? source.src : null;
+    });
+
+    await browser.close();
+    updateSameElements(videoDocument, { highestQualityURL,isdl:true, last_scraped: new Date() });
+
+    return highestQualityURL;
+
+  } catch (error) {
+    await browser.close();
+    console.error('Error:', error);
+    return videoDocument.thumb;
+  }
+}
+
 async function searchVideoUrlAPI(videoDocument,user){
   return await getJSON(`https://appsdev.cyou/xv-ph-rt/api/?site_id=xvideos&video_id=${videoDocument.video_id}`,user)
 }

@@ -15,7 +15,7 @@ const scrapeScrolller = (subreddit, mode, nsfw, page) => {
 
       // Launch Puppeteer browser
       const browser = await puppeteer.launch({
-        headless: true,
+        headless: false,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
       });
 
@@ -25,11 +25,8 @@ const scrapeScrolller = (subreddit, mode, nsfw, page) => {
       // Navigate to the URL
       await page.goto(url, { waitUntil: 'networkidle2' });
       
-      // Wait for the element with the specified class to appear
-      await page.waitForSelector('.nsfw-warning__accept-button');
-
-      // Click on the element by class
-      await page.click('.nsfw-warning__accept-button');
+      await page.evaluate(() => localStorage.setItem('SCROLLLER_BETA_1:CONFIRMED_NSFW', true));
+      await page.reload();
 
       const itemSelector = '.vertical-view__item-container'; // Replace with your item selector
       const itemCount = 50; // Number of items you want to collect
@@ -50,7 +47,6 @@ const scrapeScrolller = (subreddit, mode, nsfw, page) => {
     }
   });
 }
-
 async function scrapeReddit(url, mode, nsfw, page, filter = 'images') {
   if (!url) return false;
 
@@ -113,6 +109,7 @@ async function scrollAndScrape(page, itemSelector, itemCount) {
       return elements.map(element => {
         const link = 'https://scrolller.com' + element.querySelector('a').getAttribute('href');
         const thumb = element.querySelector('img').getAttribute('src');
+        const video = element.querySelector('video').querySelector('source').getAttribute('src') || null;
         return { link, thumb, extractor :'scrolller' };
       });
     });
@@ -126,7 +123,6 @@ async function scrollAndScrape(page, itemSelector, itemCount) {
       }
     });
   }
-
   return scrapedData; // Return the collected data
 }
 

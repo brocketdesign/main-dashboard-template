@@ -38,9 +38,8 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         console.log('File download requested for video_id:', video_id);
       
         try {
-      
           const url = await getHighestQualityVideoURL(video_id,req.user,false);
-      
+          
           if (!url) {
             console.log('Video URL not found for video_id:', video_id);
             res.status(404).json({ error: 'Video URL not found.' });
