@@ -17,7 +17,7 @@ block dynamicContent
                       button.displaysrc-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'', onclick="displaySrc(this)" )
                         i.fas.fa-play
                     else
-                      if mode == '1' || data.link.includes('scrolller')
+                      if mode == '1' || (data.link.includes('scrolller') && data.video)
                         button.play-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'')
                           i.fas.fa-play
 

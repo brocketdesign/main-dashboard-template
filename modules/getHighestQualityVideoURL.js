@@ -25,7 +25,9 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     if (foundElement.mode == "4") {
       return isMedia(foundElement.link) ? foundElement.link : foundElement.thumb; 
     }
-
+    if(!foundElement.video){
+      return foundElement.thumb
+    }
     return await searchVideo(foundElement, user, stream);
   } catch (error) {
     console.log('Error occurred while getting the video URL:', error);
@@ -64,8 +66,7 @@ async function searchVideoScroller(videoDocument, user) {
     await defaultPage.evaluate(() => localStorage.setItem('SCROLLLER_BETA_1:CONFIRMED_NSFW', true));
     const page = await browser.newPage();
     await page.goto(videoURL, { waitUntil: 'networkidle2' });
-    //await page.reload();
-    console.log('Open new page and wait for video')
+    
     await page.waitForSelector('video', { timeout: 10000 });
 
     const highestQualityURL = await page.$eval('video', video => {

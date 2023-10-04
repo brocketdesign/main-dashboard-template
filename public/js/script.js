@@ -462,7 +462,8 @@ function displayMedia(url,id){
             autoplay: true,
             width:"100%",
             controls: true,
-            playsinline: true
+            playsinline: true,
+            loop:true
         }).on('loadeddata', function() {
           updateMasonryLayout()
       });

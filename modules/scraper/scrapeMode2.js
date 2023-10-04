@@ -15,18 +15,19 @@ const scrapeScrolller = (subreddit, mode, nsfw, page) => {
 
       // Launch Puppeteer browser
       const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
       });
 
       // Create a new page
-      const page = await browser.newPage();
+      const defaultPage = await browser.newPage();
 
       // Navigate to the URL
-      await page.goto(url, { waitUntil: 'networkidle2' });
+      await defaultPage.goto(url, { waitUntil: 'networkidle2' });
       
-      await page.evaluate(() => localStorage.setItem('SCROLLLER_BETA_1:CONFIRMED_NSFW', true));
-      await page.reload();
+      await defaultPage.evaluate(() => localStorage.setItem('SCROLLLER_BETA_1:CONFIRMED_NSFW', true));
+      const page = await browser.newPage();
+      await page.goto(url, { waitUntil: 'networkidle2' });
 
       const itemSelector = '.vertical-view__item-container'; // Replace with your item selector
       const itemCount = 50; // Number of items you want to collect
@@ -109,8 +110,8 @@ async function scrollAndScrape(page, itemSelector, itemCount) {
       return elements.map(element => {
         const link = 'https://scrolller.com' + element.querySelector('a').getAttribute('href');
         const thumb = element.querySelector('img').getAttribute('src');
-        const video = element.querySelector('video').querySelector('source').getAttribute('src') || null;
-        return { link, thumb, extractor :'scrolller' };
+        const video = !! element.querySelector('[data-test-id="media-component-video"]') ;
+        return { link, thumb, video, extractor :'scrolller' };
       });
     });
 
