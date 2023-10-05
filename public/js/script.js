@@ -212,6 +212,8 @@ $(document).ready(function() {
     });
       
 
+    activateClickOnVisibleButtons();
+
     handleSelectCountry()
     handleCopyButtons()
     updateMoments();
@@ -2204,4 +2206,44 @@ function displaySrc(el) {
     $('#select-country .close').on('click',function(){
         $('#select-country').hide().removeClass('d-flex')
     })
+}
+
+function activateClickOnVisibleButtons() {
+
+    // Function to check if an element is in the viewport
+    function isInViewport(element) {
+        const rect = element.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
+    }
+
+    $(document).on('scroll', function() {
+        // Loop through each .displaysrc-button element
+        $('.displaysrc-button').each(function() {
+            // Check if the button is in the viewport
+            if (isInViewport(this)) {
+                // Trigger a click event on the button
+                $(this).click();
+                console.log("Clicked on a .displaysrc-button in the viewport");
+            }
+        });
+
+function hideImage() {
+            // Loop through each .card.info-container element
+            $('.card.info-container').each(function() {
+                // Check if the card is NOT in the viewport
+                if (!isInViewport(this)) {
+                    // Find the .card-img-top inside the card, remove its src and set its 'data-processed' attribute to true
+                    const $img = $(this).find('.card-img-top');
+                    $img.attr('data-processed', 'false');
+                    $img.removeAttr('src');
+                    console.log(".card-img-top's 'data-processed' attribute set to false as its parent .card.info-container is not in the viewport");
+                }
+            });
+}
+    });
 }

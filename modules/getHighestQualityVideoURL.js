@@ -25,9 +25,10 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     if (foundElement.mode == "4") {
       return isMedia(foundElement.link) ? foundElement.link : foundElement.thumb; 
     }
-    if(!foundElement.video){
+    if(!foundElement.video && foundElement.mode == "2"){
       return foundElement.thumb
     }
+
     return await searchVideo(foundElement, user, stream);
   } catch (error) {
     console.log('Error occurred while getting the video URL:', error);
