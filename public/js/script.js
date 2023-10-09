@@ -2222,28 +2222,34 @@ function activateClickOnVisibleButtons() {
     }
 
     $(document).on('scroll', function() {
-        // Loop through each .displaysrc-button element
-        $('.displaysrc-button').each(function() {
-            // Check if the button is in the viewport
-            if (isInViewport(this)) {
-                // Trigger a click event on the button
-                $(this).click();
-                console.log("Clicked on a .displaysrc-button in the viewport");
-            }
-        });
+        showImage()
 
-function hideImage() {
-            // Loop through each .card.info-container element
-            $('.card.info-container').each(function() {
-                // Check if the card is NOT in the viewport
-                if (!isInViewport(this)) {
-                    // Find the .card-img-top inside the card, remove its src and set its 'data-processed' attribute to true
-                    const $img = $(this).find('.card-img-top');
-                    $img.attr('data-processed', 'false');
-                    $img.removeAttr('src');
-                    console.log(".card-img-top's 'data-processed' attribute set to false as its parent .card.info-container is not in the viewport");
-                }
-            });
-}
+        function showImage() {
+                    // Loop through each .card.info-container element
+                    $('.displaysrc').each(function() {
+                        // Check if the card is NOT in the viewport
+                            const $img = $(this).find('.card-img-top');
+                        if (isInViewport(this) && $img.attr('data-processed') != 'true') {
+                            // Find the .card-img-top inside the card, remove its src and set its 'data-processed' attribute to true
+                            $img.attr('data-processed', 'true');
+                            $img.attr('src',$img.attr('data-src'));
+                            console.log(".card-img-top's 'data-processed' attribute set to false as its parent .card.info-container is not in the viewport");
+                        }
+                    });
+        }
+
+        function hideImage() {
+                    // Loop through each .card.info-container element
+                    $('.card.info-container').each(function() {
+                        // Check if the card is NOT in the viewport
+                        if (!isInViewport(this)) {
+                            // Find the .card-img-top inside the card, remove its src and set its 'data-processed' attribute to true
+                            const $img = $(this).find('.card-img-top');
+                            $img.attr('data-processed', 'false');
+                            $img.removeAttr('src');
+                            console.log(".card-img-top's 'data-processed' attribute set to false as its parent .card.info-container is not in the viewport");
+                        }
+                    });
+        }
     });
 }
