@@ -107,7 +107,7 @@ async function allImagesLazyLoaded(page) {
 async function scrollToBottom(page, viewportN = 1) {
   let previousScrollPosition = await page.evaluate(() => window.scrollY);
   let currentScrollPosition;
-
+  let count = 0
   while (true) {
       // Scroll down by the height of the viewport times viewportN
       await page.evaluate(`window.scrollBy(0, window.innerHeight * ${viewportN})`);
@@ -123,8 +123,12 @@ async function scrollToBottom(page, viewportN = 1) {
           if (loaded) {
               break;
           } else {
+            if(count >= 10){
+              break;
+            }
               console.log('Waiting for all images to be lazy-loaded...');
               await page.waitForTimeout(1000); // wait an additional second, adjust as needed
+              count ++
           }
       }
 
