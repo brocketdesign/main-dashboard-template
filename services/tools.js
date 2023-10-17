@@ -123,11 +123,20 @@ async function fetchMediaUrls(url) {
 
 async function findDataInMedias(userId, query, categoryId = null) {
 
+  // Modify the query to include checking for userId in the userIDs array
+  query.userId = userId;
+
+  // If a categoryId is provided, include it in the query
+  if (categoryId !== null) {
+    query.categoryId = categoryId;
+  }
+
   // Find the medias that match the query
   const medias = await global.db.collection('medias').find(query).toArray();
 
   return medias;
 }
+
 
 function sanitizeData(scrapedData,query) {
   //check for object with the same source and keep only one

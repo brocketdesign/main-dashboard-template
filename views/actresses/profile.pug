@@ -1,0 +1,70 @@
+extends ../dashboard
+
+block dynamicContent
+    .container 
+        .card.d-flex.justify-content-center.align-items-center.flex-rows.p-3
+            .card-image-left
+                img(src=actress_info.filePath style="border-radius: 50%;")
+            .card-body.py-0
+                span=actress_info.name
+                
+        .card.bg-transparent.shadow-0
+            .card-body.px-0
+                .row.row-cols-4
+                    if actressData && actressData.length > 0
+                        for item in actressData
+                            .actress.card.p-0.mb-3.text-center.border.border-light(id=item._id style="cursor:pointer;overflow: hidden;" onmouseenter=`setPreview('${item._id}',event)` onmouseleave=`setPreview('${item._id}',event)`)
+                                .card-image-top     
+                                    img(data-id=item._id src=item.thumbnail_filePath style="height: 202px; display: block; object-fit: cover; width: 100%;")
+                                    video(data-id=item._id style="display: none; height: 202px; object-fit: cover; width: 100%;" src=item.preview_filePath )
+                                .card-body 
+                                    .title(style="overflow: hidden;text-overflow: ellipsis;white-space: nowrap;")=item.title
+                                    .duration.badge.bg-light.text-dark(style="position: absolute;top: 20px;right: 10px;opacity: 0.7;")=item.duration
+                                    a.link.badge.bg-light.text-dark(target="_blank" href=item.link style="position: absolute;top: 20px;right: 10px;opacity: 0.7;")
+                                        i.fas.fa-link
+                    else    
+                        span.text-center Nothing founded
+    .d-flex.justify-content-center.w-100.p-3
+        a.btn.btn-white(type="button",class=page<=1?'d-none':'', href=`/dashboard/app/actresses/profile/${actress_info._id}?page=${page>1?page-1:''}`)        
+            i.fas.fa-angle-left.me-3
+            | 前へ
+
+        // Loop to show page numbers: 2 before, current, 2 after
+        - for(let i = -2; i <= 2; i++) {
+            - const displayPage = page + i;
+            if displayPage > 0 
+                if displayPage === page
+                    span.px-3.btn.btn-white.active #{displayPage}
+                else
+                    a.px-3.btn.btn-white(href=`/dashboard/app/actresses/profile/${actress_info._id}?page=${displayPage}`) #{displayPage}
+        - }
+
+        a.btn.btn-white(type="button" href=`/dashboard/app/actresses/profile/${actress_info._id}?page=${page+1}`)        
+            | 次へ
+            i.fas.fa-angle-right.ms-3
+
+    script.
+        function setPreview(id, event) {
+            // Get the image and video elements based on the provided ID
+            const imgElement = document.querySelector(`img[data-id="${id}"]`);
+            const videoElement = document.querySelector(`video[data-id="${id}"]`);
+
+            if (!imgElement || !videoElement) {
+                console.error(`Elements not found for ID: ${id}`);
+                return;
+            }
+
+            if (event.type === "mouseenter") {
+                // Hide the image, display the video, and start playback
+                imgElement.style.display = "none";
+                videoElement.style.display = "block";
+                videoElement.play();
+            } else if (event.type === "mouseleave") {
+                // Show the image, pause the video, reset its time, and hide it
+                imgElement.style.display = "block";
+                videoElement.pause();
+                videoElement.currentTime = 0;  // Reset video playback
+                videoElement.style.display = "none";
+            }
+        }
+

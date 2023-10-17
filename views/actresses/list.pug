@@ -1,0 +1,75 @@
+extends ../dashboard
+
+block dynamicContent
+    .container
+        h1.text-center.mb-3 女優リスト
+        .row.row-cols-4.my-3
+            .col
+                .dropdown
+                    button.btn.btn-secondary.dropdown-toggle.w-100(type='button', id='actress_height', data-bs-toggle='dropdown', aria-expanded='false')
+                        Dropdown 身長を選ぶ
+                    ul.dropdown-menu(aria-labelledby='actress_height')
+
+            .col
+                .dropdown
+                    button.btn.btn-secondary.dropdown-toggle.w-100(type='button', id='actress_bust', data-bs-toggle='dropdown', aria-expanded='false')
+                        Dropdown カップを選ぶ
+                    ul.dropdown-menu(aria-labelledby='actress_bust')
+
+            .col
+                .dropdown
+                    button.btn.btn-secondary.dropdown-toggle.w-100(type='button', id='actress_age', data-bs-toggle='dropdown', aria-expanded='false')
+                        Dropdown 年齢を選択
+                    ul.dropdown-menu(aria-labelledby='actress_debut')
+
+            .col
+                .dropdown
+                    button.btn.btn-secondary.dropdown-toggle.w-100(type='button', id='actress_debut', data-bs-toggle='dropdown', aria-expanded='false')
+                        Dropdown デビュー年を選択してください
+                    ul.dropdown-menu(aria-labelledby='actress_debut')
+        .row    
+            .col 
+                .card.bg-transparent.shadow-0
+                    .card-body.px-0
+                        .row.row-cols-4.px-0
+                            if actresses && actresses.length > 0
+                                for actress in actresses
+                                    .actress.card.p-3.mb-3.text-center(id=actress._id style="cursor:pointer;")
+                                        .card-image-top     
+                                            img(src=actress.filePath style="border-radius: 50%;")
+                                        .card-body 
+                                            .name=actress.name
+                                            .record #{actress.record_number} 本映画
+                                            .debut デビュー: #{actress.debut}
+
+                            else    
+                                span.text-center Nothing founded
+    .d-flex.justify-content-center.w-100.p-3
+        a.btn.btn-white(type="button",class=page<=1?'d-none':'', href=`/dashboard/app/actresses?page=${page>1?page-1:''}`)        
+            i.fas.fa-angle-left.me-3
+            | 前へ
+
+        // Loop to show page numbers: 2 before, current, 2 after
+        - for(let i = -2; i <= 2; i++) {
+            - const displayPage = page + i;
+            if displayPage > 0 
+                if displayPage === page
+                    span.px-3.btn.btn-white.active #{displayPage}
+                else
+                    a.px-3.btn.btn-white(href=`/dashboard/app/actresses?page=${displayPage}`) #{displayPage}
+        - }
+
+        a.btn.btn-white(type="button" href=`/dashboard/app/actresses?page=${page+1}`)        
+            | 次へ
+            i.fas.fa-angle-right.ms-3
+    script.
+        $(document).ready(function(){
+            $('.actress.card').each(function(){
+                const actressID = $(this).attr('id')
+                $(this).on('click',function(){
+                    window.open(`/dashboard/app/actresses/profile/${actressID}`)
+                })
+            })
+        })
+
+

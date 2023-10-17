@@ -182,6 +182,37 @@ const isSafari = (userAgent) => {
   return /^((?!chrome|android).)*safari/i.test(userAgent);
 };
 
+
+router.get('/app/actresses', ensureAuthenticated, ensureMembership, async (req, res) => {
+  try {
+    const { actressesList } = require('../modules/actressesList');
+    const page = parseInt(req.query.page )|| 1
+    try {
+      const actresses = await actressesList(page)
+      res.render('actresses/list', { user: req.user, actresses, page, mode: 'actresses'});
+    } catch (error) {
+      console.log(error)
+      res.render('actresses/list', { user: req.user, actresses:[], page, mode: 'actresses'});
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error retrieving news.');
+  }
+});
+
+router.get('/app/actresses/profile/:actressID', ensureAuthenticated, ensureMembership, async (req, res) => {
+  try {
+    const actressID = req.params.actressID
+    const page = parseInt(req.query.page) || 1
+    const actress_info = await global.db.collection('actresses').findOne({_id:new ObjectId(actressID)});
+    const { actressesProfile } = require('../modules/actressesProfile');
+    const actressData = await actressesProfile(actressID,page)
+    res.render('actresses/profile', { user: req.user, actress_info,actressData, page, mode: 'profile'});
+  } catch (err) {
+    console.error(err);
+    res.render('actresses/profile', { user: req.user, actress_info:[], actressData:[], page, mode: 'profile'});
+  }
+});
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) => {
 
@@ -210,7 +241,6 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
       } catch (error) {
         console.log(error)
       }
-      console.log({favoriteCountry:req.user.favoriteCountry})
       res.render(`search`, { user: req.user, result:true, isSafari:isSafari(userAgent), searchTerm, scrapedData, scrapInfo, mode, page, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
     
   } catch (error) {

@@ -1,7 +1,6 @@
 extends dashboard-base
 
 block mainContent
-  a.display-4(href=`/dashboard/app/${mode}`) Home
 
   #select-country.position-fixed.justify-content-center.align-items-center.bg-dark(style='display:none;inset:0;z-index: 99;')
     .card(style="width: 50vw;")
@@ -44,9 +43,12 @@ block mainContent
       input.form-range(type="range" id="grid-range" min="1" max="4" value="3")
   
   .row
-    if searchTerm || fav
-      #extractors.d-flex.my-3.col
-        button.btn.btn-primary.extractor.mx-2(data-extractor="false") All
+    .d-flex.my-3.col
+      a.btn.btn-dark.me-2(href=`/dashboard/app/${mode}/`)
+        i.fas.fa-home
+      if searchTerm || fav
+        #extractors
+          button.btn.btn-primary.extractor.mx-2(data-extractor="false") All
     .my-3.col.d-flex.justify-content-end
       button.btn.btn-primary.me-2(type='button' onclick="getDownloadData()")
         i.fas.fa-download

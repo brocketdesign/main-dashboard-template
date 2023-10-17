@@ -1219,19 +1219,19 @@ function scrollToTop() {
 function adjustSidebarAppearance(isVisible) {
     if (isVisible) {
         $('#sidebarMenu').find('.hide-text').hide()
-        $('#sidebarMenu').find('.collapse').removeClass('show').end()
+        $('#sidebarMenu').find('.collapse').removeClass('fast').end()
         //iconAnimation();
-        $('#sidebarMenu').animate({ width: '60px' }, 500, function() {
+        $('#sidebarMenu').animate({ width: '60px' }, 100, function() {
             //$('#sidebarMenu').find('.list-group-item').addClass('text-center');
             $('#sidebarMenu').css("animation", "");
             $('#sidebarMenu').removeClass('open')
-            $('#sidebarMenu').fadeOut()
+            $('#sidebarMenu').hide()
         });
     } else {
-        $('#sidebarMenu').fadeIn()
+        $('#sidebarMenu').show()
         $('#sidebarMenu').find('.list-group-item').removeClass('text-center').end()
-        $('#sidebarMenu').animate({ width: '250px' }, 500, function() {
-            $('#sidebarMenu').find('.hide-text').fadeIn();
+        $('#sidebarMenu').animate({ width: '250px' }, 100, function() {
+            $('#sidebarMenu').find('.hide-text').show();
             //iconAnimation();
             $('#sidebarMenu').addClass('open')
         });

@@ -91,6 +91,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           //res.status(200).json({ message: 'アイテムが成功的に保存されました。' });
       
         } catch (err) {
+          console.log(err)
           console.log('Error occurred while downloading file:', err.message);
           //res.status(500).json({ error: err.message });
         }

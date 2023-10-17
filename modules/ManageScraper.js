@@ -13,7 +13,6 @@ async function findAndUpdateUser(userId, newScrapedData = null) {
   return user;
 }
 async function ManageScraper(url, nsfw, mode, user, page) {
-  console.log('Manage Scraper:' ,{url, nsfw, mode, page})
   const scrapeMode = require(`./scraper/scrapeMode${mode}`);
   const userId = new ObjectId(user._id);
 
@@ -26,15 +25,16 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     page:parseInt(page),
     hide_query: { $exists: false },
     hide: { $exists: false },
+    favoriteCountry:userInfo.favoriteCountry
   });
 
-  console.log(`Found ${scrapedData.length} items in the medias collection`)
+  //console.log(`Found ${scrapedData.length} items in the medias collection`)
   if(scrapedData && scrapedData.length > 0){
     return scrapedData
   }
   
   scrapedData = await scrapeMode(url, mode, nsfw, page, user);
-  console.log(`Scrape data and found ${scrapedData.length} elements.`)
+  //console.log(`Scrape data and found ${scrapedData.length} elements.`)
 
   const categories = await initCategories(userId)
 
@@ -45,13 +45,15 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     nsfw: nsfw,
     page:parseInt(page),
     userId: userId,
-    categories:categories
+    categories:categories,
+    favoriteCountry:userInfo.favoriteCountry
   })); 
 
 
 
 if (scrapedData && scrapedData.length > 0) {
-
+  await global.db.collection('medias').insertMany(scrapedData)
+  /*
   for (const item of scrapedData) {
       if (item.source) {
         await global.db.collection('medias').updateOne({'source':item.source}, { $set: item }, { upsert: true });
@@ -63,6 +65,7 @@ if (scrapedData && scrapedData.length > 0) {
         await global.db.collection('medias').updateOne({'link':item.link}, { $set: item }, { upsert: true });
       }
   }
+  */
 }
 
   
@@ -77,9 +80,10 @@ if (scrapedData && scrapedData.length > 0) {
     page:parseInt(page),
     hide_query: { $exists: false },
     hide: { $exists: false },
+    favoriteCountry:userInfo.favoriteCountry
   });
 
-  console.log(`Found ${scrapedData.length} items in the medias collection`)
+  //console.log(`Found ${scrapedData.length} items in the medias collection`)
   return scrapedData;
 }
 
@@ -88,7 +92,6 @@ async function checkUserScrapeInfo(user){
   const userId = user._id
   if(!scrapInfo){
     try {
-      console.log(('Init info'))
       // If the URL doesn't exist, push the new scrapInfo
       await global.db.collection('users').updateOne(
         { _id: new ObjectId(userId) },
@@ -105,7 +108,6 @@ async function checkUserScrapeInfo(user){
 }
 async function updateUserScrapInfo(user,url,page){
 
-  console.log('Update user scrapInfo.')
   await checkUserScrapeInfo(user)
   userInfo = await findAndUpdateUser(user._id);
   const scrapInfo = userInfo.scrapInfo.find(info => info.url === url);
