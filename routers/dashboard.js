@@ -278,10 +278,15 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
         isdl:true,
       }
     }
+
     let medias = await findDataInMedias(req.user._id, query_obj);
+    let medias2 = await global.db.collection('actresses_profile').find({isdl:true}).toArray();
+    
     console.log(`Found ${medias.length} element(s).`)
+    console.log(`Found ${medias2.length} element(s).`)
+
     medias = getUniqueElementBySource(medias)
-    res.render(`search`, { user: req.user,result:true,fav:true, searchTerm,  isSafari:isSafari(userAgent), scrapedData:medias, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+    res.render(`search`, { user: req.user,result:true,fav:true, searchTerm,  isSafari:isSafari(userAgent), scrapedData:medias,medias2, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 
   }catch(err){
     console.log(err)

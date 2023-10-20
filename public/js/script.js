@@ -1864,7 +1864,7 @@ function onSmallScreen(callback){
 let lastScrollTop = 0;
 
 function enableTrackScroll() {
-    const threshold = 50;
+    const threshold = 100;
 
     $(window).on("scroll.trackScroll", function() {
         let currentScrollTop = $(this).scrollTop();
@@ -2253,3 +2253,64 @@ function activateClickOnVisibleButtons() {
         }
     });
 }
+
+//actress functions
+
+
+function setPreview(id, event) {
+    if($(`#${id}`).hasClass('done')){
+        return
+    }
+    // Get the image and video elements based on the provided ID
+    const imgElement = document.querySelector(`img[data-id="${id}"]`);
+    const videoElement = document.querySelector(`video[data-id="${id}"]`);
+
+    if (!imgElement || !videoElement) {
+        console.error(`Elements not found for ID: ${id}`);
+        return;
+    }
+
+    if (event.type === "mouseenter") {
+        // Hide the image, display the video, and start playback
+        imgElement.style.display = "none";
+        videoElement.style.display = "block";
+        videoElement.play();
+    } else if (event.type === "mouseleave") {
+        // Show the image, pause the video, reset its time, and hide it
+        imgElement.style.display = "block";
+        videoElement.pause();
+        videoElement.currentTime = 0;  // Reset video playback
+        videoElement.style.display = "none";
+    }
+}
+function downloadVideo(itemID, actressName) {
+    // Prepare the payload to send in the request body
+    const payload = {
+        itemID: itemID,
+        actressName: actressName
+    };
+
+    // Make the AJAX POST request
+    $.ajax({
+        url: 'http://192.168.10.115:3100/api/downloadVideoSegments', // API endpoint
+        type: 'POST', // HTTP Method
+        contentType: 'application/json', // Content type being sent
+        data: JSON.stringify(payload), // Convert payload object to JSON string
+        success: function(response) {
+        // Handle the success case
+        console.log("Video segments downloaded successfully: ", response);
+        $(`#${itemID}`).addClass('done')
+        $((`video[data-id="${itemID}"]`)).attr({
+            src: response.url,
+            autoplay: true,
+            controls: true,
+            playsinline: true,
+        }).show()
+        $(`img[data-id="${itemID}"]`).hide()
+        },
+        error: function(error) {
+        // Handle the error case
+        console.error("Error downloading video segments: ", error);
+        }
+    });
+    }

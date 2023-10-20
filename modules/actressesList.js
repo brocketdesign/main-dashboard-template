@@ -81,17 +81,19 @@ const actressesList = async (page_number = 1) => {
 
 async function downloadPicture (scrapedData)  {
 
-
   // Download pictures
   const updatedScrapedData = await Promise.all(scrapedData.map(async (data) => {
-    const dirPath = path.join(__dirname,  '..', 'public','downloads', 'actresses', data.name);
 
-    // Create the directory if it does not exist
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-      console.log(`Created directory: ${dirPath}`);
-    }
     try {
+      
+      const dirPath = path.join(__dirname,  '..', 'public','downloads', 'actresses', data.name);
+
+      // Create the directory if it does not exist
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+        console.log(`Created directory: ${dirPath}`);
+      }
+
       const pictureUrl = data.picture;
 
       // Download the image

@@ -6,7 +6,6 @@ const ip = require('ip');
 const app = express();
 const bodyParser = require('body-parser');
 
-
 const url = process.env.MONGODB_URL; // Use MONGODB_URL from .env file
 const dbName = process.env.MONGODB_DATABASE; // Use MONGODB_DATABASE from .env file
 
@@ -20,8 +19,10 @@ MongoClient.connect(url, { useUnifiedTopology: true })
     const router = express.Router();
     const fs = require('fs');
     const { ObjectId } = require('mongodb');
+    const path = require('path');
     const starterTools = require('./services/starterTools')
     const getHighestQualityVideoURL = require("./modules/getHighestQualityVideoURL")
+    const downloadVideoSegments = require('./modules/downloadVideoSegments')
     const { 
         saveData, 
         getFileExtension,
@@ -96,7 +97,46 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           //res.status(500).json({ error: err.message });
         }
       });
+      router.post('/downloadVideoSegments', async (req, res) => {
+        try{
+          const actressName = req.body.actressName
+          const itemID = req.body.itemID
+      
+          const folderPath = path.join(__dirname, 'public','downloads', 'actresses', actressName, itemID);
+          const item = await global.db.collection('actresses_profile').findOne({ _id: new ObjectId(itemID) })
+          const url = item.link;
+      
+          if(item.video_filePath){
+            res.json({url:item.video_filePath.replace('public','')})
+            return
+          }
+          try {
+            const finalVideoFilePath = await downloadVideoSegments(url, folderPath, itemID);
+            console.log("Received final video file path:", finalVideoFilePath);
+            const trimmedPath = finalVideoFilePath.replace(/.*\/public/, '');
+      
+            // Update the video_filePath in MongoDB
+            const updateResult = await global.db.collection('actresses_profile').updateOne(
+              { _id: new ObjectId(itemID) },
+              { $set: { video_filePath:trimmedPath, actressName, isdl:true, isdl_end:new Date() } }
+            );
 
+            // Log the result (optional)
+            if (updateResult.modifiedCount === 1) {
+              console.log(`Successfully updated video_filePath for itemID: ${itemID}`);
+            } else {
+              console.log(`Failed to update video_filePath for itemID: ${itemID}`);
+            }
+      
+            res.json({url:trimmedPath})
+          } catch (error) {
+            console.error("An error occurred while downloading video segments:", error);
+          }
+          
+        }catch(error){
+          console.log(error)
+        }
+      });  
     // parse application/x-www-form-urlencoded
     app.use(bodyParser.urlencoded({ extended: false }));
     // parse application/json

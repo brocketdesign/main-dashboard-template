@@ -3,7 +3,7 @@ extends ../dashboard
 block dynamicContent
     .container
         h1.text-center.mb-3 女優リスト
-        .row.row-cols-4.my-3
+        .row.row-cols-12.row-cols-sm-4.my-3
             .col
                 .dropdown
                     button.btn.btn-secondary.dropdown-toggle.w-100(type='button', id='actress_height', data-bs-toggle='dropdown', aria-expanded='false')
@@ -31,7 +31,7 @@ block dynamicContent
             .col 
                 .card.bg-transparent.shadow-0
                     .card-body.px-0
-                        .row.row-cols-4.px-0
+                        .row.row-cols-sm-4.row-cols-12.px-0
                             if actresses && actresses.length > 0
                                 for actress in actresses
                                     .actress.card.p-3.mb-3.text-center(id=actress._id style="cursor:pointer;")
@@ -67,7 +67,8 @@ block dynamicContent
             $('.actress.card').each(function(){
                 const actressID = $(this).attr('id')
                 $(this).on('click',function(){
-                    window.open(`/dashboard/app/actresses/profile/${actressID}`)
+                    const newUrl = `${window.location.origin}/dashboard/app/actresses/profile/${actressID}`;
+                    window.location = newUrl;
                 })
             })
         })

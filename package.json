@@ -23,6 +23,7 @@
     "handlebars": "^4.7.7",
     "images-scraper": "^6.4.2",
     "kuromoji": "^0.1.2",
+    "m3u8-parser": "^7.1.0",
     "mongodb": "^5.7.0",
     "multer": "^1.4.5-lts.1",
     "natural": "^6.5.0",

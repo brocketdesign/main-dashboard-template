@@ -1,7 +1,7 @@
 extends dashboard
 
 block dynamicContent
-  if scrapedData.length > 0 
+  if scrapedData.length > 0 || medias2.length > 0
     .masonry-container.row.custom-carousel-container
       each data in scrapedData
         if data._id
@@ -49,6 +49,19 @@ block dynamicContent
                   img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=data.imageUrl || data.filePath, alt=data.title )
 
               p.card-title.text-white.bg-dark.border-white.border.p-3(style="display:none")= data.title 
+      .card.bg-transparent.shadow-0
+        .card-body.px-0
+            .row.row-cols-sm-4.row-cols-12
+              each item in medias2
+                .actress.card.p-0.mb-3.text-center.border.border-light(id=item._id data-name=item.actressName style="cursor:pointer;overflow: hidden;" onclick=`downloadVideo('${item._id}','${item.actressName}')` onmouseenter=`setPreview('${item._id}',event)` onmouseleave=`setPreview('${item._id}',event)`)
+                    .card-image-top     
+                        img(data-id=item._id src=item.thumbnail_filePath style="height: 202px; display: block; object-fit: cover; width: 100%;")
+                        video(data-id=item._id style="display: none; height: 202px; object-fit: cover; width: 100%;" src=item.preview_filePath )
+                    .card-body 
+                        .title(style="overflow: hidden;text-overflow: ellipsis;white-space: nowrap;")=item.title
+                        .duration.badge.bg-light.text-dark(style="position: absolute;top: 20px;right: 10px;opacity: 0.7;")=item.duration
+                        a.link.badge.bg-light.text-dark(target="_blank" href=item.link style="position: absolute;top: 50px;right: 10px;opacity: 0.7;")
+                            i.fas.fa-link
   else
     p ここには何もありません！
   if scrapedData.length > 0 && !fav
