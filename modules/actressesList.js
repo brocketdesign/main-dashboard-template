@@ -6,7 +6,16 @@ const path = require('path');
 // This is an async function that performs the web scraping.
 const actressesList = async (page_number = 1) => {
   const actressCollection = global.db.collection('actresses');
-  const actressData = await actressCollection.find({page_number}).toArray()
+  page_number = parseInt(page_number) || 1;
+  const limit = 60; // Number of documents per page
+  const skip = (page_number - 1) * limit; // Calculate skip value
+
+  // Fetch data with skip and limit
+  const actressData = await actressCollection.find()
+    .skip(skip) // Skip N documents
+    .limit(limit) // Limit to N documents
+    .toArray();
+
   if(actressData.length>0){
     return actressData
   }
@@ -78,7 +87,75 @@ const actressesList = async (page_number = 1) => {
     
   return scrapedData;
 };
+const searchActresses = async (searchTerm) => {
+  const actressCollection = global.db.collection('actresses');
+  const actressData = await actressCollection.find({searchTerm}).toArray()
+  if(actressData.length>0){
+    return actressData
+  }
+  
+  console.log("Launching Puppeteer...");
+  
+  // Initialize a new Puppeteer browser instance
+  const browser = await puppeteer.launch({
+    headless:false
+  });
+  
+  // Create a new page in the browser
+  const page = await browser.newPage();
+  
+  // Navigate to the blog page you want to scrape
+  console.log("Navigating to blog page...");
+  await page.goto(`https://missav.com/ja/search/${searchTerm}`);
+  
+  let scrapedData = await page.evaluate((searchTerm) => {
+    const items = Array.from(document.querySelectorAll('ul.grid li'));
+    const data = items.map((item, index) => {
+      try {
+        const picture = item.querySelector('img').getAttribute('src');
+        const name = item.querySelector('h4').textContent;
+        const record_number = item.querySelector('.space-y-2 p').textContent.replace(' 本映画','');     
+        const link = item.querySelector('a').getAttribute('href');
+  
+        return { picture, name, record_number, link, searchTerm };
+      } catch (error) {
+        console.log(`Error at index ${index}:`, error);
+        return null;
+      }
+    });
+    return data;
+  },searchTerm);
+  
+  scrapedData = await downloadPicture(scrapedData);
+  
+  console.log("Closing Puppeteer...");
+  // Close the browser
+  await browser.close();
 
+    // Insert or update the scraped data in MongoDB
+    console.log("Saving to MongoDB...");
+
+    for (const data of scrapedData) {
+      const { name, record_number } = data;
+
+      // Update or insert data to avoid duplicates
+      // Assuming 'name' or 'record_number' is unique for each actress
+      await actressCollection.updateOne(
+        { name },
+        { $set: data },
+        { upsert: true }
+      );
+    }
+
+    // Send the response
+    console.log("Scraping and database update complete.");
+    const reusult = await actressCollection.find({searchTerm}).toArray()
+    if(reusult.length>0){
+      return reusult
+    }
+    
+  return scrapedData;
+}
 async function downloadPicture (scrapedData)  {
 
   // Download pictures
@@ -127,4 +204,4 @@ async function downloadPicture (scrapedData)  {
   return updatedScrapedData.filter(Boolean);
 };
 // Export the function for use in other modules
-module.exports = { actressesList };
+module.exports = { actressesList, searchActresses };

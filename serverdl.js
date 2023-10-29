@@ -110,6 +110,14 @@ MongoClient.connect(url, { useUnifiedTopology: true })
             res.json({url:item.video_filePath.replace('public','')})
             return
           }
+
+          // Update the isdl_start in MongoDB
+          await global.db.collection('actresses_profile').updateOne(
+            { _id: new ObjectId(itemID) },
+            { $set: { actressName, isdl_start:new Date() } }
+          );
+
+
           try {
             const finalVideoFilePath = await downloadVideoSegments(url, folderPath, itemID);
             console.log("Received final video file path:", finalVideoFilePath);
@@ -118,7 +126,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
             // Update the video_filePath in MongoDB
             const updateResult = await global.db.collection('actresses_profile').updateOne(
               { _id: new ObjectId(itemID) },
-              { $set: { video_filePath:trimmedPath, actressName, isdl:true, isdl_end:new Date() } }
+              { $set: { video_filePath:trimmedPath, isdl:true, isdl_end:new Date() } }
             );
 
             // Log the result (optional)

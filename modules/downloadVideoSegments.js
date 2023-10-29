@@ -5,12 +5,16 @@ const path = require('path');
 const { ObjectId } = require('mongodb');
 const ffmpeg = require('fluent-ffmpeg');
 
+
+
 const convertToMp4 = (inputPath, outputPath) => {
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
       .output(outputPath)
+      .videoCodec('libx264')
+      .audioCodec('aac')
       .on('end', () => {
-        console.log('Conversion finished');
+        //console.log('Conversion finished');
         resolve();
       })
       .on('error', (err) => {
@@ -20,20 +24,71 @@ const convertToMp4 = (inputPath, outputPath) => {
       .run();
   });
 };
+async function convertVideo(finalVideoFilePath) {
+  const inputPath = finalVideoFilePath;
+  const outputPath = finalVideoFilePath.replace('.ts','.mp4');
 
-const combineSegments = (newSegmentFile, finalVideoFile) => {
-  // Read the segment data from the new segment file
-  const segmentData = fs.readFileSync(newSegmentFile);
+  try {
+    await convertToMp4(inputPath, outputPath);
+    return outputPath
+  } catch (error) {
+    console.error('An error occurred:', error);
+    return false
+  }
+}
 
-  // Append the segment data to the final video file
-  fs.appendFileSync(finalVideoFile, segmentData);
+const combineSegments = (finalVideoFile, folderPath, itemID, totalSegments) => {
+  return new Promise((resolve, reject) => {
+    try {
+      let currentIndex = 0;
+      const intervalId = setInterval(() => {
 
-  // Remove the new segment file after appending its content
-  fs.unlinkSync(newSegmentFile);
+        if (currentIndex >= totalSegments) {
+          clearInterval(intervalId);
+          resolve();
+          return;
+        }
 
-  //console.log(`Appended and removed ${newSegmentFile}`);
+        const segmentFileName = `video_${new ObjectId(itemID)}_${currentIndex}.ts`;
+        const fullPath = path.join(folderPath, segmentFileName);
+        const outputPath = fullPath.replace('.ts','.mp4');
+        // Check if the segment file exists
+        if (!fs.existsSync(fullPath) && !fs.existsSync(outputPath)) {
+          //console.log(`Segment ${currentIndex} not found. Waiting for the segment.`);
+          return; // Skip the current iteration and wait for the next interval
+        }
+        if (fs.existsSync(outputPath) && fs.existsSync(finalVideoFile)) {
+          currentIndex++;
+          return
+        }
+
+        // Read the segment data from the new segment file
+        const segmentData = fs.readFileSync(fullPath);
+
+        // Append the segment data to the final video file
+        fs.appendFileSync(finalVideoFile, segmentData);
+
+        if (!fs.existsSync(outputPath)) {
+              // Convert the final TS file to MP4
+            convertVideo(fullPath)
+            .then((pathToStream) => {
+              //fs.unlinkSync(fullPath);
+            })
+            .catch((error) => {
+              console.log('Error during video conversion:', error);
+            });
+
+        }
+
+        //console.log(`Appended segment: ${segmentFileName}`); // Debugging line
+        currentIndex++;
+      }, 0); // Checking every 1 second
+    } catch (error) {
+      console.log('An error occurred:', error); // Debugging line
+      reject(error); // Reject the Promise
+    }
+  });
 };
-
 
 const initializePuppeteer = async () => {
   const browser = await puppeteer.launch({ headless: false });
@@ -75,61 +130,6 @@ const fetchAndParseM3U8 = async (page, m3u8Url) => {
   return parser;
 };
 
-const downloadSegments = async (page, parser, basePath, folderPath, itemID) => {
-  return new Promise(async (resolve, reject) => {
-    const downloadedSegments = new Set();
-    const finalVideoFile = path.join(folderPath, `final_video_${new ObjectId(itemID)}.ts`);
-    const batchSize = 10; // Number of segments in each batch
-    const tempFiles = [];
-
-    try {
-      const fetchSegment = async (segment, segmentFileName) => {
-        //console.log(`Fetching segment: ${segmentFileName}`);
-        const tsUrl = `${basePath}${segment.uri}`;
-        const tsData = await page.evaluate(async (url) => {
-          const res = await fetch(url);
-          const buffer = await res.arrayBuffer();
-          return Array.from(new Uint8Array(buffer));
-        }, tsUrl);
-        
-        const fullPath = path.join(folderPath, segmentFileName);
-        fs.writeFileSync(fullPath, Buffer.from(tsData));
-        return fullPath;
-      };
-
-      for (let i = 0; i < parser.manifest.segments.length; i += batchSize) {
-        const tempFile = path.join(folderPath, `temp_${new ObjectId(itemID)}_${i / batchSize}.ts`);
-        tempFiles.push(tempFile);
-        console.log(`Process: ${i+1}/${parser.manifest.segments.length}`)
-        const promises = [];
-        for (let j = i; j < i + batchSize && j < parser.manifest.segments.length; j++) {
-          const segment = parser.manifest.segments[j];
-          const segmentFileName = `video_${new ObjectId(itemID)}_${j}.ts`;
-          if (downloadedSegments.has(segmentFileName)) continue;
-
-          downloadedSegments.add(segmentFileName);
-          promises.push(fetchSegment(segment, segmentFileName).then((fullPath) => {
-            combineSegments(fullPath, tempFile);
-          }));
-        }
-
-        // Wait for all segments in this batch to be downloaded and combined
-        await Promise.all(promises);
-      }
-
-      // Combine all the temporary files into the final video file
-      for (const tempFile of tempFiles) {
-        combineSegments(tempFile, finalVideoFile);
-      }
-
-      resolve(finalVideoFile);
-    } catch (error) {
-      reject(error);
-    }
-  });
-};
-
-
 const downloadVideoSegments = (url, folderPath, itemID) => {
   return new Promise(async (resolve, reject) => {
     const { browser, page } = await initializePuppeteer();
@@ -159,8 +159,7 @@ const downloadVideoSegments = (url, folderPath, itemID) => {
 
             // Close the browser and resolve the Promise with the file path
             await browser.close();
-            const outputPath = await convertVideo(finalVideoFilePath);
-            resolve(outputPath);
+            resolve(finalVideoFilePath);
 
           } catch (error) {
             console.error("An error occurred:", error);
@@ -180,17 +179,80 @@ const downloadVideoSegments = (url, folderPath, itemID) => {
   });
 };
 
-async function convertVideo(finalVideoFilePath) {
-  const inputPath = finalVideoFilePath;
-  const outputPath = finalVideoFilePath.replace('.ts','.mp4');
 
-  try {
-    await convertToMp4(inputPath, outputPath);
-    return outputPath
-  } catch (error) {
-    console.error('An error occurred:', error);
-    return false
-  }
-}
+const downloadSegments = async (page, parser, basePath, folderPath, itemID) => {
+  return new Promise(async (resolve, reject) => {
+    const downloadedSegments = new Set();
+    const finalVideoFile = path.join(folderPath, `final_video_${new ObjectId(itemID)}.ts`);
+
+    const fetchSegment = async (segment, segmentFileName) => {
+      const fullPath = path.join(folderPath, segmentFileName);
+      if (fs.existsSync(fullPath)) {
+        return
+      }
+      //console.log(`Fetching segment: ${segmentFileName}`);
+      const tsUrl = `${basePath}${segment.uri}`;
+      const tsData = await page.evaluate(async (url) => {
+        const res = await fetch(url);
+        const buffer = await res.arrayBuffer();
+        return Array.from(new Uint8Array(buffer));
+      }, tsUrl);
+
+      fs.writeFileSync(fullPath, Buffer.from(tsData));
+      return fullPath;
+    };
+
+    try {
+      const totalSegments = parser.manifest.segments.length;
+      let currentIndex = 0;
+      const allCombine = combineSegments(finalVideoFile, folderPath, itemID, totalSegments);
+      const processSegments = async () => {
+        while (currentIndex < totalSegments) {
+          const segment = parser.manifest.segments[currentIndex];
+          const segmentFileName = `video_${new ObjectId(itemID)}_${currentIndex}.ts`;
+          
+          if (downloadedSegments.has(segmentFileName)) {
+            currentIndex++;
+            continue;
+          }
+
+          downloadedSegments.add(segmentFileName);
+          const fullPath = await fetchSegment(segment, segmentFileName);
+          console.log(`Processed segment: ${currentIndex + 1}/${totalSegments}`);
+
+          currentIndex++;
+        }
+      };
+
+      // Start 5 parallel downloads
+      const parallelDownloads = Array.from({ length: 1 }, () => processSegments());
+
+      await Promise.all(parallelDownloads);
+      await allCombine
+      // Convert the final TS file to MP4
+      convertVideo(finalVideoFile)
+      .then((outputPath) => {
+        console.log('Video converted successfully.',outputPath);
+        fs.unlinkSync(finalVideoFile);
+        for (let i = 0 ; i < totalSegments; i++){
+          const segmentFileName = `video_${new ObjectId(itemID)}_${currentIndex}.ts`;
+          if (fs.existsSync(segmentFileName)) {
+            fs.unlinkSync(segmentFileName);
+          }
+        }
+        resolve(outputPath);
+      })
+      .catch((error) => {
+        console.log('Error during video conversion:', error);
+        reject(error);
+      });
+
+    } catch (error) {
+      console.log(`An error occurred: ${error}`);
+      reject(error);
+    }
+  });
+};
+
 
 module.exports = downloadVideoSegments;

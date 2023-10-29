@@ -43,12 +43,12 @@ block mainContent
       input.form-range(type="range" id="grid-range" min="1" max="4" value="3")
   
   .row
-    .d-flex.my-3.col
+    .my-3.col.col-auto
       a.btn.btn-dark.me-2(href=`/dashboard/app/${mode}/`)
         i.fas.fa-home
-      if searchTerm || fav
-        #extractors
-          button.btn.btn-primary.extractor.mx-2(data-extractor="false") All
+    if searchTerm || fav
+      #extractors.my-3.col-auto
+        button.btn.btn-primary.extractor.mx-2(data-extractor="false") All
     .my-3.col.d-flex.justify-content-end
       button.btn.btn-primary.me-2(type='button' onclick="getDownloadData()")
         i.fas.fa-download

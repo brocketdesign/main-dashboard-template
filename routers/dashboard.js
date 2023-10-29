@@ -185,10 +185,20 @@ const isSafari = (userAgent) => {
 
 router.get('/app/actresses', ensureAuthenticated, ensureMembership, async (req, res) => {
   try {
-    const { actressesList } = require('../modules/actressesList');
+    const { actressesList, searchActresses } = require('../modules/actressesList');
     const page = parseInt(req.query.page )|| 1
+    const searchTerm = req.query.searchTerm || false
+    const debut = req.query.debut || false
     try {
-      const actresses = await actressesList(page)
+      if(searchTerm){
+        let actresses = await searchActresses(searchTerm)
+        res.render('actresses/list', { user: req.user, actresses, page, mode: 'actresses'});
+        return
+      }
+      let actresses = await actressesList(page)
+      if(debut){
+        actresses = await filterData('actresses',{debut})
+      }
       res.render('actresses/list', { user: req.user, actresses, page, mode: 'actresses'});
     } catch (error) {
       console.log(error)
@@ -199,11 +209,13 @@ router.get('/app/actresses', ensureAuthenticated, ensureMembership, async (req, 
     res.status(500).send('Error retrieving news.');
   }
 });
-
+async function filterData(coll,query){
+  return await global.db.collection(coll).find(query).toArray()
+}
 router.get('/app/actresses/profile/:actressID', ensureAuthenticated, ensureMembership, async (req, res) => {
+    const page = parseInt(req.query.page) || 1
   try {
     const actressID = req.params.actressID
-    const page = parseInt(req.query.page) || 1
     const actress_info = await global.db.collection('actresses').findOne({_id:new ObjectId(actressID)});
     const { actressesProfile } = require('../modules/actressesProfile');
     const actressData = await actressesProfile(actressID,page)
@@ -270,22 +282,27 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
       mode:mode,
       nsfw:nsfw,
       isdl:true,
+      hide: { $exists: false },
     }
     if(!searchTerm){
       query_obj = {
         mode:mode,
         nsfw:nsfw,
         isdl:true,
+        hide: { $exists: false },
       }
     }
 
     let medias = await findDataInMedias(req.user._id, query_obj);
-    let medias2 = await global.db.collection('actresses_profile').find({isdl:true}).toArray();
-    
     console.log(`Found ${medias.length} element(s).`)
-    console.log(`Found ${medias2.length} element(s).`)
+    let medias2 = []
+    if(mode == 'actresses'){
+      medias2 = await global.db.collection('actresses_profile').find({isdl:true}).toArray();
+      console.log(`Found ${medias2.length} element(s).`)
+    }
 
-    medias = getUniqueElementBySource(medias)
+    //medias = getUniqueElement(medias)
+
     res.render(`search`, { user: req.user,result:true,fav:true, searchTerm,  isSafari:isSafari(userAgent), scrapedData:medias,medias2, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 
   }catch(err){
@@ -295,29 +312,66 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
   }
   
 });
+// Function to get unique elements from the medias array based on fields 'url', 'link', 'source'
+function getUniqueElement(medias) {
+  console.log("Initial medias array:", medias);
 
-function getUniqueElementBySource(medias) {
-  // Map the sources and filter those that are undefined
-  const undefinedSources = medias.filter(object => object.link === undefined);
+  let result = [];  // Initialize the result array
+  let seenIds = new Set();  // Keep track of unique identifiers
 
-  let uniqueData = [];
-  let seenSources = new Set();
+  // Loop through each type to filter unique elements
+  for (let type of ['url', 'link', 'source']) {
+    console.log(`Filtering based on type: ${type}`);
+    
+    const filteredElements = elementFilter(type, medias);
+    
+    // Add to result only if the item's id is not already seen
+    for (let item of filteredElements) {
+      const id = item._id.toString(); // Assuming each item has a unique _id field
+
+      if (!seenIds.has(id)) {
+        seenIds.add(id);
+        result.push(item);
+      }
+    }
+  }
   
+  console.log("Final result array:", result);
+  return result;  // Return the final result
+}
+
+// Function to filter elements based on a specific type
+function elementFilter(type, medias) {
+  console.log(`Inside elementFilter for type: ${type}`);
+  
+  // Filter out the elements where the specified type field is undefined
+  const undefinedSources = medias.filter(object => object[type] === undefined);
+  console.log("Elements with undefined sources:", undefinedSources);
+
+  let uniqueData = [];  // To store unique elements
+  let seenSources = new Set();  // To keep track of already seen sources
+
+  // Loop through the medias array
   for (let item of medias) {
-    if (item.link === undefined) {
-        continue; // Skip undefined sources, as we've already collected them
+    // Skip the item if the type field is undefined
+    if (item[type] === undefined) {
+      continue;
     }
     
-    if (!seenSources.has(item.link)) {
-        seenSources.add(item.link);
-        uniqueData.push(item);
+    // If the source is not seen before, add it to the Set and to the uniqueData array
+    if (!seenSources.has(item[type])) {
+      console.log(`Adding unique item: ${item[type]}`);
+      seenSources.add(item[type]);
+      uniqueData.push(item);
     }
-}
+  }
 
-  // Combine unique data with the undefined sources
-  return [...uniqueData, ...undefinedSources]; // Now, the return value contains unique items based on the source property and all items with an undefined source.
+  // Combine uniqueData with the undefinedSources
+  let combinedData = [...uniqueData, ...undefinedSources];
+  console.log("Combined Data:", combinedData);
+  
+  return combinedData;
 }
-
 
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (req, res) => {

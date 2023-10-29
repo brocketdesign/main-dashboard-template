@@ -210,7 +210,11 @@ $(document).ready(function() {
         // Replace the content of the element with the converted HTML
         $(this).html(htmlContent);
     });
-      
+    
+    $('.actress.card .player-button').on('click',function(e){
+        e.stopPropagation()
+        downloadVideo($(this).attr('data-id'), $(this).attr('data-name'))
+    })
 
     activateClickOnVisibleButtons();
 
@@ -972,17 +976,24 @@ function updategridlayout(value) {
     })
   }
   function sendSearchForm(data,callback) {
+    if(data.mode  == 'actresses'){
+        const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchTerm=${data.searchterm?data.searchterm:data.searchTerm}&nsfw=${data.nsfw}`
+        window.location=url
+        return 
+    }
     $.ajax({
         url: `/api/loadpage`,
         type: 'POST',
         data,
         success: function(response){
             const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchTerm=${data.searchterm?data.searchterm:data.searchTerm}&nsfw=${data.nsfw}`
-            console.log(url)
-            if(callback){callback()}
            window.location=url
         },
-        error: handleFormError
+        error: handleFormError,
+        finally: function(){
+            if(callback){callback()}
+        }
+        
     });
 }
   const handleResetFormSubmission = () => {
@@ -1006,10 +1017,6 @@ function enableSubRedit(){
         $('#searchTerm').on('focus', function() {
           // Check the value of the 'data-mode' attribute
           const dataMode = $(this).attr('data-mode');
-          
-          // Log the focus event and the value of the 'data-mode' attribute
-          console.log('Input is focused.');
-          console.log(`data-mode attribute value: ${dataMode}`);
           
           // Check if data-mode attribute is equal to "2"
           if(dataMode === '2') {
@@ -2284,6 +2291,11 @@ function setPreview(id, event) {
     }
 }
 function downloadVideo(itemID, actressName) {
+    if($(`#${itemID}`).hasClass('done')){
+        return
+    }
+    $(`#${itemID}`).addClass('done')
+
     // Prepare the payload to send in the request body
     const payload = {
         itemID: itemID,
@@ -2299,18 +2311,110 @@ function downloadVideo(itemID, actressName) {
         success: function(response) {
         // Handle the success case
         console.log("Video segments downloaded successfully: ", response);
-        $(`#${itemID}`).addClass('done')
+        $(`img[data-id="${itemID}"]`).hide()
+        
+        
         $((`video[data-id="${itemID}"]`)).attr({
             src: response.url,
             autoplay: true,
             controls: true,
             playsinline: true,
+            loop:false
         }).show()
-        $(`img[data-id="${itemID}"]`).hide()
         },
         error: function(error) {
         // Handle the error case
         console.error("Error downloading video segments: ", error);
         }
     });
+
+    
+}
+function isVideoStreaming(itemID) {
+    return $(`#${itemID}`).hasClass('streaming');
+}
+
+function waitForBufferUpdateEnd(sourceBuffer) {
+    return new Promise(resolve => {
+        if (!sourceBuffer.updating) {
+            resolve();
+        } else {
+            sourceBuffer.addEventListener('updateend', resolve, { once: true });
+        }
+    });
+}
+
+async function streamVideo(itemID, actressName) {
+    if (isVideoStreaming(itemID)) {
+        console.log(`Video with itemID: ${itemID} is already streaming.`);
+        return;
     }
+
+    const mediaSource = new MediaSource();
+    const videoElement = $(`video[data-id="${itemID}"]`)[0];
+    videoElement.src = URL.createObjectURL(mediaSource);
+    let sourceBuffer;
+    
+    // This array will hold fetched buffers
+    const bufferQueue = [];
+
+    mediaSource.addEventListener('sourceopen', () => {
+        if (mediaSource.readyState === 'open') {
+            sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.64001E, mp4a.40.2"');
+            
+            sourceBuffer.addEventListener('updateend', async () => {
+                console.log('Buffer updated. Buffered ranges: ', sourceBuffer.buffered);
+                if (bufferQueue.length) {
+                    // Remove the first buffer from the queue and append it to the sourceBuffer
+                    const nextBuffer = bufferQueue.shift();
+                    sourceBuffer.appendBuffer(new Uint8Array(nextBuffer));
+                }
+            });
+            
+            sourceBuffer.addEventListener('error', e => {
+                console.log('SourceBuffer Error:', e);
+            });
+        } else {
+            console.log(`Cannot append buffer, MediaSource readyState is ${mediaSource.readyState}`);
+        }
+    });
+
+    const ws = new WebSocket('ws://localhost:3001');
+    ws.addEventListener('message', async (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type !== 'videoSegmentReady') return;
+
+        console.log(`New segment ready to stream for item ${data.itemID}: ${data.pathToStream}`);
+        try {
+            const response = await fetch(data.pathToStream);
+            const arrayBuffer = await response.arrayBuffer();
+            
+            console.log(`Fetched ${arrayBuffer.byteLength} bytes`);
+            bufferQueue.push(arrayBuffer);
+
+            if (!sourceBuffer.updating && bufferQueue.length === 1) {
+                // If sourceBuffer is not updating and our bufferQueue has only one item (the one we just added), 
+                // immediately append it to the sourceBuffer. 
+                const nextBuffer = bufferQueue.shift();
+                sourceBuffer.appendBuffer(new Uint8Array(nextBuffer));
+            }
+        } catch (error) {
+            console.log('Error fetching segment:', error);
+        }
+    });
+
+    $(videoElement).attr({
+        autoplay: true,
+        muted: true,
+        controls: true,
+        playsinline: true,
+        loop: false
+    });
+
+    $(`img[data-id="${itemID}"]`).hide();
+    $(videoElement).show();
+
+    $(`#${itemID}`).addClass('streaming done');
+
+    console.log(`Started streaming video for itemID: ${itemID}, actressName: ${actressName}`);
+}

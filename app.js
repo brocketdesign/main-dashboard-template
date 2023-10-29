@@ -18,6 +18,7 @@ const bcrypt = require('bcrypt');
 const app = express();
 const WebSocket = require('./routers/WebSocket');
 const server = http.createServer(app);
+const cors = require('cors');
 
 // Attach the WebSocket server to the HTTP server
 WebSocket(server);
@@ -106,7 +107,7 @@ function startServer() {
             done(err, null);
           });
       });
-      
+      app.use(cors());
       app.use(compression());
       app.use(flash());
       app.use((req, res, next) => {

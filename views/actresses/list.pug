@@ -20,13 +20,14 @@ block dynamicContent
                 .dropdown
                     button.btn.btn-secondary.dropdown-toggle.w-100(type='button', id='actress_age', data-bs-toggle='dropdown', aria-expanded='false')
                         Dropdown 年齢を選択
-                    ul.dropdown-menu(aria-labelledby='actress_debut')
+                    ul.dropdown-menu(aria-labelledby='actress_age')
 
             .col
                 .dropdown
                     button.btn.btn-secondary.dropdown-toggle.w-100(type='button', id='actress_debut', data-bs-toggle='dropdown', aria-expanded='false')
                         Dropdown デビュー年を選択してください
-                    ul.dropdown-menu(aria-labelledby='actress_debut')
+                    ul.dropdown-menu.w-100(aria-labelledby='actress_debut' style="height:150px;overflow-y:scroll")
+                        li.dropdown-item(value=false style="cursor:pointer") デビュー年を選択してください
         .row    
             .col 
                 .card.bg-transparent.shadow-0
@@ -71,6 +72,17 @@ block dynamicContent
                     window.location = newUrl;
                 })
             })
+
+            for (let i = 2000; i <= new Date().getFullYear(); i++) {
+                $('.dropdown-menu[aria-labelledby="actress_debut"]').prepend(`<li class="dropdown-item" style="cursor:pointer" value=${i}>${i} 年以前</li>`);
+            }
+            $(document).on('click','li',function(){
+                const listID = $(this).parent().attr('aria-labelledby')
+                $(`#${listID} Dropdown` ).text($(this).text())
+                const newUrl = `${window.location.origin}/dashboard/app/actresses?debut=${$(this).val()}`;
+                window.location = newUrl;
+            })
+           
         })
 
 

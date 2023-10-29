@@ -28,6 +28,24 @@ const actressesProfile = async (actressID,page_number = 1) => {
   console.log("Navigating to blog page...");
   await page.goto(`https://missav.com/dm237/ja/actresses/${actressInfo.name}?page=${page_number}`);
 
+  let actressInfoData = await page.evaluate(() => {
+    try {
+        let data = {}
+          const paragraphs = Array.from(document.querySelectorAll('.mt-2.text-sm p'));
+  
+          data.height = paragraphs[0] ? paragraphs[0].textContent.split('/')[0].replace('cm','').trim() : false;;
+          data.bust = paragraphs[0] ? paragraphs[0].textContent.split('/')[1].split('-')[0].trim() : false;;
+          data.birth = paragraphs[1] ? paragraphs[1].textContent.split('(')[0].trim() : false;;
+          data.age = paragraphs[1] ? paragraphs[1].textContent.split('(')[1].replace(')','').trim() : false;;
+  
+      return data;
+    } catch (error) {
+      console.log(error)
+    }
+  });
+  if(actressInfoData){
+    await actressCollection.updateOne({_id:new ObjectId(actressID)},{ $set:actressInfoData })
+  }
   let scrapedData = await page.evaluate((actressID,page_number) => {
     const items = Array.from(document.querySelectorAll('.thumbnail.group'));
     const data = items.map((item, index) => {

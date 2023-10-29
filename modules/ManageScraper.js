@@ -52,20 +52,25 @@ async function ManageScraper(url, nsfw, mode, user, page) {
 
 
 if (scrapedData && scrapedData.length > 0) {
-  await global.db.collection('medias').insertMany(scrapedData)
-  /*
+  let isdone = false
   for (const item of scrapedData) {
       if (item.source) {
         await global.db.collection('medias').updateOne({'source':item.source}, { $set: item }, { upsert: true });
+        isdone = true
       }
       if (item.url) {
         await global.db.collection('medias').updateOne({'url':item.url}, { $set: item }, { upsert: true });
+        isdone = true
       }
       if (item.link) {
         await global.db.collection('medias').updateOne({'link':item.link}, { $set: item }, { upsert: true });
+        isdone = true
+      }
+      if(!isdone){
+        await global.db.collection('medias').inserOne(item);
       }
   }
-  */
+  
 }
 
   

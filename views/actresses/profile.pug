@@ -2,26 +2,41 @@ extends ../dashboard
 
 block dynamicContent
     .container 
-        .card.d-flex.justify-content-center.align-items-center.flex-rows.p-3
+        .card.d-flex.justify-content-center.align-items-center.flex-row.p-3
             .card-image-left
                 img(src=actress_info.filePath style="border-radius: 50%;")
             .card-body.py-0
                 span=actress_info.name
+                .info1 
+                    span #{actress_info.height} cm
+                    | /
+                    span=actress_info.bust
+                .info2
+                    span #{actress_info.birth}
+                    | / 
+                    span 
+                        | (#{actress_info.age})
                 
         .card.bg-transparent.shadow-0
             .card-body.px-0
                 .row.row-cols-sm-4.row-cols-12
                     if actressData && actressData.length > 0
                         for item in actressData
-                            .actress.card.p-0.mb-3.text-center.border.border-light(id=item._id data-name=actress_info.name style="cursor:pointer;overflow: hidden;" onclick=`downloadVideo('${item._id}','${actress_info.name}')` onmouseenter=`setPreview('${item._id}',event)` onmouseleave=`setPreview('${item._id}',event)`)
+                            .actress.card.p-0.mb-3.text-center.border.border-light(id=item._id data-name=actress_info.name class=item.isdl_start && !item.isdl_end ? '' : ''  style="cursor:pointer;overflow: hidden;" onmouseenter=`setPreview('${item._id}',event)` onmouseleave=`setPreview('${item._id}',event)`)
                                 .card-image-top     
                                     img(data-id=item._id src=item.thumbnail_filePath style="height: 202px; display: block; object-fit: cover; width: 100%;")
-                                    video(data-id=item._id style="display: none; height: 202px; object-fit: cover; width: 100%;" src=item.preview_filePath )
+                                    video(data-id=item._id style="display: none; height: 202px; object-fit: cover; width: 100%;" loop="true" src=item.preview_filePath )
                                 .card-body 
                                     .title(style="overflow: hidden;text-overflow: ellipsis;white-space: nowrap;")=item.title
                                     .duration.badge.bg-light.text-dark(style="position: absolute;top: 20px;right: 10px;opacity: 0.7;")=item.duration
                                     a.link.badge.bg-light.text-dark(target="_blank" href=item.link style="position: absolute;top: 50px;right: 10px;opacity: 0.7;")
                                         i.fas.fa-link
+                                    button.btn.btn-light.player-button(data-id=item._id data-name=actress_info.name style="position: absolute;top: 20px;left: 10px;opacity: 0.7;")
+                                        if item.isdl_end || item.video_filePath
+                                            i.fas.fa-video
+                                        else
+                                            i.fas.fa-download
+                                    
                     else    
                         span.text-center Nothing founded
     .d-flex.justify-content-center.w-100.p-3

@@ -29,6 +29,8 @@ button.done i {
   background: linear-gradient(to bottom, #d9d9d9, #8a8b8e);
 }
 
+.actress.done img{display:none;}
+.actress.done video{display:block;}
 .card-clickable:hover {
     cursor: pointer;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);

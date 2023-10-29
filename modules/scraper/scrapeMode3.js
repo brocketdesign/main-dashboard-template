@@ -47,7 +47,7 @@ async function searchPorn(query, mode, nsfw, url, page) {
     extractor:"pornhub",
     video_id: generateRandomID(8)
   }));
-
+  console.log(scrapedData)
   return scrapedData
 }
 

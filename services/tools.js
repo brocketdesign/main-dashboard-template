@@ -155,7 +155,7 @@ function sanitizeData(scrapedData,query) {
 
 async function updateItemsByField(fieldName, fieldValue, query) {
   const itemsWithSameLink = await global.db.collection('medias').find({ [fieldName]: fieldValue }).toArray();
-  //console.log(`Found ${itemsWithSameLink.length} item(s) with the same ${fieldName} `, fieldValue);
+  console.log(`Found ${itemsWithSameLink.length} item(s) with the same ${fieldName} `, fieldValue);
 
   for (let item of itemsWithSameLink) {
       await global.db.collection('medias').updateOne({ _id: new ObjectId(item._id) }, { $set: query });

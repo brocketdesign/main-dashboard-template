@@ -3,7 +3,7 @@ const router = express.Router();
 
 const getHighestQualityVideoURL = require("../modules/getHighestQualityVideoURL")
 const ensureAuthenticated = require('../middleware/authMiddleware');
-
+const streamVideoSegments = require('../modules/streamVideoSegments')
 const {
   formatDateToDDMMYYHHMMSS,
   saveData, 
@@ -111,6 +111,29 @@ router.delete('/user/:elementRemoved/:elementId', async (req, res) => {
         res.status(500).send({ message: 'Internal server error' });
     }
 });
+
+
+// Create a new route to handle the streaming
+router.get('/streamVideo/:itemID', async (req, res) => {
+  const itemID = req.params.itemID;
+  const item = await global.db.collection('actresses_profile').findOne({ _id: new ObjectId(itemID) })
+  const videoUrl = item.link
+  console.log(`Initiating streaming for ${videoUrl}`);
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'video/mp2t');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  
+  res.flushHeaders(); // Flush the headers to establish the SSE connection
+  
+  try {
+    await streamVideoSegments(videoUrl, res);
+  } catch (err) {
+    console.error(`Streaming failed: ${err}`);
+    res.status(500).end();
+  }
+});
+
 
 
 router.post('/openai/custom/:type', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }]), async (req, res) => {
@@ -821,7 +844,6 @@ router.post('/hide', async (req, res) => {
       }
     }
 
-    console.log('メディアが正常に更新されました');
     res.status(200).json({ message: 'この要素はもう表示されません' });
   } catch (err) {
     console.log(err);
@@ -939,7 +961,7 @@ try {
       page: req.body.page ,
       mode: req.body.mode 
     }
-    
+
     let scrapedData = await ManageScraper(
       data.searchTerm,
       data.nsfw,

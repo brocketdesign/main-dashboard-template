@@ -2,16 +2,42 @@ const { ObjectId } = require('mongodb');
 const axios = require('axios');
 const puppeteer = require('puppeteer');
 
-async function scrapeMode2(url, mode, nsfw, page, filter = 'images'){
-  const data1 = await scrapeReddit(url, mode, nsfw, page, filter = 'images');
-  const data2 = await scrapeScrolller(url, mode, nsfw, page)
-  const data = data1.concat(data2)
-  return data
+async function scrapeMode2(url, mode, nsfw, page, filter = 'images') {
+  let data1 = [];
+  let data2 = [];
+  let data = [];
+
+  try {
+    // Attempt to scrape data from Reddit
+    console.log("Starting Reddit scraping...");
+    data1 = await scrapeReddit(url, mode, nsfw, page, filter = 'images');
+    console.log("Successfully scraped data from Reddit");
+  } catch (error) {
+    // Log an error if Reddit scraping fails
+    console.error("Failed to scrape data from Reddit", error);
+  }
+
+  try {
+    // Attempt to scrape data from Scrolller
+    console.log("Starting Scrolller scraping...");
+    data2 = await scrapeScrolller(url, mode, nsfw, page);
+    console.log("Successfully scraped data from Scrolller");
+  } catch (error) {
+    // Log an error if Scrolller scraping fails
+    console.error("Failed to scrape data from Scrolller", error);
+  }
+
+  // Concatenate data from both sources
+  data = data1.concat(data2);
+  console.log("Combined data from Reddit and Scrolller");
+
+  return data;
 }
+
 const scrapeScrolller = (subreddit, mode, nsfw, page) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const url = `https://scrolller.com${subreddit}/`;
+      const url = subreddit.indexOf('http') >= 0 ? subreddit : `https://scrolller.com${subreddit}/`;
 
       // Launch Puppeteer browser
       const browser = await puppeteer.launch({
@@ -43,6 +69,9 @@ const scrapeScrolller = (subreddit, mode, nsfw, page) => {
       // Resolve with the scraped data
       resolve(scrapedData);
     } catch (error) {
+
+      // Close the browser
+      await browser.close();
       // Reject if there's an error
       reject(error);
     }
@@ -111,7 +140,8 @@ async function scrollAndScrape(page, itemSelector, itemCount) {
         const link = 'https://scrolller.com' + element.querySelector('a').getAttribute('href');
         const thumb = element.querySelector('img').getAttribute('src');
         const video = !! element.querySelector('[data-test-id="media-component-video"]') ;
-        return { link, thumb, video, extractor :'scrolller' };
+        const subreddit = element.querySelector('.item-panel__text-title:nth-child(2)').getAttribute('href');
+        return { link, thumb, video, subreddit, extractor :'scrolller' };
       });
     });
 

@@ -23,7 +23,7 @@ function setupWebSocketServer(server) {
 
             const dataString = message.toString('utf8'); // Convert the Buffer to a UTF-8 string
             const { type, id } = JSON.parse(dataString); // Parse the string as JSON
-    
+
             if (type === 'openai_stream') {
                 try {
                     const record = await global.db.collection('openai').findOne({ _id: new ObjectId(id) });
@@ -87,6 +87,7 @@ function setupWebSocketServer(server) {
                     ws.send(JSON.stringify({ error: "Internal server error" }));
                 }
             }
+
         });
 
         ws.send('Hello from WebSocket server!');
