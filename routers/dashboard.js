@@ -293,7 +293,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
       }
     }
 
-    let medias = await findDataInMedias(req.user._id, query_obj);
+    let medias = await findDataInMedias(req.user._id, page, query_obj);
     console.log(`Found ${medias.length} element(s).`)
     let medias2 = []
     if(mode == 'actresses'){
@@ -387,7 +387,7 @@ router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (r
 
   try{
 
-    const medias = await findDataInMedias(userId, {
+    const medias = await findDataInMedias(userId, false, {
       mode: mode,
       nsfw: nsfw,
       hide_query: { $exists: false },

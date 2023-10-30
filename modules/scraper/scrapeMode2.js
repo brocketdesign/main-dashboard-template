@@ -36,15 +36,15 @@ async function scrapeMode2(url, mode, nsfw, page, filter = 'images') {
 
 const scrapeScrolller = (subreddit, mode, nsfw, page) => {
   return new Promise(async (resolve, reject) => {
+    const url = subreddit.indexOf('http') >= 0 ? subreddit : `https://scrolller.com${subreddit}/`;
+
+    // Launch Puppeteer browser
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+    });
+
     try {
-      const url = subreddit.indexOf('http') >= 0 ? subreddit : `https://scrolller.com${subreddit}/`;
-
-      // Launch Puppeteer browser
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
-      });
-
       // Create a new page
       const defaultPage = await browser.newPage();
 
@@ -78,8 +78,8 @@ const scrapeScrolller = (subreddit, mode, nsfw, page) => {
   });
 }
 async function scrapeReddit(url, mode, nsfw, page, filter = 'images') {
-  if (!url) return false;
-
+  if (!url) return [];
+  if(url.includes('discover')){return []}
   const subreddit = url;
   const collection = global.db.collection('medias');
   const today = new Date().setHours(0, 0, 0, 0);
@@ -127,9 +127,15 @@ async function scrapeReddit(url, mode, nsfw, page, filter = 'images') {
 async function scrollAndScrape(page, itemSelector, itemCount) {
   const scrapedData = [];
   const uniqueItems = new Set(); // Using a Set to automatically avoid duplicate objects
-
+  let ct = 0
   while (scrapedData.length < itemCount) {
-    // Scroll the page down by one viewport height
+
+  // Get the current scroll position
+
+  const currentScrollPosition = await page.evaluate(() => {
+    return window.scrollY;
+  });
+      // Scroll the page down by one viewport height
     await page.evaluate(() => {
       window.scrollBy(0, window.innerHeight);
     });
@@ -153,6 +159,23 @@ async function scrollAndScrape(page, itemSelector, itemCount) {
         scrapedData.push(item);
       }
     });
+
+    // Get the new scroll position after scrolling
+    const newScrollPosition = await page.evaluate(() => {
+      return window.scrollY;
+    });
+    // Check if the scroll position hasn't changed, indicating that you've reached the bottom
+    if (newScrollPosition === currentScrollPosition) {
+      // Add your logic here for what to do when you've reached the bottom
+      if(scrapedData.length == 0 && ct>=10){
+        console.log("Reached the bottom of the page and nothing founded. Waiting ...");
+        break; // Exit the loop if you've reached the bottom
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      ct ++
+      
+    }
+
   }
   return scrapedData; // Return the collected data
 }

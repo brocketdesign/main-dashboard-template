@@ -18,11 +18,10 @@ async function ManageScraper(url, nsfw, mode, user, page) {
 
   let userInfo = await findAndUpdateUser(userId);
 
-  scrapedData = await findDataInMedias(userId, {
+  scrapedData = await findDataInMedias(userId, parseInt(page), {
     query:url,
     mode: mode,
     nsfw: nsfw,
-    page:parseInt(page),
     hide_query: { $exists: false },
     hide: { $exists: false },
     favoriteCountry:userInfo.favoriteCountry
@@ -48,7 +47,6 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     categories:categories,
     favoriteCountry:userInfo.favoriteCountry
   })); 
-
 
 
 if (scrapedData && scrapedData.length > 0) {
@@ -78,11 +76,10 @@ if (scrapedData && scrapedData.length > 0) {
   updateUserScrapInfo(user,url,page)
   
 
-  scrapedData = await findDataInMedias(userId, {
+  scrapedData = await findDataInMedias(userId, parseInt(page), {
     query:url,
     mode: mode,
     nsfw: nsfw,
-    page:parseInt(page),
     hide_query: { $exists: false },
     hide: { $exists: false },
     favoriteCountry:userInfo.favoriteCountry

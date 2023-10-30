@@ -1,62 +1,58 @@
 extends dashboard
 
 block dynamicContent
-  if scrapedData.length > 0 || medias2.length > 0
+  if (scrapedData && scrapedData.length > 0 )|| (medias2 && medias2.length > 0)
     .masonry-container.row.custom-carousel-container
       each data in scrapedData
         if data._id
           - displayscr = (mode == 3 )? 'displaysrc':''
           .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode,data-extractor=data.extractor, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
             .card.info-container(class=`card-clickable-${mode} ${displayscr}`, style="cursor:pointer", data-id=data._id, data-title=data.title)
-
-              .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                  if data.link && data.link.includes('redgif')
-                    button.iframe-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
-                      i.fas.fa-play
-                  else
-                    if mode == '1' || (data.link && data.link.includes('scrolller') && data.video)
-                      button.play-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'')
+              .card-top.position-relative
+                .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
+                    if data.link && data.link.includes('redgif')
+                      button.iframe-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
                         i.fas.fa-play
+                    else
+                      if mode == '1' || (data.link && data.link.includes('scrolller') && data.video)
+                        button.play-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'')
+                          i.fas.fa-play
+                                      
 
-              .card-top.py-2.px-3.position-absolute.hover(style="display:none;top:25%;bottom:25%;")
-                .d-flex.justify-content-center.flex-column(style="height:100%")
-                    button.delete-button.btn.btn-dark.border.border-white.my-1(type="button", data-id=data._id)
+                if mode == 2
+                  - favsrc = data.filePath && data.filePath.includes('.mp4') ? false : data.filePath
+                  if data.link.includes('redgif') || data.link.includes('scrolller')
+                      img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", src=favsrc || data.thumb , alt=data.title )
+                  else 
+                    img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=favsrc || data.link, alt=data.title )
+                else
+                  if data.webm 
+                    if !isSafari && false
+                      - favsrc = data.filePath && data.filePath.includes('.webm') ? data.filePath : data.webm
+                      video.webm(src=favsrc controls loop)
+                    else
+                      img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", data-src=data.url , alt=data.title)
+                  else
+                    img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=data.imageUrl || data.filePath, alt=data.title )
+
+              .card-title.bg-white.border-white.border.p-3
+                .d-flex.justify-content-start.flex-row(style="height:100%")
+                    button.delete-button.btn.btn-white.border.border-0.my-1.shadow-0(type="button", data-id=data._id)
                         i.fas.fa-trash-alt
                     if !fav
                       if data.link && data.link.includes('redgif')
-                        button.iframe-button.fav.btn.btn-dark.shadow.border.border-white.my-1(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
+                        button.iframe-button.fav.btn.btn-white.shadow-0.border.border-0.my-1(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
                           i.fas.fa-heart
                       else
-                        button.download-button.btn.btn-dark.shadow.border.border-white.my-1(type="button", class=data.isdl?'done':'')
+                        button.download-button.btn.btn-white.shadow-0.border.border-0.my-1(type="button", class=data.isdl?'done':'')
                           i.fas.fa-heart
-                    a.source.btn.btn-dark.border.border-white.my-1(target="_blank", href=data.source||data.link||data.webm||data.url)
+                    a.source.btn.btn-white.border.border-0.my-1.shadow-0(target="_blank", href=data.source||data.link||data.webm||data.url)
                       i.fas.fa-link
                     if mode == 2 && data.extractor == 'scrolller'
-                      a.source.btn.btn-dark.border.border-white.my-1(href=`/dashboard/app/${mode}?page=${parseInt(page)}&searchTerm=${data.link}/discover`)
+                      a.source.btn.btn-white.border.border-0.my-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.link}/discover`)
                         i.fas.fa-plus-square     
-                      a.source.btn.btn-dark.border.border-white.my-1(href=`/dashboard/app/${mode}?page=${parseInt(page)}&searchTerm=${data.subreddit}`)
-                        i.fas.fa-plus-square
-                                        
-
-              if mode == 2
-                - favsrc = data.filePath && data.filePath.includes('.mp4') ? false : data.filePath
-                if data.link.includes('redgif') || data.link.includes('scrolller')
-                    img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", src=favsrc || data.thumb , alt=data.title )
-                else 
-                  img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=favsrc || data.link, alt=data.title )
-              else
-                if data.webm 
-                  if !isSafari && false
-                    - favsrc = data.filePath && data.filePath.includes('.webm') ? data.filePath : data.webm
-                    video.webm(src=favsrc controls loop)
-                  else
-                    img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", data-src=data.url , alt=data.title)
-                else
-                  img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=data.imageUrl || data.filePath, alt=data.title )
-
-              p.card-title.border-white.border.p-3.d-none
-                span=data.subreddit
-                span=data.title 
+                a(href=`/dashboard/app/${mode}?searchTerm=${data.subreddit}`)=data.subreddit
+                p=data.title 
 
       if medias2 && medias2.length > 0 && mode == 'actresses'
         .card.bg-transparent.shadow-0

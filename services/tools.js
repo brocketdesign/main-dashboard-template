@@ -121,7 +121,7 @@ async function fetchMediaUrls(url) {
   return images;
 }
 
-async function findDataInMedias(userId, query, categoryId = null) {
+async function findDataInMedias(userId, page, query, categoryId = null) {
 
   // Modify the query to include checking for userId in the userIDs array
   query.userId = userId;
@@ -130,11 +130,25 @@ async function findDataInMedias(userId, query, categoryId = null) {
   if (categoryId !== null) {
     query.categoryId = categoryId;
   }
+  const mediasColelction = global.db.collection('medias');
+  if(!page){
+    const medias = await mediasColelction.find(query).toArray();
 
-  // Find the medias that match the query
-  const medias = await global.db.collection('medias').find(query).toArray();
+    return medias;
+  }else{
+    page_number = parseInt(page) || 1;
+    const limit = 60; // Number of documents per page
+    const skip = (page_number - 1) * limit; // Calculate skip value
 
-  return medias;
+    // Find the medias that match the query
+    const medias = await mediasColelction.find(query)
+    .skip(skip) // Skip N documents
+    .limit(limit) // Limit to N documents
+    .toArray();
+  
+    return medias;
+  }
+
 }
 
 

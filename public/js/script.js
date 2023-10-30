@@ -855,19 +855,25 @@ const handleCOmpare = () => {
  
 const handleHiding = (videoId) => {
     let $container = $(`.card[data-id=${videoId}]`)
-    $.ajax({
-        url: '/api/hide',
-        method: 'POST',
-        data: { element_id: videoId },
-        success: function(response) {
-            $container.remove()
-            updateMasonryLayout()
-            handleFormResult(true,response.message)
-            // Handle the success response
-            console.log(response);
-            },
-        error: handleFormError
-    });
+
+    const confirmation = confirm("Are you sure you want to delete this item? This action cannot be undone.");
+
+    if (confirmation) {
+        $.ajax({
+            url: '/api/hide',
+            method: 'POST',
+            data: { element_id: videoId },
+            success: function(response) {
+                $container.remove()
+                updateMasonryLayout()
+                handleFormResult(true,response.message)
+                // Handle the success response
+                console.log(response);
+                },
+            error: handleFormError
+        });
+    }
+
 
 }
 
