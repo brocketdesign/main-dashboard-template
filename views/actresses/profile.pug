@@ -26,6 +26,7 @@ block dynamicContent
                                 .card-image-top     
                                     img(data-id=item._id src=item.thumbnail_filePath style="height: 202px; display: block; object-fit: cover; width: 100%;")
                                     video(data-id=item._id style="display: none; height: 202px; object-fit: cover; width: 100%;" loop="true" src=item.preview_filePath )
+                                    .iframe-container(data-id=item._id data-link=item.link)
                                 .card-body 
                                     .title(style="overflow: hidden;text-overflow: ellipsis;white-space: nowrap;")=item.title
                                     .duration.badge.bg-light.text-dark(style="position: absolute;top: 20px;right: 10px;opacity: 0.7;")=item.duration

@@ -47,7 +47,6 @@ async function searchPorn(query, mode, nsfw, url, page) {
     extractor:"pornhub",
     video_id: generateRandomID(8)
   }));
-  console.log(scrapedData)
   return scrapedData
 }
 
@@ -184,6 +183,7 @@ async function scrapeMode3(url, mode, nsfw, page, user) {
     const data1 = await searchPorn(query, mode, nsfw, url, page);
     const data2 = await searchImage(query, page);
     const data = data1.concat(data1,data2)
+
     return data;
   } catch (error) {
     console.log('Error occurred while scraping and saving data:', error);

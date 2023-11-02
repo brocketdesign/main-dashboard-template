@@ -7,7 +7,7 @@ block dynamicContent
         if data._id
           - displayscr = (mode == 3 )? 'displaysrc':''
           .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode,data-extractor=data.extractor, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
-            .card.info-container(class=`card-clickable-${mode} ${displayscr}`, style="cursor:pointer", data-id=data._id, data-title=data.title)
+            .card.info-container(class=`card-clickable-${mode} ${displayscr}`, style="cursor:pointer", data-id=data._id, data-title=data.title, data-link=data.link)
               .card-top.position-relative
                 .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
                     if data.link && data.link.includes('redgif')
@@ -70,7 +70,7 @@ block dynamicContent
                               i.fas.fa-link
   else
     p ここには何もありません！
-  if scrapedData.length > 0 && !fav
+  if scrapedData && scrapedData.length > 0 && !fav
     .d-flex.justify-content-center.w-100.p-3
       a.btn.btn-dark.border(type="button",class=page<=1?'d-none':'', href=`/dashboard/app/${mode}?page=${page>1?page-1:''}&searchTerm=${searchTerm}&nsfw=${user.nsfw}`)        
         i.fas.fa-angle-left.me-3

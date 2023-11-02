@@ -130,10 +130,10 @@ async function findDataInMedias(userId, page, query, categoryId = null) {
   if (categoryId !== null) {
     query.categoryId = categoryId;
   }
+
   const mediasColelction = global.db.collection('medias');
   if(!page){
     const medias = await mediasColelction.find(query).toArray();
-
     return medias;
   }else{
     page_number = parseInt(page) || 1;

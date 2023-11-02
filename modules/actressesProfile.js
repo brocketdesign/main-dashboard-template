@@ -10,6 +10,7 @@ const actressesProfile = async (actressID,page_number = 1) => {
   const actressProfileCollection = global.db.collection('actresses_profile');
   const actressInfo = await actressCollection.findOne({_id:new ObjectId(actressID)})
   const actressData = await actressProfileCollection.find({actressID,page_number}).toArray()
+
   if(actressData.length>0){
     return actressData
   }
@@ -28,23 +29,9 @@ const actressesProfile = async (actressID,page_number = 1) => {
   console.log("Navigating to blog page...");
   await page.goto(`https://missav.com/dm237/ja/actresses/${actressInfo.name}?page=${page_number}`);
 
-  let actressInfoData = await page.evaluate(() => {
-    try {
-        let data = {}
-          const paragraphs = Array.from(document.querySelectorAll('.mt-2.text-sm p'));
-  
-          data.height = paragraphs[0] ? paragraphs[0].textContent.split('/')[0].replace('cm','').trim() : false;;
-          data.bust = paragraphs[0] ? paragraphs[0].textContent.split('/')[1].split('-')[0].trim() : false;;
-          data.birth = paragraphs[1] ? paragraphs[1].textContent.split('(')[0].trim() : false;;
-          data.age = paragraphs[1] ? paragraphs[1].textContent.split('(')[1].replace(')','').trim() : false;;
-  
-      return data;
-    } catch (error) {
-      console.log(error)
-    }
-  });
-  if(actressInfoData){
-    await actressCollection.updateOne({_id:new ObjectId(actressID)},{ $set:actressInfoData })
+  const actressInfoScrap = await actressInfoData(page)
+  if(actressInfoScrap){
+    await actressCollection.updateOne({_id:new ObjectId(actressID)},{ $set:actressInfoScrap })
   }
   let scrapedData = await page.evaluate((actressID,page_number) => {
     const items = Array.from(document.querySelectorAll('.thumbnail.group'));
@@ -96,7 +83,56 @@ const actressesProfile = async (actressID,page_number = 1) => {
     }
     return scrapedData
 };
+const getActressInfoData = async (actressID,page_number = 1) => {
+  const actressCollection = global.db.collection('actresses');
+  const actressInfo = await actressCollection.findOne({_id:new ObjectId(actressID)})
+  if(actressInfo.height){
+    return actressInfo
+  }
+  console.log("Launching Puppeteer...");
+  
+  // Initialize a new Puppeteer browser instance
+  const browser = await puppeteer.launch({
+    headless:false
+  });
+  
+  // Create a new page in the browser
+  const page = await browser.newPage();
+  
+  // Navigate to the blog page you want to scrape
+  console.log("Navigating to blog page...");
+  await page.goto(`https://missav.com/dm237/ja/actresses/${actressInfo.name}?page=${page_number}`);
 
+  const actressInfoScrap = await actressInfoData(page)
+
+  if(actressInfoScrap){
+    await actressCollection.updateOne({_id:new ObjectId(actressID)},{ $set:actressInfoScrap })
+  }
+
+  console.log("Closing Puppeteer...");
+  // Close the browser
+  await browser.close();
+
+  return await actressCollection.findOne({_id:new ObjectId(actressID)})
+}
+
+async function actressInfoData(page){
+  return await page.evaluate(() => {
+    try {
+        let data = {}
+          const paragraphs = Array.from(document.querySelectorAll('.mt-2.text-sm p'));
+  
+          data.height = paragraphs[0] ? paragraphs[0].textContent.split('/')[0].replace('cm','').trim() : false;;
+          data.bust = paragraphs[0] ? paragraphs[0].textContent.split('/')[1].split('-')[0].trim() : false;;
+          data.birth = paragraphs[1] ? paragraphs[1].textContent.split('(')[0].trim() : false;;
+          data.age = paragraphs[1] ? paragraphs[1].textContent.split('(')[1].replace(')','').trim() : false;;
+  
+      return data;
+    } catch (error) {
+      console.log(error)
+    }
+  });
+}
 async function downloadPicture (actressInfo,scrapedData,uniqueID)  {
   const dirPath = path.join(__dirname,  '..', 'public','downloads', 'actresses', actressInfo.name);
 
@@ -189,4 +225,4 @@ function generateRandomID() {
 }
 
 // Export the function for use in other modules
-module.exports = { actressesProfile };
+module.exports = { actressesProfile , getActressInfoData};

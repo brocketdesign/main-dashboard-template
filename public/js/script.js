@@ -2307,7 +2307,8 @@ function downloadVideo(itemID, actressName) {
         itemID: itemID,
         actressName: actressName
     };
-
+    //handleIframeActress(itemID)
+    
     // Make the AJAX POST request
     $.ajax({
         url: 'http://192.168.10.115:3100/api/downloadVideoSegments', // API endpoint
@@ -2423,4 +2424,12 @@ async function streamVideo(itemID, actressName) {
     $(`#${itemID}`).addClass('streaming done');
 
     console.log(`Started streaming video for itemID: ${itemID}, actressName: ${actressName}`);
+}
+
+function handleIframeActress(itemID){
+    const element = $(`.iframe-container[data-id="${itemID}"]`);
+    const iframURL = element.attr('data-link')
+    console.log({iframURL})
+    const iframeHTML = `<iframe src="${iframURL}" width="600" height="400"></iframe>`
+    element.append(iframeHTML)
 }

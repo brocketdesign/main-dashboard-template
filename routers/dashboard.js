@@ -215,9 +215,9 @@ async function filterData(coll,query){
 router.get('/app/actresses/profile/:actressID', ensureAuthenticated, ensureMembership, async (req, res) => {
     const page = parseInt(req.query.page) || 1
   try {
+    const { actressesProfile, getActressInfoData } = require('../modules/actressesProfile');
     const actressID = req.params.actressID
-    const actress_info = await global.db.collection('actresses').findOne({_id:new ObjectId(actressID)});
-    const { actressesProfile } = require('../modules/actressesProfile');
+    const actress_info = await getActressInfoData(actressID)
     const actressData = await actressesProfile(actressID,page)
     res.render('actresses/profile', { user: req.user, actress_info,actressData, page, mode: 'profile'});
   } catch (err) {
