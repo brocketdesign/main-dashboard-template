@@ -22,11 +22,14 @@ block dynamicContent
                       button.delete-button-history.btn.btn-dark.border-white.border.hover.shadow(type="button", style="display:none")
                           i.fas.fa-trash-alt
                 .card-body.row.p-0.rounded
-                  each item in data[query]
-                    if item.link && item.link.includes('redgif')
-                      img.col-6.p-0(style="width:50%;height:100px;object-fit:cover", data-id=item.video_id, src=item.thumb ,  alt=item.title)
+                  each item,index in data[query]
+                    if (mode == 4) && index > 0
+                      break
                     else
-                      img.col-6.p-0(style="width:50%;height:100px;object-fit:cover", data-id=item.video_id, src=item.url || item.imageUrl || item.thumb || item.link ,  alt=item.title)
+                      if item.link && item.link.includes('redgif')
+                        img.col-6.p-0(style="width:50%;height:100px;object-fit:cover", data-id=item.video_id, src=item.thumb ,  alt=item.title)
+                      else
+                        img.col-6.p-0(style="width:50%;height:100px;object-fit:cover", data-id=item.video_id, src=item.url || item.imageUrl || item.thumb || item.link ,  alt=item.title)
                   .text-dark.px-4.py-2.fw-bold
                     span=data[query][0].query
       else

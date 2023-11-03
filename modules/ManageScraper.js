@@ -25,7 +25,7 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     nsfw: nsfw,
     hide_query: { $exists: false },
     hide: { $exists: false },
-    favoriteCountry:userInfo.favoriteCountry
+    favoriteCountry: { $in: [userInfo.favoriteCountry] }
   });
 
   console.log(`Found ${scrapedData.length} items in the medias collection`)
@@ -47,12 +47,11 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     page:parseInt(page),
     userId: userId,
     categories:categories,
-    favoriteCountry:userInfo.favoriteCountry
+    favoriteCountry: userInfo.favoriteCountry
   })); 
-
+  
   insertInDB(scrapedData)
   updateUserScrapInfo(user,url,page)
-  
 
   scrapedData = await findDataInMedias(userId, parseInt(page), {
     query:url,
@@ -60,15 +59,15 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     nsfw: nsfw,
     hide_query: { $exists: false },
     hide: { $exists: false },
-    favoriteCountry:userInfo.favoriteCountry
+    favoriteCountry: { $in: [userInfo.favoriteCountry] }
   });
 
   console.log(`Found ${scrapedData.length} items in the medias collection`)
   return scrapedData;
 }
 
-async function updateOrInsert(criteria, item) {
-  const updateResult = await global.db.collection('medias').updateOne(criteria, { $set: item }, { upsert: true });
+async function updateOrInsert(criteria, updateQuery) {
+  const updateResult = await global.db.collection('medias').updateOne(criteria, updateQuery, { upsert: true });
   return updateResult.matchedCount > 0 || updateResult.upsertedCount > 0;
 }
 
@@ -79,17 +78,23 @@ async function insertInDB(scrapedData) {
 
     for (const itemWithId of scrapedData) {
       const item = _.omit(itemWithId, ['_id']);
+      const query2 = {$addToSet: { favoriteCountry: item.favoriteCountry }}
+      delete item.favoriteCountry
+      const query1 = {$set:item}
       
       if (item.source) {
-        promises.push(updateOrInsert({ 'source': item.source }, item));
+        promises.push(updateOrInsert({ 'source': item.source }, query1));
+        promises.push(updateOrInsert({ 'source': item.source }, query2));
       }
 
       if (item.url) {
-        promises.push(updateOrInsert({ 'url': item.url }, item));
+        promises.push(updateOrInsert({ 'url': item.url }, query1));
+        promises.push(updateOrInsert({ 'url': item.url }, query2));
       }
 
       if (item.link) {
-        promises.push(updateOrInsert({ 'link': item.link }, item));
+        promises.push(updateOrInsert({ 'link': item.link }, query1));
+        promises.push(updateOrInsert({ 'link': item.link }, query2));
       }
     }
 

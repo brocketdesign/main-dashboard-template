@@ -408,7 +408,7 @@ const handleCardClickable = () => {
       $thisCard.addClass('done');
       // Check if the spinner is already present, if not, create and append it to the card
       if (!$thisCard.find('.spinner-border .for-strm').length) {
-          var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute bg-dark').css({inset:"0px", margin:"auto"}).attr('role', 'status');
+          var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute').css({inset:"0px", margin:"auto"}).attr('role', 'status');
           var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
           $spinner.append($span);
           $thisCard.find('.card-body-over').append($spinner);
@@ -2099,7 +2099,7 @@ function handleIframe(){
 function generateSpinnerCard($thisCard){
     // Check if the spinner is already present, if not, create and append it to the card
     if (!$thisCard.find('.spinner-border').length) {
-        var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute bg-dark').css({inset:"0px", margin:"auto"}).attr('role', 'status');
+        var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute').css({inset:"0px", margin:"auto"}).attr('role', 'status');
         var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
         $spinner.append($span);
         $thisCard.find('.card-body-over').append($spinner);
