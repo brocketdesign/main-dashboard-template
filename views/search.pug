@@ -18,7 +18,7 @@ block dynamicContent
                         button.play-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'')
                           i.fas.fa-play
                                       
-
+                .video-container(data-id=data._id)
                 if mode == 2
                   - favsrc = data.filePath && data.filePath.includes('.mp4') ? false : data.filePath
                   if data.link.includes('redgif') || data.link.includes('scrolller')
@@ -52,7 +52,8 @@ block dynamicContent
                       a.source.btn.btn-white.border.border-0.my-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.link}/discover`)
                         i.fas.fa-plus-square     
                 a(href=`/dashboard/app/${mode}?searchTerm=${data.subreddit}`)=data.subreddit
-                p=data.title 
+                if data.title
+                  p=data.title 
 
       if medias2 && medias2.length > 0 && mode == 'actresses'
         .card.bg-transparent.shadow-0

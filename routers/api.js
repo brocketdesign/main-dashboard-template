@@ -640,7 +640,13 @@ router.get('/video', async (req, res) => {
     return res.status(500).json({ error: 'An error occurred while processing the request.' });
   }
 });
+router.post('/resetDownloadStatus', async (req, res) => {
+  const { itemId } = req.body
+  const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(itemId)})
+  updateSameElements(foundElement,{isdl_data:new Date(),filePath:null})
+  res.status(200).json({ message: 'Retry download item' });
 
+})
 const ytdl = require('ytdl-core');
 const ffmpeg = require('fluent-ffmpeg');
 

@@ -418,49 +418,55 @@ const handleCardClickable = () => {
         $thisCard.find('.card-body-over').show();
       var $spinner = $thisCard.find('.spinner-border');
       $spinner.show();
+      handleDownloadVideo(id)
+  });
+}
+function handleDownloadVideo(id){
+    const $thisCard = $(`.card.info-container[data-id="${id}"]`)
+    const $spinner = $thisCard.find('.spinner-border');
+    const isdl = $thisCard.data('isdl');
 
-      // Make a request to the server to get the highest quality video URL for the given ID
-      $.get('/api/video?videoId='+id, function(response) {
-          console.log('API Response:', response);
+    // Make a request to the server to get the highest quality video URL for the given ID
+    $.get('/api/video?videoId='+id, function(response) {
+        console.log('API Response:', response);
 
         // Hide the spinner
 
         $spinner.hide();
         $thisCard.find('.card-body-over').remove()
-          // Assuming the response from the API is a JSON object with a 'url' property
-          if (response && response.url) {
-            displayMedia(response.url,id)
-            //$thisCard.prepend($video);
-            $('#video-holder').html('')
-            $('#video-holder').data('id',id)
-        
+            // Assuming the response from the API is a JSON object with a 'url' property
+            if (response && response.url) {
+                displayMedia(response.url,id)
+                //$thisCard.prepend($video);
+                $('#video-holder').html('')
+                $('#video-holder').data('id',id)
 
-            if (isdl==false && response.url.includes('http')) {
-                // Add the download button
-                var $downloadButton = $thisCard.find('.download-button')
-                $downloadButton.show()
-                console.log('Download button added to card body.');
-            }
+                if (isdl==false && response.url.includes('http')) {
+                    // Add the download button
+                    var $downloadButton = $thisCard.find('.download-button')
+                    $downloadButton.show()
+                    console.log('Download button added to card body.');
+                }
                 
-          } else {
-              // If the response does not contain a URL, show an error message or handle it as needed
-              console.error('Error: Video URL not available.');
+            } else {
+                // If the response does not contain a URL, show an error message or handle it as needed
+                console.error('Error: Video URL not available.');
 
-              $thisCard.find('.card-body-over').hide();
-              // Hide the spinner if there's an error
-              $spinner.hide();
-          }
-      });
-  });
-}
+                $thisCard.find('.card-body-over').hide();
+                // Hide the spinner if there's an error
+                $spinner.hide();
+            }
+        });
+  }
 function displayMedia(url,id){
+    console.log('displayMedia',{url,id})
     $thisCard = $(`.card.info-container[data-id=${id}]`)
 
     if($thisCard.find('img.card-img-top').attr('src').includes('.gif') || url.includes('.jpg')){
         return
     }
-
-    if((url.includes('.mp4') || url.includes('.webm')) && $thisCard.find('video').length == 0 && !$thisCard.find('img.card-img-top').attr('src').includes('.gif')){
+    console.log('checkUrlandCardStatus',checkUrlandCardStatus($thisCard,url))
+    if(checkUrlandCardStatus($thisCard,url)){
         
         $thisCard.find('.card-body-over').remove()
         var $video = $('<video>').attr({
@@ -472,15 +478,31 @@ function displayMedia(url,id){
             loop:true
         }).on('loadeddata', function() {
           updateMasonryLayout()
-      });
-      $thisCard.find(`img.card-img-top`).before($video)
-      $thisCard.find(`img.card-img-top`).hide()
-      $thisCard.find(`.play-button`).hide()
-      return
+        }).on('error',function(){
+            console.log('Error loading the video')
+            resetDownloadStatus(id,function(){
+                handleDownloadVideo(id)
+            })
+        });
+        $thisCard.find(`.video-container video`).remove()
+        $thisCard.find(`.video-container`).append($video)
+        $thisCard.find(`img.card-img-top`).hide()
+        $thisCard.find(`.play-button`).hide()
+        return
     }
     
     $thisCard.find(`img.card-img-top`).attr('src',url)
     $thisCard.find(`.play-button`).hide()
+}
+function checkUrlandCardStatus($thisCard,url){
+    return (url.includes('.mp4') || url.includes('.webm')) && !$thisCard.find('img.card-img-top').attr('src').includes('.gif')
+}
+function resetDownloadStatus(itemId,callback){
+    $.post('/api/resetDownloadStatus',{itemId},function(){
+        if(callback){
+            callback()
+        }
+    })
 }
 // jQuery function to make a GET request to '/api/downloading'
 function getDownloadData() {

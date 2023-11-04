@@ -89,6 +89,8 @@ async function searchVideoScroller(videoDocument, user) {
 }
 
 async function searchVideoUrlAPI(videoDocument,user){
+  //noot working anymore
+  return false
   return await getJSON(`https://appsdev.cyou/xv-ph-rt/api/?site_id=xvideos&video_id=${videoDocument.video_id}`,user)
 }
 const getJSON = async (url,user) => {
@@ -110,6 +112,7 @@ const getJSON = async (url,user) => {
 async function searchVideoUrl( videoDocument, user) {
 
   videoURL = videoDocument.link
+
   if(!videoDocument.link.includes('http')){
     videoURL = `${process.env.DEFAULT_URL}${videoDocument.link}`;
   }
