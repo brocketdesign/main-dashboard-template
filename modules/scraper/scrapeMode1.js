@@ -33,64 +33,21 @@ const searchYoutube = async (query, url, mode, nsfw, page) => {
   return result;
 }
 
-const scrapeWebsite = (query, mode, nsfw, url, pageNum, user) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      if(url){
-        url = url.includes('http') ? url : `${process.env.DEFAULT_URL}/s/${url}/${pageNum}/?o=all`;
-      }else{
-        url = process.env.DEFAULT_URL;
-      }
+async function scrapeWebsiteFromOtherServer(query, mode, nsfw, url, pageNum, user) {
+  try {
+    const userId = user._id
+    // Make a POST request to the download server
+    const response = await axios.post('http://192.168.10.115:3100/api/getVideoFromSB', {
+      query, mode, nsfw, url, pageNum, userId
+    });
+    // You might want to return something here, depending on your use case
 
-      const browser = await puppeteer.launch({
-        headless: false,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
-      });
-
-      const page = await browser.newPage();
-
-      // get the cookie value from the page's cookies object
-      const cookies = await page.cookies();
-      const coeCookie = cookies.find((cookie) => cookie.name === 'coe');
-      
-      // set the cookie with the updated value
-      
-      await page.setCookie({
-        name: 'coe',
-        value: user.favoriteCountry || process.env.COUNTRY,
-        domain: '.spankbang.com' // specify the domain where the cookie should be set
-      });
-      
-      await page.goto(url, { waitUntil: 'networkidle2' });
-      
-
-      const scrapedData = await page.evaluate((url, query, mode, nsfw) => {
-        const items = Array.from(document.querySelectorAll('#container .video-list .video-item'));
-        const data = items.map(item => {
-          try {
-            const thumb = item.querySelector('.thumb');
-            const coverImg = thumb.querySelector('picture img.cover');
-            const link = 'https://spankbang.com'+thumb.getAttribute('href');
-            const video_id = item.getAttribute("data-id");
-            const imageUrl = coverImg ? coverImg.getAttribute('data-src') : '';
-            const alt = coverImg ? coverImg.getAttribute('alt') : '';
-            const currentPage = url;
-  
-            return { video_id, imageUrl, alt, link ,currentPage, query, mode, nsfw, extractor:'spankbang' };
-          } catch (error) {
-            console.log(error)
-          }
-        });
-        return data;
-      }, url, query, mode, nsfw);
-
-      await browser.close();
-
-      resolve(scrapedData);
-    } catch (error) {
-      reject(error);
-    }
-  });
+    return response.data.result;
+  } catch (error) {
+    // Log the error if the request fails
+    console.error('Error connecting to the download server:');
+    //throw error; // Optionally throw the error to be handled by the caller
+  }
 }
 
 const scrapeWebsite1 = (query, mode, nsfw, url, pageNum) => {
@@ -99,7 +56,7 @@ const scrapeWebsite1 = (query, mode, nsfw, url, pageNum) => {
       if(url){
         url = url.includes('http') ? url : `https://www.xvideos.com/?k=${url}&sort=relevance&quality=hd&p=${pageNum}`;
       }else{
-        url = process.env.DEFAULT_URL;
+        url = 'https://spankbang.com';
       }
 
       const browser = await puppeteer.launch({
@@ -194,8 +151,8 @@ async function scrapeMode1(url, mode, nsfw, page, user) {
     console.log('Operating a NSFW search');
 
     const [result1, result2] = await Promise.all([
-      scrapeWebsite(query, mode, nsfw, url, page, user),
-      scrapeWebsite1(query, mode, nsfw, url, page),
+      scrapeWebsiteFromOtherServer(query, mode, nsfw, url, page, user),
+      //scrapeWebsite1(query, mode, nsfw, url, page),
       //scrapeWebsite2(query, mode, nsfw, url, page)
     ]);
     

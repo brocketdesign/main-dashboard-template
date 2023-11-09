@@ -29,7 +29,6 @@ const ManageScraper = require('../modules/ManageScraper');
 // Route for handling '/dashboard/'
 router.get('/', ensureAuthenticated,ensureMembership, async (req, res) => {
   const userId = req.user._id;
-
   const latestNews = await global.db.collection('latestNews').find().limit(2).toArray();
 
   // Fetch all book IDs associated with the user
@@ -254,7 +253,6 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
         console.log(error)
       }
       res.render(`search`, { user: req.user, result:true, isSafari:isSafari(userAgent), searchTerm, scrapedData, scrapInfo, mode, page, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
-    
   } catch (error) {
     console.error('An error occurred:', error);
     res.status(500).send('An error occurred while scraping.');
@@ -281,14 +279,14 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
       },
       mode:mode,
       nsfw:nsfw,
-      isdl:true,
+      fav_user_list:req.user._id,
       hide: { $exists: false },
     }
     if(!searchTerm){
       query_obj = {
         mode:mode,
         nsfw:nsfw,
-        isdl:true,
+        fav_user_list:req.user._id,
         hide: { $exists: false },
       }
     }
@@ -396,6 +394,7 @@ router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (r
     //const userOpenAi = await mapArrayOpenai(req.user)
     const categories = await global.db.collection('category').find({nsfw}).toArray()
     
+    console.log(`Dashboard userId is : ${req.user._id}`)
     res.render('history', { user: req.user, data, categories, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
 
   } catch (error) {

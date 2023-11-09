@@ -427,7 +427,7 @@ function handleDownloadVideo(id){
     const isdl = $thisCard.data('isdl');
 
     // Make a request to the server to get the highest quality video URL for the given ID
-    $.get('/api/video?videoId='+id, function(response) {
+    $.get('http://192.168.10.115:3100/api/video?videoId='+id, function(response) {
         console.log('API Response:', response);
 
         // Hide the spinner
@@ -475,17 +475,22 @@ function displayMedia(url,id){
             width:"100%",
             controls: true,
             playsinline: true,
-            loop:true
+            loop:true,
+            muted:true,
+            volume: 0
         }).on('loadeddata', function() {
           updateMasonryLayout()
+          $thisCard.find('.video-container').addClass('loaded')
         }).on('error',function(){
             console.log('Error loading the video')
             resetDownloadStatus(id,function(){
                 handleDownloadVideo(id)
             })
         });
-        $thisCard.find(`.video-container video`).remove()
-        $thisCard.find(`.video-container`).append($video)
+        if(!$thisCard.find('.video-container').hasClass('loaded')){
+            $thisCard.find(`.video-container video`).remove()
+            $thisCard.find(`.video-container`).append($video)
+        }
         $thisCard.find(`img.card-img-top`).hide()
         $thisCard.find(`.play-button`).hide()
         return
@@ -579,7 +584,9 @@ const handleDownloadButton = () => {
       // Show the spinner while the download is in progress
       var $spinner = $(this).find('.spinner-border');
       $spinner.show();
+      $.post('/api/addtofav',{ video_id: id ,},function(response){
 
+      })
       // Make a request to download the video
       $.post('http://192.168.10.115:3100/api/dl', { video_id: id ,title}, function(response) {
         console.log('Download API Response:', response);
@@ -997,27 +1004,36 @@ function updategridlayout(value) {
         const $buttonContainer = $(this)
         const $spinner = showSpinner($buttonContainer,'loadmore')
 
-        sendSearchForm(data,function(){
-            $spinner.hide();
-            $buttonContainer.find('i').show();
-        })
+        
+        if(!$buttonContainer.hasClass('process')){
+            $buttonContainer.addClass('process')
+            sendSearchForm(data,function(){
+                $spinner.hide();
+                $buttonContainer.find('i').show();
+                $buttonContainer.removeClass('process')
+            })
+        }
+
     })
   }
   function sendSearchForm(data,callback) {
-    if(data.mode  == 'actresses'){
-        const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchTerm=${data.searchterm?data.searchterm:data.searchTerm}&nsfw=${data.nsfw}`
-        window.location=url
-        return 
-    }
+    
+    const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchTerm=${data.searchterm?data.searchterm:data.searchTerm}&nsfw=${data.nsfw}`
+    //window.location=url
+    //return 
+ 
+    console.log(data)
     $.ajax({
         url: `/api/loadpage`,
         type: 'POST',
         data,
         success: function(response){
-            const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchTerm=${data.searchterm?data.searchterm:data.searchTerm}&nsfw=${data.nsfw}`
            window.location=url
         },
-        error: handleFormError,
+        error: function(){
+            handleFormError()
+            if(callback){callback()}
+        },
         finally: function(){
             if(callback){callback()}
         }

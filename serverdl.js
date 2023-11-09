@@ -31,6 +31,8 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         generateFilePathFromUrl,
         downloadFileFromURL,
         downloadYoutubeVideo } = require('./services/tools')
+  const ManageScraper = require('./modules/ManageScraper');
+  const getVideoFromSB = require('./modules/getVideoFromSB')
 
     // Your /api/dl route (content left empty for you to fill in)
     router.post('/dl', async (req, res) => {
@@ -97,7 +99,39 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           //res.status(500).json({ error: err.message });
         }
       });
-      router.post('/downloadVideoSegments', async (req, res) => {
+      router.post('/connectUser', async (req, res) => {
+        // Extract the user from the request body
+        const { user } = req.body;
+      
+        // If user data is not present in the request body, send a bad request response
+        if (!user) {
+          console.log('No user data provided');
+          return res.status(400).send({ message: 'User data is required' });
+        }
+      
+        // Log the connection attempt
+        console.log(`Attempting to connect the user to the download server, User ID: ${user._id}`);
+      
+        try {
+          // Set the user to req.user
+          req.user = user;
+      
+          // Here you would typically have some logic to handle the user connection
+          // For example, you might call another function to process the user data
+          // connectUserToTheDownloadServer(req.user);
+      
+          // If the connection logic is successful, send a success response
+          console.log(`User connected to the download server, User ID: ${req.user._id}`);
+          res.status(200).send({ message: 'User connected to the download server successfully' });
+        } catch (error) {
+          // If an error occurs, log it and send a server error status
+          console.error(`Error connecting user to the download server, User ID: ${user._id}`, error);
+          res.status(500).send({ message: 'Error connecting user to the download server' });
+        }
+      });
+      
+
+        router.post('/downloadVideoSegments', async (req, res) => {
         try{
           const actressName = req.body.actressName
           const itemID = req.body.itemID
@@ -145,6 +179,34 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           console.log(error)
         }
       });  
+
+      router.post('/getVideoFromSB', async (req, res) => {
+        const {query, mode, nsfw, url, pageNum, userId}=req.body
+        const result = await getVideoFromSB(query, mode, nsfw, url, pageNum, userId)
+        res.status(200).json({result})
+      })
+
+      // Define a route to handle video requests
+      router.get('/video', async (req, res) => {
+        try {
+          const { videoId } = req.query;
+          console.log(`Loadind video : ${videoId}`)
+          const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
+          // Call the function to get the highest quality video URL for the provided id
+          const url = await getHighestQualityVideoURL(videoId,req.user);
+          //const related = await scrapeMode1GetRelatedVideo(id,req.user,req.user.mode, req.user.nsfw)
+
+          if (!url) {
+            return res.status(404).json({ error: 'Video not found or no valid URL available.' });
+          }
+
+          // Respond with the highest quality video URL
+          return res.json({ url,data:foundElement });
+        } catch (error) {
+          console.error('Error occurred while processing the request:', error);
+          return res.status(500).json({ error: 'An error occurred while processing the request.' });
+        }
+      });
     // parse application/x-www-form-urlencoded
     app.use(bodyParser.urlencoded({ extended: false }));
     // parse application/json

@@ -393,6 +393,81 @@ router.get('/openai/summarize', async (req, res) => {
       res.end();
   }
 });
+// ルーターを定義して '/loadpage' への POST リクエストを処理します
+router.post('/loadpage', async (req, res) => {
+  console.log('API request loadmore')
+  try {
+      // リクエストボディをコンソールにログ
+  
+      const data = { 
+        nsfw: req.body.nsfw == 'true',
+        searchTerm: req.body.searchterm || req.body.searchTerm , 
+        page: req.body.page ,
+        mode: req.body.mode,
+        user: req.user
+      }
+
+      let scrapedData = await ManageScraper(
+        data.searchTerm,
+        data.nsfw,
+        data.mode,
+        data.user, 
+        parseInt(data.page)
+        );
+    
+      // JSON 応答を送る
+      res.status(200).json({
+        status: '成功', // Status as success
+        message: 'ページが正常にロードされました' // Message indicating the page has been successfully loaded
+      });
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({
+      status: 'Error', // Status as success
+      message: 'An error occured' // Message indicating the page has been successfully loaded
+    });
+  }
+  });
+  router.post('/addtofav', async (req, res) => {
+    const {video_id}=req.body
+    const user = req.user
+
+    addUserToFavList(user, video_id)
+  })
+  // Async function to add a user to the favorite list of a media element
+async function addUserToFavList(user, video_id) {
+  const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
+
+  // Log the intent to add user to the favorite list for debugging
+  console.log(`Attempting to add user ${user._id} to fav_user_list for video ${foundElement._id}`);
+
+  try {
+    // Perform the update operation
+    const updateResult = await global.db.collection('medias').updateOne(
+      { _id: foundElement._id }, // Use the _id of the foundElement
+      { $addToSet: { fav_user_list: user._id } } // Use $addToSet to avoid duplicates
+    );
+
+    // Log the result of the update operation
+    //console.log('Update Result:', updateResult);
+
+    // Check if the update operation was acknowledged and a document was modified
+    if (updateResult.matchedCount === 1 && updateResult.modifiedCount === 1) {
+      console.log(`Successfully added user ${user._id} to fav_user_list for video ${foundElement._id}`);
+    } else if (updateResult.matchedCount === 0) {
+      console.log(`No media found with ID: ${foundElement._id}`);
+    } else {
+      console.log(`User ${user._id} was already in the fav_user_list for video ${foundElement._id}`);
+    }
+
+    // Return the update result
+    return updateResult;
+  } catch (error) {
+    // If there's an error in the try block, catch it and log it
+    console.error('Error adding user to fav_user_list:', error);
+    throw error; // Re-throw the error to handle it further up the call stack if necessary
+  }
+}
 
 // Define the /openai/ebook route
 router.post('/openai/ebook', async (req, res) => {
@@ -619,27 +694,6 @@ router.get('/downloading', async (req, res) => {
   res.json({ data });
 });
 
-// Define a route to handle video requests
-router.get('/video', async (req, res) => {
-  try {
-    const { videoId } = req.query;
-    console.log(`Loadind video : ${videoId}`)
-    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
-    // Call the function to get the highest quality video URL for the provided id
-    const url = await getHighestQualityVideoURL(videoId,req.user);
-    //const related = await scrapeMode1GetRelatedVideo(id,req.user,req.user.mode, req.user.nsfw)
-
-    if (!url) {
-      return res.status(404).json({ error: 'Video not found or no valid URL available.' });
-    }
-
-    // Respond with the highest quality video URL
-    return res.json({ url,data:foundElement });
-  } catch (error) {
-    console.error('Error occurred while processing the request:', error);
-    return res.status(500).json({ error: 'An error occurred while processing the request.' });
-  }
-});
 router.post('/resetDownloadStatus', async (req, res) => {
   const { itemId } = req.body
   const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(itemId)})
@@ -955,40 +1009,7 @@ router.post('/category/remove', async (req, res) => {
   }
 });
 
-// ルーターを定義して '/loadpage' への POST リクエストを処理します
-router.post('/loadpage', async (req, res) => {
-console.log('API request loadmore')
-try {
-    // リクエストボディをコンソールにログ
 
-    const data = { 
-      nsfw: req.user.nsfw == 'true',
-      searchTerm: req.body.searchterm || req.body.searchTerm , 
-      page: req.body.page ,
-      mode: req.body.mode 
-    }
-
-    let scrapedData = await ManageScraper(
-      data.searchTerm,
-      data.nsfw,
-      data.mode,
-      req.user, 
-      parseInt(data.page)
-      );
-  
-    // JSON 応答を送る
-    res.status(200).json({
-      status: '成功', // Status as success
-      message: 'ページが正常にロードされました' // Message indicating the page has been successfully loaded
-    });
-} catch (error) {
-  console.log(error)
-  res.status(500).json({
-    status: 'Error', // Status as success
-    message: 'An error occured' // Message indicating the page has been successfully loaded
-  });
-}
-});
 
 async function saveImageToDB(db, userID, prompt, image) {
   const imageID = new ObjectId();

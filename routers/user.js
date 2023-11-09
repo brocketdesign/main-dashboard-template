@@ -6,6 +6,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const passport = require('passport');
 const { email, sendEmail } = require('../services/email')
+const axios = require('axios'); // Import axios at the top of your file
 
 const { ObjectId } = require('mongodb');
 
@@ -98,11 +99,64 @@ router.get('/login', (req, res) => {
   res.render('user-login'); // Render the login template
 });
 
-router.post('/login', passport.authenticate('local', { failureRedirect: '/user/login', failureFlash: 'Invalid username or password.' }), async (req, res) => {
-  const userID = req.user._id
-  req.flash('info', 'You are now logged in!');
-  res.redirect('/dashboard');
+router.post('/login', passport.authenticate('local', {
+  failureRedirect: '/user/login',
+  failureFlash: 'Invalid username or password.'
+}), async (req, res) => {
+  try {
+
+    const updatedUserDetails = {
+      // ... copy over the properties from req.user you want to retain
+      ...req.user,
+      // ... and include any updates you want to make
+      lastLogin: new Date()
+    };
+  
+    // Now you can update the user session with the new details
+    req.login(updatedUserDetails, (err) => {
+      if (err) {
+        return next(err);
+      }
+
+      console.log({userId:req.user._id})
+      // After successful authentication, connect the user to the download server
+      //connectUserToTheDownloadServer(req.user);
+      
+      // If successful, inform the user with a flash message
+      req.flash('info', 'You are now logged in and connected to the download server!');
+      
+      // Redirect to the dashboard
+      res.redirect('/dashboard');
+    });
+
+
+  } catch (error) {
+    // If there is an error, handle it appropriately
+    console.error('Login or connection to download server failed:', error);
+    req.flash('error', 'There was an issue logging in or connecting to the download server.');
+    res.redirect('/user/login');
+  }
 });
+
+
+async function connectUserToTheDownloadServer(user) {
+  try {
+    // Make a POST request to the download server
+    const response = await axios.post('http://192.168.10.115:3100/api/connectUser', {
+      user: user
+    });
+
+    // Log the response from the download server for debugging
+    console.log('Connected to download server:', response.data);
+    
+    // You might want to return something here, depending on your use case
+    return response.data;
+  } catch (error) {
+    // Log the error if the request fails
+    console.error('Error connecting to the download server:', error);
+    throw error; // Optionally throw the error to be handled by the caller
+  }
+}
 
 
 router.get('/signup', (req, res) => {

@@ -145,7 +145,7 @@ async function findDataInMedias(userId, page, query, categoryId = null) {
     .skip(skip) // Skip N documents
     .limit(limit) // Limit to N documents
     .toArray();
-  
+
     return medias;
   }
 

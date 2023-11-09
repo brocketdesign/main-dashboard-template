@@ -45,13 +45,16 @@ block dynamicContent
                         button.iframe-button.fav.btn.btn-white.shadow-0.border.border-0.my-1(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
                           i.fas.fa-heart
                       else
-                        button.download-button.btn.btn-white.shadow-0.border.border-0.my-1(type="button", class=data.isdl?'done':'')
+                        button.download-button.btn.btn-white.shadow-0.border.border-0.my-1(type="button", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done':'')
                           i.fas.fa-heart
                     a.source.btn.btn-white.border.border-0.my-1.shadow-0(target="_blank", href=data.source||data.link||data.webm||data.url)
                       i.fas.fa-link
                     if mode == 2 && data.extractor == 'scrolller'
                       a.source.btn.btn-white.border.border-0.my-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.link}/discover`)
-                        i.fas.fa-plus-square     
+                        i.fas.fa-plus-square    
+                    else 
+                      a.source.btn.btn-white.border.border-0.my-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.title || data.alt}`)
+                        i.fas.fa-plus-square    
                 a(href=`/dashboard/app/${mode}?searchTerm=${data.subreddit}`)=data.subreddit
                 if data.title
                   p=data.title 
@@ -78,7 +81,7 @@ block dynamicContent
         i.fas.fa-angle-left.me-3
         | 前へ
       span.px-3.btn.btn-white #{page}
-      button.btn.btn-dark.bordert.load-more.load-more-next(type="button" data-mode=mode, data-page=page+1, data-searchTerm=searchTerm, data-nsfw= user.nsfw)        
+      button.btn.btn-dark.bordert.load-more.load-more-next(type="button" data-userId=user._id data-mode=mode, data-page=page+1, data-searchTerm=searchTerm, data-nsfw= user.nsfw)        
         | 次へ
         i.fas.fa-angle-right.ms-3
       a.btn.btn-dark.bordert(type="button", class=scrapInfo&&scrapInfo.page==page?'d-none':'',href=`/dashboard/app/${mode}?page=${scrapInfo?scrapInfo.page:'1'}&searchTerm=${searchTerm}&nsfw=${user.nsfw}`)        
