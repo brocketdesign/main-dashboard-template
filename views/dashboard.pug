@@ -50,7 +50,8 @@ block mainContent
       #extractors.my-3.col-auto
         button.btn.btn-primary.extractor.mx-2(data-extractor="false") All
     .my-3.col.d-flex.justify-content-end
-      button.btn.btn-primary.me-2(type='button' onclick="getDownloadData()")
+      //button.btn.btn-primary.me-2(type='button' onclick="getDownloadData()")
+      a.btn.btn-primary.me-2(href=`/dashboard/app/${mode}/fav?searchTerm=All`)
         i.fas.fa-download
         ul#download-list.list-group.position-fixed.m-3.shadow(style="bottom: 0;right:0;width: 20%;z-index:99")
       a.btn.btn-primary.me-2(href=`/dashboard/app/${mode}/fav?searchTerm=${searchTerm?searchTerm:''}`)

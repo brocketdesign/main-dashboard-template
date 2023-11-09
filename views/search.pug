@@ -11,12 +11,12 @@ block dynamicContent
               .card-top.position-relative
                 if data.link && data.link.includes('redgif')
                   .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                      button.iframe-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
+                      button.iframe-button.btn.shadow.border.border-white(style="background: #ffffff61;", type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
                         i.fas.fa-play
                 else
                   if mode == '1' || (data.link && data.link.includes('scrolller') && data.video)
                     .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                        button.play-button.btn.btn-dark.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'')
+                        button.play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'' style="background: #ffffff61;")
                           i.fas.fa-play
                                       
                 .video-container(data-id=data._id)
@@ -36,26 +36,30 @@ block dynamicContent
                   else
                     img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=data.imageUrl || data.filePath, alt=data.title )
 
-              .card-title.bg-white.border-white.border.p-3
-                .d-flex.justify-content-start.flex-row(style="height:100%")
-                    button.delete-button.btn.btn-white.border.border-0.my-1.shadow-0(type="button", data-id=data._id)
+              .card-title.px-3.my-0
+                .row.justify-content-start.flex-row(style="height:100%")
+                  .col-12.col-sm-4.text-start(style="overflow:hidden")
+                    a.expand(href=`/dashboard/app/${mode}?searchTerm=${data.subreddit}`)=data.subreddit
+                  .col-12.col-sm-8.text-start
+                    button.expand.delete-button.btn.btn-transparent.border.border-0.my-1.shadow-0(type="button", data-id=data._id)
                         i.fas.fa-trash-alt
+                    button.d-none.expand-button.btn.btn-transparent.border.border-0.my-1.shadow-0(type="button", data-id=data._id)
+                        i.fas.fa-expand
                     if !fav
                       if data.link && data.link.includes('redgif')
-                        button.iframe-button.fav.btn.btn-white.shadow-0.border.border-0.my-1(type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
+                        button.expand.iframe-button.fav.btn.btn-transparent.shadow-0.border.border-0.my-1(type="button", data-id=data._id, class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
                           i.fas.fa-heart
                       else
-                        button.download-button.btn.btn-white.shadow-0.border.border-0.my-1(type="button", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done':'')
+                        button.expand.download-button.btn.btn-transparent.shadow-0.border.border-0.my-1(type="button", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done':'')
                           i.fas.fa-heart
-                    a.source.btn.btn-white.border.border-0.my-1.shadow-0(target="_blank", href=data.source||data.link||data.webm||data.url)
+                    a.source.expand.btn.btn-transparent.border.border-0.my-1.shadow-0(target="_blank", href=data.source||data.link||data.webm||data.url)
                       i.fas.fa-link
                     if mode == 2 && data.extractor == 'scrolller'
-                      a.source.btn.btn-white.border.border-0.my-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.link}/discover`)
+                      a.source.expand.btn.btn-transparent.border.border-0.my-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.link}/discover`)
                         i.fas.fa-plus-square    
                     else 
-                      a.source.btn.btn-white.border.border-0.my-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.title || data.alt}`)
+                      a.source.expand.btn.btn-transparent.border.border-0.my-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.title || data.alt}`)
                         i.fas.fa-plus-square    
-                a(href=`/dashboard/app/${mode}?searchTerm=${data.subreddit}`)=data.subreddit
                 if data.title
                   p=data.title 
 

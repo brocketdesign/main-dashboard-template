@@ -387,8 +387,8 @@ function lessThan24Hours(date) {
   // Log the time difference in hours
   //console.log(`Time difference in hours: ${timeDifferenceInHours}`);
 
-  // Check if the time difference is less than 24 hours
-  if (timeDifferenceInHours < 24) {
+  // Check if the time difference is less than 12 hours
+  if (timeDifferenceInHours < 12) {
       return true;
   } else {
       return false;

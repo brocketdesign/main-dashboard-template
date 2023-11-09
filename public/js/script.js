@@ -109,6 +109,11 @@ $(document).ready(function() {
 
          handleHiding($(this).closest('.card').data('id'))  
     });
+    $('.expand-button').click(function(e) { 
+        e.preventDefault()
+         handleExpand($(this).closest('.card').data('id'))  
+    });
+    
     $('.delete-button-history').click(function(e) {  
         e.preventDefault()
         $(this).closest('a').remove()
@@ -483,9 +488,14 @@ function displayMedia(url,id){
           $thisCard.find('.video-container').addClass('loaded')
         }).on('error',function(){
             console.log('Error loading the video')
-            resetDownloadStatus(id,function(){
-                handleDownloadVideo(id)
-            })
+            if(!$thisCard.hasClass('resetDownloadStatus')){
+                $thisCard.addClass('resetDownloadStatus')
+                resetDownloadStatus(id,function(){
+                    handleDownloadVideo(id)
+                })
+            }else{
+                handleFormResult(false,'The video could not be found.')
+            }
         });
         if(!$thisCard.find('.video-container').hasClass('loaded')){
             $thisCard.find(`.video-container video`).remove()
@@ -584,9 +594,8 @@ const handleDownloadButton = () => {
       // Show the spinner while the download is in progress
       var $spinner = $(this).find('.spinner-border');
       $spinner.show();
-      $.post('/api/addtofav',{ video_id: id ,},function(response){
-
-      })
+      addtofav(id)
+      
       // Make a request to download the video
       $.post('http://192.168.10.115:3100/api/dl', { video_id: id ,title}, function(response) {
         console.log('Download API Response:', response);
@@ -614,6 +623,11 @@ const handleDownloadButton = () => {
   });
 }
 
+function addtofav(id,callback){
+    $.post('/api/addtofav',{ video_id: id },function(response){
+        if(callback){callback()}
+    })
+  }
 const handleCOmparePDF = () => {
     $('form#comparePDF').on('submit', function(e) {
         e.preventDefault();
@@ -881,30 +895,79 @@ const handleCOmpare = () => {
         });
     });
  }
- 
-const handleHiding = (videoId) => {
-    let $container = $(`.card[data-id=${videoId}]`)
+   
+// Function to enter fullscreen
+const enterFullScreen = (videoElement) => {
+    if (videoElement.requestFullscreen) {
+      videoElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+      });
+    } else {
+      console.log('Fullscreen API is not supported by this browser.');
+    }
+  };
+  
+  // Function to toggle video controls based on fullscreen state
+  const toggleVideoControls = (videoElement, isFullscreen) => {
+    if (isFullscreen) {
+      $(videoElement).attr('controls', 'controls'); // Add controls
+      $(videoElement).find('.expand').hide()
+    } else {
+      $(videoElement).removeAttr('controls'); // Remove controls
+      $(videoElement).find('.expand').show()
+    }
+  };
+  // Function to toggle video controls based on fullscreen state
+  const toggleMenu = (cardElement, isFullscreen) => {
+    if (isFullscreen) {
+      $(cardElement).find('.expand').hide()
+    } else {
+      $(cardElement).find('.expand').show()
+    }
+  };
+    
+  // Main function to expand the video
+  const handleExpand = (videoId) => {
+    let videoElement = $(`.card[data-id=${videoId}]`).find('video').get(0);
+  
+    // Enter full screen
+    //enterFullScreen(videoElement);
+  
+    // Log the action
+    //console.log(`Video ${videoId} requested to go fullscreen.`);
 
-    const confirmation = confirm("Are you sure you want to delete this item? This action cannot be undone.");
-
-    if (confirmation) {
-        $.ajax({
-            url: '/api/hide',
-            method: 'POST',
-            data: { element_id: videoId },
-            success: function(response) {
-                $container.remove()
-                updateMasonryLayout()
-                handleFormResult(true,response.message)
-                // Handle the success response
-                console.log(response);
-                },
-            error: handleFormError
-        });
+    if(!$(videoElement).attr('controls')){
+        toggleVideoControls(videoElement,true);
+        toggleMenu($(`.card[data-id=${videoId}]`),true);
     }
 
+  };
 
-}
+  
+
+ const handleHiding = (videoId) => {
+     let $container = $(`.card[data-id=${videoId}]`)
+ 
+     const confirmation = confirm("Are you sure you want to delete this item? This action cannot be undone.");
+ 
+     if (confirmation) {
+         $.ajax({
+             url: '/api/hide',
+             method: 'POST',
+             data: { element_id: videoId },
+             success: function(response) {
+                 $container.remove()
+                 updateMasonryLayout()
+                 handleFormResult(true,response.message)
+                 // Handle the success response
+                 console.log(response);
+                 },
+             error: handleFormError
+         });
+     }
+ 
+ 
+ }
 
 const handleHidingHistory = (query) => {
     console.log(`Hide this query : ${query}`)
@@ -2116,6 +2179,8 @@ function handleIframe(){
             $(this).find('i').addClass('text-danger')
         }
         $spinner.show()
+
+      addtofav(itemID)
     // Show the spinner while the download is in progress
       $thisCard.find('.card-body-over').show();
         $.ajax({

@@ -290,7 +290,14 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
         hide: { $exists: false },
       }
     }
-
+    if(searchTerm=='All'){
+      query_obj = {
+        mode:mode,
+        nsfw:nsfw,
+        isdl:true,
+        hide: { $exists: false },
+      }
+    }
     let medias = await findDataInMedias(req.user._id, page, query_obj);
     console.log(`Found ${medias.length} element(s).`)
     let medias2 = []

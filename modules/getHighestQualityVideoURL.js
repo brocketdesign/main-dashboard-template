@@ -116,7 +116,7 @@ async function searchVideoUrl( videoDocument, user) {
   if(!videoDocument.link.includes('http')){
     videoURL = `${process.env.DEFAULT_URL}${videoDocument.link}`;
   }
-  //console.log('Video URL to scrape:', videoURL);
+  console.log('Video URL to scrape:', videoURL);
 
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();

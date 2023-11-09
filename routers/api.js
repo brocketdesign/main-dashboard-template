@@ -697,7 +697,7 @@ router.get('/downloading', async (req, res) => {
 router.post('/resetDownloadStatus', async (req, res) => {
   const { itemId } = req.body
   const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(itemId)})
-  updateSameElements(foundElement,{isdl_data:new Date(),filePath:null})
+  await updateSameElements(foundElement,{isdl:false,isdl_data:new Date(),filePath:null})
   res.status(200).json({ message: 'Retry download item' });
 
 })

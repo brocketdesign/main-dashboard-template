@@ -40,7 +40,7 @@ const scrapeScrolller = (subreddit, mode, nsfw, page) => {
 
     // Launch Puppeteer browser
     const browser = await puppeteer.launch({
-      headless: true,
+      headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
     });
 
