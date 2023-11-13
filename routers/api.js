@@ -431,9 +431,54 @@ router.post('/loadpage', async (req, res) => {
   router.post('/addtofav', async (req, res) => {
     const {video_id}=req.body
     const user = req.user
-
-    addUserToFavList(user, video_id)
+    const result = await addUserToFavList(user, video_id)
+    if(result.modifiedCount>0){
+      res.status(200).json({message:'Add media to favorites.',status:true})
+    }else{
+      res.status(200).json({message:'Error when adding media.',status:false})
+    }
   })
+  router.post('/removeFromFav', async (req, res) => {
+    const {video_id}=req.body
+    const user = req.user
+    const result = await removeUserFromFavList(user, video_id)
+    if(result.modifiedCount>0){
+      res.status(200).json({message:'Remove media from favorites.',status:false})
+    }else{
+      res.status(200).json({message:'Error when removing media.',status:true})
+    }
+  })
+  async function removeUserFromFavList(user, video_id) {
+    const videoObjectId = new ObjectId(video_id);
+  
+    // Log the intent to remove user from the favorite list for debugging
+    console.log(`Attempting to remove user ${user._id} from fav_user_list for video ${videoObjectId}`);
+  
+    try {
+      // Perform the update operation
+      const updateResult = await global.db.collection('medias').updateOne(
+        { _id: new ObjectId(videoObjectId) }, // Use the ObjectId of the video
+        { $pull: { fav_user_list: user._id } } // Use $pull to remove the user ID
+      );
+  
+      // Log the result of the update operation
+      if (updateResult.matchedCount === 1 && updateResult.modifiedCount === 1) {
+        console.log(`Successfully removed user ${user._id} from fav_user_list for video ${videoObjectId}`);
+      } else if (updateResult.matchedCount === 0) {
+        console.log(`No media found with ID: ${videoObjectId}`);
+      } else {
+        console.log(`User ${user._id} was not in the fav_user_list for video ${videoObjectId}`);
+      }
+  
+      // Return the update result
+      return updateResult;
+    } catch (error) {
+      // If there's an error in the try block, catch it and log it
+      console.error('Error removing user from fav_user_list:', error);
+      throw error; // Re-throw the error to handle it further up the call stack if necessary
+    }
+  }
+  
   // Async function to add a user to the favorite list of a media element
 async function addUserToFavList(user, video_id) {
   const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
@@ -904,7 +949,7 @@ router.post('/hide', async (req, res) => {
       }
     }
 
-    res.status(200).json({ message: 'この要素はもう表示されません' });
+    res.status(200).json({ message: 'The medias is hidden' });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: 'エラーが発生しました' });
@@ -1008,7 +1053,6 @@ router.post('/category/remove', async (req, res) => {
     res.status(500).json({ message: 'エラーが発生しました' }); // An error occurred
   }
 });
-
 
 
 async function saveImageToDB(db, userID, prompt, image) {

@@ -253,7 +253,7 @@ router.post('/resetpassword', async (req, res, next) => {
   }
 });
 
-router.post('/nsfw', async (req, res, next) => {
+router.post('/setNsfw', async (req, res, next) => {
   const { nsfw } = req.body;
   try{
     await global.db.collection('users').updateOne({_id: new ObjectId(req.user._id)},{$set:{nsfw}}) 
@@ -262,7 +262,14 @@ router.post('/nsfw', async (req, res, next) => {
     console.log('User is not connected')
     res.status(500).json({message:'NSFW sttatus updated failed'});
   }
-
+});
+router.get('/getNsfw', async (req, res, next) => {
+  try{
+    res.status(200).json({nsfw:req.user.nsfw,message:'NSFW sttatus updated'});
+  }catch(err){
+    console.log('User is not connected')
+    res.status(500).json({message:'NSFW sttatus updated failed'});
+  }
 });
 
 router.post('/signup', async (req, res, next) => {

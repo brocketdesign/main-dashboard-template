@@ -11,12 +11,12 @@ block dynamicContent
               .card-top.position-relative
                 if data.link && data.link.includes('redgif')
                   .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                      button.iframe-button.btn.shadow.border.border-white(style="background: #ffffff61;", type="button", data-id=data._id, class=data.isdl?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
+                      button.iframe-button.btn.shadow.border.border-white(style="background: #ffffff61;", type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'', data-url=`${data.link.replace('watch','ifr')}`)
                         i.fas.fa-play
                 else
                   if mode == '1' || (data.link && data.link.includes('scrolller') && data.video)
                     .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                        button.play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl?'done':'' style="background: #ffffff61;")
+                        button.play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
                           i.fas.fa-play
                                       
                 .video-container(data-id=data._id)
@@ -45,13 +45,12 @@ block dynamicContent
                         i.fas.fa-trash-alt
                     button.d-none.expand-button.btn.btn-transparent.border.border-0.my-1.shadow-0(type="button", data-id=data._id)
                         i.fas.fa-expand
-                    if !fav
-                      if data.link && data.link.includes('redgif')
-                        button.expand.iframe-button.fav.btn.btn-transparent.shadow-0.border.border-0.my-1(type="button", data-id=data._id, class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done':'', data-url=`${data.link.replace('watch','ifr')}`)
-                          i.fas.fa-heart
-                      else
-                        button.expand.download-button.btn.btn-transparent.shadow-0.border.border-0.my-1(type="button", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done':'')
-                          i.fas.fa-heart
+                    if data.link && data.link.includes('redgif')
+                      button.expand.handle-fav.btn.btn-transparent.shadow-0.border.border-0.my-1(type="button", data-id=data._id, class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'', data-url=`${data.link.replace('watch','ifr')}`)
+                        i.fas.fa-heart
+                    else
+                      button.expand.handle-fav.btn.btn-transparent.shadow-0.border.border-0.my-1(type="button", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'')
+                        i.fas.fa-heart
                     a.source.expand.btn.btn-transparent.border.border-0.my-1.shadow-0(target="_blank", href=data.source||data.link||data.webm||data.url)
                       i.fas.fa-link
                     if mode == 2 && data.extractor == 'scrolller'

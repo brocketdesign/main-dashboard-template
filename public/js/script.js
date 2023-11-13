@@ -220,17 +220,17 @@ $(document).ready(function() {
         e.stopPropagation()
         downloadVideo($(this).attr('data-id'), $(this).attr('data-name'))
     })
-
+ 
     activateClickOnVisibleButtons();
-
-    handleSelectCountry()
-    handleCopyButtons()
+    handleFavorite();
+    handleSelectCountry();
+    handleCopyButtons();
     updateMoments();
     enableTrackScroll();
     handleOpenaiForm();
     handleMemo();
 
-    enableSubRedit()
+    enableSubRedit();
 
     //Handle SideBAR
     onLargeScreen(handleSideBar)
@@ -245,6 +245,7 @@ $(document).ready(function() {
     handleChat();
     handleCOmpare();
     handleCOmparePDF();
+    initNsfw();
     handleSwitchNSFW();
     handleGridRange();
     handleLoadMore();
@@ -382,7 +383,7 @@ const handleFormResult = (isSuccess, message) => {
     $("#front-alert .alert-success").stop().hide();
     $("#front-alert .alert-danger").stop().hide();
 
-    $("#front-alert .alert-"+btnColor).text(message).fadeIn().delay(5000).fadeOut();
+    $("#front-alert .alert-"+btnColor).text(message).fadeIn().delay(3000).fadeOut();
 
     //setTimeout(() => $(btnSelector).removeClass(`btn-${btnColor}`).addClass('btn-success'), 5000);
 }
@@ -510,7 +511,7 @@ function displayMedia(url,id){
     $thisCard.find(`.play-button`).hide()
 }
 function checkUrlandCardStatus($thisCard,url){
-    return (url.includes('.mp4') || url.includes('.webm')) && !$thisCard.find('img.card-img-top').attr('src').includes('.gif')
+    return (url.includes('video') || url.includes('.mp4') || url.includes('.webm')) && !$thisCard.find('img.card-img-top').attr('src').includes('.gif')
 }
 function resetDownloadStatus(itemId,callback){
     $.post('/api/resetDownloadStatus',{itemId},function(){
@@ -559,6 +560,7 @@ function displaySummary(response) {
         $('#mobile-toolbar #summary-content .card-body').append(response.data.summary)
     }
 }
+
 // Handling of download button clicking
 const handleDownloadButton = () => {
   $(document).on('click', '.download-button', function(event) {
@@ -569,12 +571,9 @@ const handleDownloadButton = () => {
 
     console.log('Download button clicked for:', {id,title});
     var $buttonContainer = $(this);
-
-      // Check if the card has already been processed
-      if ($buttonContainer.hasClass('done')) {
-        handleFormResult(false, '既にダウンロードされています') 
-          console.log('Card has already been processed.');
-          return;
+      if ($buttonContainer.hasClass('done') ) {
+        console.log('Card has already been processed.');
+        return;
       }
 
       // Mark the card as done to avoid processing it again
@@ -585,7 +584,7 @@ const handleDownloadButton = () => {
 
       // Check if the spinner is already present, if not, create and append it to the card
       if (!$(this).find('.spinner-border.for-dl').length) {
-          var $spinner = $('<div>').addClass('spinner-border for-dl spinner-border-sm').attr('role', 'status');
+          var $spinner = $('<div>').addClass('spinner-border for-dl spinner-border-sm text-white').attr('role', 'status');
           var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
           $spinner.append($span);
           $(this).prepend($spinner);
@@ -594,7 +593,6 @@ const handleDownloadButton = () => {
       // Show the spinner while the download is in progress
       var $spinner = $(this).find('.spinner-border');
       $spinner.show();
-      addtofav(id)
       
       // Make a request to download the video
       $.post('http://192.168.10.115:3100/api/dl', { video_id: id ,title}, function(response) {
@@ -622,10 +620,32 @@ const handleDownloadButton = () => {
       });
   });
 }
-
-function addtofav(id,callback){
-    $.post('/api/addtofav',{ video_id: id },function(response){
+function handleFavorite(){
+    $(document).on('click','.handle-fav',function(){
+        const $buttonContainer = $(this);
+        const itemID = $(this).data('id') || $(this).closest('.info-container').data('id');
+        // Check if the card has already been processed
+        if ($buttonContainer.hasClass('fav')) {
+            removeFromFav(itemID,function(){
+                $buttonContainer.removeClass('fav')
+            })
+        }else{
+            addtofav(itemID,function(){
+                $buttonContainer.addClass('fav')
+            })
+        }
+    })
+}
+function removeFromFav(video_id,callback){
+    $.post('/api/removeFromFav',{video_id},function(response){
         if(callback){callback()}
+        handleFormResult(response.status, response.message) 
+    })
+}
+function addtofav(video_id,callback){
+    $.post('/api/addtofav',{ video_id },function(response){
+        if(callback){callback()}
+        handleFormResult(response.status, response.message) 
     })
   }
 const handleCOmparePDF = () => {
@@ -699,36 +719,37 @@ const handleCOmparePDF = () => {
 
 }
 
+function initNsfw(){
+        getUserNSFW(function(userNSFW){
+            if (userNSFW !== null) {
+                $('#nsfw').prop('checked', userNSFW === 'true');
+            }
+            if ($('#nsfw').length > 0) {
+                handleNSFWlabel(userNSFW === 'true')
+                nsfwUpdateData({nsfw:userNSFW === 'true'})
+            }
+        })
+}
 const handleSwitchNSFW= () => {
-    // Check if the local variable exists
-    var switchState = localStorage.getItem('handleSwitchNSFW');
-
-    // Initialize the switch based on the local variable
-    if (switchState !== null) {
-        $('#nsfw').prop('checked', switchState === 'true');
-    }
-    if ($('#nsfw').length > 0) {
-        handleNSFWlabel(switchState === 'true')
-        
-        nsfwUpdateData({nsfw:switchState === 'true'})
-    }
-    // Save the state of the switch to a local variable when it's toggled
-    $('#nsfw').change(function() {
+       // Save the state of the switch to a local variable when it's toggled
+       $('#nsfw').change(function() {
         $('input#searchTerm').val('')
-        localStorage.setItem('handleSwitchNSFW', $(this).is(':checked'));
-        console.log('NSFW: ',$(this).is(':checked'))
         const nsfw = $(this).is(':checked')
-        handleNSFWlabel(nsfw)
+        handleNSFWlabel(nsfw === 'true' )
         nsfwUpdateData({nsfw},function(){
             //handleFormResult(true, response.message);
             location.href = location.origin + location.pathname;
         })
     });
 }
+function getUserNSFW(callback){
+    $.get('/user/getNsfw',function(response){
+        callback(response.nsfw)
+    })
+}
 function nsfwUpdateData(nsfw,callback) {
-    console.log('Update NSFW to: ',nsfw)
     $.ajax({
-        url: `/user/nsfw`,
+        url: `/user/setNsfw`,
         type: 'POST',
         data: nsfw,
         success: (response) => {
@@ -958,7 +979,7 @@ const enterFullScreen = (videoElement) => {
              success: function(response) {
                  $container.remove()
                  updateMasonryLayout()
-                 handleFormResult(true,response.message)
+                 handleFormResult(false,response.message)
                  // Handle the success response
                  console.log(response);
                  },
@@ -2179,8 +2200,6 @@ function handleIframe(){
             $(this).find('i').addClass('text-danger')
         }
         $spinner.show()
-
-      addtofav(itemID)
     // Show the spinner while the download is in progress
       $thisCard.find('.card-body-over').show();
         $.ajax({
@@ -2261,8 +2280,6 @@ function listExtractors() {
             extractors.push(extractor);
         }
     });
-
-    console.log({ extractors });
     return extractors;
 }
 function displaySrc(el) {

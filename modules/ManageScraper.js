@@ -4,7 +4,8 @@ const _ = require('lodash');  // Import lodash at the top of your file
 const { 
   findDataInMedias,
   updateSameElements,
-  initCategories 
+  initCategories,
+  sanitizeData
 } = require('../services/tools')
 const scrapeMode1 = require(`./scraper/scrapeMode1`);
 // Helper function to find user and update their scraped data
@@ -49,7 +50,11 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     categories:categories,
     favoriteCountry: userInfo.favoriteCountry
   })); 
-  
+
+  //scrapedData = sanitizeData(scrapedData,'source')
+  //scrapedData = sanitizeData(scrapedData,'link')
+  //scrapedData = sanitizeData(scrapedData,'url')
+
   insertInDB(scrapedData)
   updateUserScrapInfo(user,url,page)
 

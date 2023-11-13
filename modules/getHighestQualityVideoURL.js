@@ -14,7 +14,7 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
       return foundElement.filePath.replace('public','')
     }
     
-    if(lessThan24Hours(foundElement.last_scraped)){
+    if(!foundElement.link.includes('youtube') && lessThan24Hours(foundElement.last_scraped)){
       return foundElement.highestQualityURL
     }
 
@@ -26,7 +26,10 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
       return isMedia(foundElement.link) ? foundElement.link : foundElement.thumb; 
     }
     if(!foundElement.video && foundElement.mode == "2"){
-      return foundElement.thumb
+      if( foundElement.link.includes('scrolller')){
+        return foundElement.thumb
+      }
+      return foundElement.link
     }
 
     return await searchVideo(foundElement, user, stream);
