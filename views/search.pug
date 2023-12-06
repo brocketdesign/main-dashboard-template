@@ -3,10 +3,10 @@ extends dashboard
 block dynamicContent
   if (scrapedData && scrapedData.length > 0 )|| (medias2 && medias2.length > 0)
     .masonry-container.row.custom-carousel-container
-      each data in scrapedData
+      each data in scrapedData.reverse()
         if data._id
           - displayscr = (mode == 3 )? 'displaysrc':''
-          .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode,data-extractor=data.extractor, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
+          .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode,data-type=data.video?'VIDEO':'IMAGE',data-extractor=data.extractor, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
             .card.info-container(class=`card-clickable-${mode} ${displayscr}`, style="cursor:pointer", data-id=data._id, data-title=data.title, data-link=data.link)
               .card-top.position-relative
                 if data.link && data.link.includes('redgif')
@@ -23,18 +23,18 @@ block dynamicContent
                 if mode == 2
                   - favsrc = data.filePath && data.filePath.includes('.mp4') ? false : data.filePath
                   if data.link.includes('redgif') || data.link.includes('scrolller')
-                      img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", src=favsrc || data.thumb , alt=data.title )
+                      img.card-img-top(type="button",data-id=data._id, style="object-fit:contain;height: 100%;", src=favsrc || data.thumb , alt=data.title )
                   else 
-                    img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=favsrc || data.link, alt=data.title )
+                    img.card-img-top(type="button", data-id=data._id, style="object-fit:contain;height: 100%;", src=favsrc || data.link, alt=data.title )
                 else
                   if data.webm 
                     if !isSafari && false
                       - favsrc = data.filePath && data.filePath.includes('.webm') ? data.filePath : data.webm
                       video.webm(src=favsrc controls loop)
                     else
-                      img.card-img-top(type="button",data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px;", data-src=data.url , alt=data.title)
+                      img.card-img-top(type="button",data-id=data._id, style="object-fit:contain;height: 100%;", data-src=data.url , alt=data.title)
                   else
-                    img.card-img-top(type="button", data-id=data._id, style="object-fit:cover;height: 100%;min-height:200px", src=data.imageUrl || data.filePath, alt=data.title )
+                    img.card-img-top(type="button", data-id=data._id, style="object-fit:contain;height: 100%;", src=data.imageUrl || data.filePath, alt=data.title )
 
               .card-title.px-3.my-0
                 .row.justify-content-start.flex-row(style="height:100%")
@@ -59,6 +59,8 @@ block dynamicContent
                     else 
                       a.source.expand.btn.btn-transparent.border.border-0.my-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.title || data.alt}`)
                         i.fas.fa-plus-square    
+                    button.expand-card.btn.btn-transparent.shadow-0.border.border-0.my-1(type="button")
+                        i.fas.fa-expand
                 if data.title
                   p=data.title 
 
@@ -78,30 +80,32 @@ block dynamicContent
                               i.fas.fa-link
   else
     p ここには何もありません！
-  if scrapedData && scrapedData.length > 0 && !fav
-    .d-flex.justify-content-center.w-100.p-3
-      a.btn.btn-dark.border(type="button",class=page<=1?'d-none':'', href=`/dashboard/app/${mode}?page=${page>1?page-1:''}&searchTerm=${searchTerm}&nsfw=${user.nsfw}`)        
-        i.fas.fa-angle-left.me-3
-        | 前へ
+  if scrapedData && scrapedData.length > 0 
+    .position-fixed.d-flex.justify-content-center.w-100(style="bottom:10px;right:10px;left:10px")
+      a.btn.btn-dark.border(type="button",class=page<=1?'d-none':'', href=`/dashboard/app/${mode}${fav?'/fav':''}?page=${page>1?page-1:''}&searchTerm=${searchTerm?searchTerm:''}&nsfw=${user.nsfw}`)        
+        i.fas.fa-angle-left
+        //| 前へ
       span.px-3.btn.btn-white #{page}
-      button.btn.btn-dark.bordert.load-more.load-more-next(type="button" data-userId=user._id data-mode=mode, data-page=page+1, data-searchTerm=searchTerm, data-nsfw= user.nsfw)        
-        | 次へ
-        i.fas.fa-angle-right.ms-3
-      a.btn.btn-dark.bordert(type="button", class=scrapInfo&&scrapInfo.page==page?'d-none':'',href=`/dashboard/app/${mode}?page=${scrapInfo?scrapInfo.page:'1'}&searchTerm=${searchTerm}&nsfw=${user.nsfw}`)        
-        | Last Page
-        i.fas.fa-angle-right.ms-3
+      a.btn.btn-dark.bordert.load-more-next(type="button", href=`/dashboard/app/${mode}${fav?'/fav':''}?page=${page+1}&searchTerm=${searchTerm?searchTerm:''}&nsfw=${user.nsfw}`, data-fav=!!fav, data-userId=user._id data-mode=mode, data-page=page+1, data-searchTerm=searchTerm, data-nsfw= user.nsfw)        
+        //| 次へ
+        i.fas.fa-angle-right
+      a.btn.btn-dark.bordert.d-none(type="button", class=scrapInfo&&scrapInfo.page==page?'d-none':'',href=`/dashboard/app/${mode}${fav?'/fav':''}?page=${scrapInfo?scrapInfo.page:'1'}&searchTerm=${searchTerm?searchTerm:''}&nsfw=${user.nsfw}`)        
+        i.fas.fa-angle-double-right
+  .position-fixed(style="bottom:10px;right:10px")
+    button#activeSlider.btn.btn-dark.shadow-0.rouded 
+      i.fas.fa-play
   #slickModal.modal.fade(tabindex='-1')
     .modal-dialog.modal-dialog-centered.modal-xl
       .modal-content.rounded-0(style="background:#000;")
         #slickCarousel.slick-carousel
         .position-absolute.d-flex.justify-content-end.py-3.w-100(style="z-index: 3;")
-          button.btn#closeSlickModal.mx-3.text-white(type="button")
+          button.btn.btn-dark.rounded-0#closeSlickModal.mx-3.text-white(type="button")
             i.fas.fa-times
-        #slickCarousel-tool-bar.info-container.d-flex.flex-column.justify-content-center.position-absolute(style="z-index: 3;top:0;bottom: 0;")
-          button.btn.slider-delete-button.p-3.text-white(type="button")
+        #slickCarousel-tool-bar.d-none.info-container.d-flex.flex-column.justify-content-center.position-absolute(style="z-index: 3;top:0;bottom: 0;")
+          button.btn.btn-dark.rounded-0.slider-delete-button.p-3.text-white(type="button")
               i.fas.fa-trash-alt
           if !fav
-            button.btn.download-button.p-3.text-white(type="button")
+            button.btn.btn-dark.rounded-0.download-button.p-3.text-white(type="button")
               i.fas.fa-heart
-          a.source.p-3.text-white(target="_blank" href="#")
+          a.source.btn.btn-dark.rounded-0.p-3.text-white(target="_blank" href="#")
               i.fas.fa-link

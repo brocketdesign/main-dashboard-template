@@ -43,6 +43,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         try {
           const url = await getHighestQualityVideoURL(video_id,req.user,false);
           console.log(url)
+          
           if (!url) {
             console.log('Video URL not found for video_id:', video_id);
             res.status(404).json({ error: 'Video URL not found.' });
@@ -190,7 +191,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
       router.get('/video', async (req, res) => {
         try {
           const { videoId } = req.query;
-          console.log(`Loadind video : ${videoId}`)
+          console.log(`Loading video : ${videoId}`)
           const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
           // Call the function to get the highest quality video URL for the provided id
           const url = await getHighestQualityVideoURL(videoId,req.user);

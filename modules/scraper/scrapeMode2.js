@@ -2,41 +2,47 @@ const { ObjectId } = require('mongodb');
 const axios = require('axios');
 const puppeteer = require('puppeteer');
 
-async function scrapeMode2(url, mode, nsfw, page, filter = 'images') {
-  let data1 = [];
-  let data2 = [];
+async function scrapeMode2(url, mode, nsfw, page, filter = 'images',isAsync) {
   let data = [];
 
-  try {
-    // Attempt to scrape data from Reddit
-    console.log("Starting Reddit scraping...");
-    data1 = await scrapeReddit(url, mode, nsfw, page, filter = 'images');
-    console.log("Successfully scraped data from Reddit");
-  } catch (error) {
-    // Log an error if Reddit scraping fails
+  // Prepare promises for each scraping task
+  const redditPromise = scrapeReddit(url, mode, nsfw, page, filter = 'images').catch(error => {
     console.error("Failed to scrape data from Reddit", error);
-  }
+    return []; // Return empty array on failure
+  });
+
+  const scrolllerVideoPromise = scrapeScrolller(url, mode, nsfw, page, 'videos', isAsync).catch(error => {
+    console.error("Failed to scrape data from Scrolller (VIDEO)", error);
+    return []; // Return empty array on failure
+  });
+
+  const scrolllerPicturePromise = scrapeScrolller(url, mode, nsfw, page, 'picture', isAsync).catch(error => {
+    console.error("Failed to scrape data from Scrolller (PICTURE)", error);
+    return []; // Return empty array on failure
+  });
 
   try {
-    // Attempt to scrape data from Scrolller
-    console.log("Starting Scrolller scraping...");
-    data2 = await scrapeScrolller(url, mode, nsfw, page);
-    console.log("Successfully scraped data from Scrolller");
+    console.log("Starting scraping from Reddit and Scrolller...");
+
+    // Use Promise.all to wait for all promises to resolve
+    const results = await Promise.all([redditPromise, scrolllerVideoPromise, scrolllerPicturePromise]);
+
+    // Combine the results
+    data = results.flat(); // Flattens the array of arrays into a single array
+    console.log("Successfully scraped data from Reddit and Scrolller");
   } catch (error) {
-    // Log an error if Scrolller scraping fails
-    console.error("Failed to scrape data from Scrolller", error);
+    // Handle any unexpected error that wasn't caught earlier
+    console.error("An unexpected error occurred during scraping", error);
   }
 
-  // Concatenate data from both sources
-  data = data1.concat(data2);
   console.log("Combined data from Reddit and Scrolller");
-
   return data;
 }
 
-const scrapeScrolller = (subreddit, mode, nsfw, page) => {
+
+const scrapeScrolller = (subreddit, mode, nsfw, page, mediaType, isAsync) => {
   return new Promise(async (resolve, reject) => {
-    const url = subreddit.indexOf('http') >= 0 ? subreddit : `https://scrolller.com${subreddit}/`;
+    const url = subreddit.indexOf('http') >= 0 ? subreddit : `https://scrolller.com${subreddit}?filter=${mediaType}`;
 
     // Launch Puppeteer browser
     const browser = await puppeteer.launch({
@@ -56,9 +62,9 @@ const scrapeScrolller = (subreddit, mode, nsfw, page) => {
       await page.goto(url, { waitUntil: 'networkidle2' });
 
       const itemSelector = '.vertical-view__item-container'; // Replace with your item selector
-      const itemCount = 50; // Number of items you want to collect
-    
-      const scrapedData = await scrollAndScrape(page, itemSelector, itemCount);
+      const itemCount = isAsync ? 100:20; // Number of items you want to collect
+      console.log(!!isAsync,`I want ${itemCount} items.`)
+      const scrapedData = await scrollAndScrape(page, itemSelector, itemCount, mediaType);
     
       // Log the total number of scraped items
       console.log('Total scraped items:', scrapedData.length);
@@ -124,7 +130,7 @@ async function scrapeReddit(url, mode, nsfw, page, filter = 'images') {
     return [];
   }
 }
-async function scrollAndScrape(page, itemSelector, itemCount) {
+async function scrollAndScrape(page, itemSelector, itemCount, mediaType) {
   const scrapedData = [];
   const uniqueItems = new Set(); // Using a Set to automatically avoid duplicate objects
   let ct = 0
@@ -141,20 +147,27 @@ async function scrollAndScrape(page, itemSelector, itemCount) {
     });
 
     // Get the updated list of items
-    const items = await page.$$eval(itemSelector, elements => {
-      return elements.map(element => {
-        const link = 'https://scrolller.com' + element.querySelector('a').getAttribute('href');
-        const thumb = element.querySelector('img').getAttribute('src');
-        const video = !! element.querySelector('[data-test-id="media-component-video"]') ;
-        const subreddit = element.querySelector('.item-panel__text-title:nth-child(2)').getAttribute('href');
-        return { link, thumb, video, subreddit, extractor :'scrolller' };
-      });
-    });
+    const items = await page.$$eval(itemSelector, (elements, mediaType) => {
+    
+        return elements.map(element => {
+          try {
+            const link = 'https://scrolller.com' + element.querySelector('a').getAttribute('href');
+            const thumb = element.querySelector('img').getAttribute('src');
+            const video = !!(mediaType.toUpperCase() === 'VIDEOS') || !!element.querySelector('.media-icon__play');
+            const subreddit = element.querySelector('.item-panel__text-title:nth-child(2)').getAttribute('href');
+            return { link, thumb, video, subreddit, extractor: 'scrolller' };
+          } catch (error) {
+            return null;
+          }
+        });
+    
+    }, mediaType);  // Pass mediaType as an argument here
+    
 
     // Filter and add unique items to the scrapedData array
     items.forEach(item => {
       const key = JSON.stringify(item); // Create a unique key for the object
-      if (!uniqueItems.has(key)) {
+      if (!uniqueItems.has(key) && item != null) {
         uniqueItems.add(key);
         scrapedData.push(item);
       }
@@ -167,7 +180,7 @@ async function scrollAndScrape(page, itemSelector, itemCount) {
     // Check if the scroll position hasn't changed, indicating that you've reached the bottom
     if (newScrollPosition === currentScrollPosition) {
       // Add your logic here for what to do when you've reached the bottom
-      if(scrapedData.length == 0 && ct>=10){
+      if(ct>=5){
         console.log("Reached the bottom of the page and nothing founded. Waiting ...");
         break; // Exit the loop if you've reached the bottom
       }

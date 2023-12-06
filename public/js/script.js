@@ -21,10 +21,13 @@ const inputTrigger = (inputElement, triggerElement) => {
 }
 let msnry = null ;
 const handleMasonry = () => {
-    
     if(
         document.querySelector('.masonry-container')
-        && window.innerWidth >= YOUR_LARGE_SCREEN_BREAKPOINT
+        && window.innerWidth >= YOUR_LARGE_SCREEN_BREAKPOINT 
+        ||
+        document.querySelector('.masonry-container')
+        && $('#grid-range').val() >= 2
+
     ){
         msnry = new Masonry('.masonry-container', {
             itemSelector: '.masonry-item:not([style*="display: none"])', 
@@ -390,8 +393,7 @@ const handleFormResult = (isSuccess, message) => {
 
 // Handling of card clicking
 const handleCardClickable = () => {
-    $(`.play-button`)
-    .click(function(event) {
+    $(document).on('click',`.play-button`,function(event) {
     event.stopPropagation();
     const $thisCard = $(this).closest('.card.info-container')
     var id = $thisCard.data('id');
@@ -1103,8 +1105,8 @@ function updategridlayout(value) {
   function sendSearchForm(data,callback) {
     
     const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchTerm=${data.searchterm?data.searchterm:data.searchTerm}&nsfw=${data.nsfw}`
-    //window.location=url
-    //return 
+    window.location=url
+    return 
  
     console.log(data)
     $.ajax({
@@ -2192,7 +2194,7 @@ function handleIframe(){
         event.stopPropagation();
         var targetURL = $(this).data('url')
         const itemID = $(this).data('id')
-        const $thisCard = $(`.card.info-container[data-id=${itemID}]`)
+        const $thisCard = $(this).closest(`.card.info-container[data-id=${itemID}]`)
         const $spinner = generateSpinnerCard($thisCard)
         if(!$(this).hasClass('fav')){
             $(this).hide()

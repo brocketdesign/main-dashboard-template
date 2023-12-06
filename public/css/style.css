@@ -71,26 +71,35 @@ button.fav i {
   border-radius:0;
 }
 #slickCarousel .slick-slide img {
-  height: 100vh;
+  height: 100%;
+  max-height: 95vh;
   object-fit: contain;
 }
 .slick-prev {
-  left: 0;
-  bottom: 0;
-  top: 0;
-  width: 50%;
-  opacity: 0;
+  left: 10px;
+  bottom: 50vh;
   position:absolute;
   z-index: 2;
 }
 .slick-next {
-  right: 0;
-  bottom: 0;
-  top: 0;
-  width: 50%;
-  opacity: 0;
+  right: 10px;
+  bottom: 50vh;
   position:absolute;
   z-index: 2;
+}
+.slick-slide video{
+  max-height: 90vh;
+}
+#slickModal .modal-dialog{
+  margin: 0 auto;
+}
+.slick-slide .card.info-container{
+  border-radius: 0;
+  width: 100%;
+}
+.slick-slide{
+  display: flex !important;
+  align-items: center !important;
 }
 @keyframes spin {
   0% { transform: rotate(0deg); }
@@ -159,6 +168,12 @@ li.list-group-item{
 
 }
 @media (max-width: 768px) {  /* assuming 768px is the breakpoint for mobile view */
+  .card-title{
+    display:none;
+  }
+  .slick-slide .card-title{
+    display:block !important;
+  }
     #positionElement { 
       position: absolute !important;
       top: auto !important;

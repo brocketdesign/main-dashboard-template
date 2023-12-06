@@ -137,7 +137,7 @@ async function findDataInMedias(userId, page, query, categoryId = null) {
     return medias;
   }else{
     page_number = parseInt(page) || 1;
-    const limit = 60; // Number of documents per page
+    const limit = 30; // Number of documents per page
     const skip = (page_number - 1) * limit; // Calculate skip value
 
     // Find the medias that match the query

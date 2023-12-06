@@ -24,7 +24,7 @@ const {
   initCategories
 } = require('../services/tools')
 
-const ManageScraper = require('../modules/ManageScraper');
+const {ManageScraper,AsyncManageScraper} = require('../modules/ManageScraper');
 
 // Route for handling '/dashboard/'
 router.get('/', ensureAuthenticated,ensureMembership, async (req, res) => {
@@ -245,6 +245,9 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
     
       await initCategories(req.user._id)
       let scrapedData = await ManageScraper(searchTerm,nsfw,mode,req.user, page);
+      if(mode == 2 || mode == 1 ){
+        AsyncManageScraper(searchTerm,nsfw,mode,req.user, page);
+      }
       let scrapInfo  
       try {
         const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
@@ -299,6 +302,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
       }
     }
     let medias = await findDataInMedias(req.user._id, page, query_obj);
+    
     console.log(`Found ${medias.length} element(s).`)
     let medias2 = []
     if(mode == 'actresses'){

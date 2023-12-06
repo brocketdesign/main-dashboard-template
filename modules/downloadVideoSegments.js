@@ -142,35 +142,40 @@ const downloadVideoSegments = (url, folderPath, itemID) => {
 
       if (contentType && contentType === 'application/vnd.apple.mpegurl') {
         const m3u8Url = response.url();
-        //console.log(`Found .m3u8 URL: ${m3u8Url}`);
-        
-        try {
-          // Remove the event listener after the first .m3u8 URL is found
-          page.removeListener('response', onResponse);
-
-          const parser = await fetchAndParseM3U8(page, m3u8Url);
-          console.log(`Number of segments: ${parser.manifest.segments.length}`);
-
-          const basePath = m3u8Url.substring(0, m3u8Url.lastIndexOf('/') + 1);
-
+        console.log(`Found .m3u8 URL: ${m3u8Url}`);
+        // Check if this is the "video.m3u8" URL
+        if (m3u8Url.includes('video.m3u8')) {
           try {
-            const finalVideoFilePath = await downloadSegments(page, parser, basePath, folderPath, itemID);
-            //console.log("Final video file path:", finalVideoFilePath);
+            // Remove the event listener after the first .m3u8 URL is found
+            page.removeListener('response', onResponse);
 
-            // Close the browser and resolve the Promise with the file path
-            await browser.close();
-            resolve(finalVideoFilePath);
+            const parser = await fetchAndParseM3U8(page, m3u8Url);
+            console.log(`Number of segments: ${parser.manifest.segments.length}`);
+            if(parser.manifest.segments.length<10){
+              await browser.close();
+              return
+            }
+            const basePath = m3u8Url.substring(0, m3u8Url.lastIndexOf('/') + 1);
 
+            try {
+              const finalVideoFilePath = await downloadSegments(page, parser, basePath, folderPath, itemID);
+              //console.log("Final video file path:", finalVideoFilePath);
+
+              // Close the browser and resolve the Promise with the file path
+              await browser.close();
+              resolve(finalVideoFilePath);
+
+            } catch (error) {
+              console.error("An error occurred:", error);
+
+              // Close the browser and reject the Promise
+              await browser.close();
+              reject(error);
+            }
           } catch (error) {
-            console.error("An error occurred:", error);
-
-            // Close the browser and reject the Promise
-            await browser.close();
+            console.error(`An error occurred: ${error}`);
             reject(error);
           }
-        } catch (error) {
-          console.error(`An error occurred: ${error}`);
-          reject(error);
         }
       }
     };

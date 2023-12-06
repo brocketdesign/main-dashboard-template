@@ -10,11 +10,21 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
 
     if(foundElement.filePath){
-      updateSameElements(foundElement,{isdl:true,isdl_data:new Date(),filePath:foundElement.filePath})
+      await updateSameElements(foundElement,{isdl:true,isdl_data:new Date(),filePath:foundElement.filePath})
       return foundElement.filePath.replace('public','')
     }
     
     if(!foundElement.link.includes('youtube') && lessThan24Hours(foundElement.last_scraped)){
+      if(!foundElement.isdl_process){
+        global.db.collection('medias').updateOne({_id:new ObjectId(video_id)},{$set:{isdl_process:true}})
+        .then(()=>{
+          downloadMedia(foundElement)
+        })
+        .catch((err)=>{
+          console.log(err)
+        })
+      }
+
       return foundElement.highestQualityURL
     }
 
@@ -25,20 +35,45 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     if (foundElement.mode == "4") {
       return isMedia(foundElement.link) ? foundElement.link : foundElement.thumb; 
     }
+    
     if(!foundElement.video && foundElement.mode == "2"){
       if( foundElement.link.includes('scrolller')){
         return foundElement.thumb
       }
       return foundElement.link
     }
+    
 
-    return await searchVideo(foundElement, user, stream);
+    const result = await searchVideo(foundElement, user, stream);
+
+    if(!foundElement.isdl_process){
+      global.db.collection('medias').updateOne({_id:new ObjectId(video_id)},{$set:{isdl_process:true}})
+      .then(()=>{
+        downloadMedia(foundElement)
+      })
+      .catch((err)=>{
+        console.log(err)
+      })
+    }
+    return result
   } catch (error) {
     console.log('Error occurred while getting the video URL:', error);
     return null;
   }
 }
-
+async function downloadMedia(foundElement){
+        axios.post('http://192.168.10.115:3100/api/dl', {
+          video_id: foundElement._id,
+          title: foundElement.title
+        })
+        .then(response => {
+          console.log(response.data);
+          global.db.collection('medias').updateOne({_id:new ObjectId(foundElement._id)},{$set:{isdl_process:false}})
+        })
+        .catch(error => {
+          console.error('There was an error!', error);
+        });        
+}
 
 async function searchVideo(videoDocument, user, stream) {
   const videoLink = videoDocument.link; // Assuming 'link' field contains the video link
@@ -62,16 +97,16 @@ async function searchVideo(videoDocument, user, stream) {
 
 async function searchVideoScroller(videoDocument, user) {
   const videoURL = videoDocument.link;
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({ headless: 'new' });
   const defaultPage = await browser.newPage();
-
+  console.log('searchVideoScroller',{videoURL})
   try {
     await defaultPage.goto(videoURL, { waitUntil: 'networkidle2' });
     await defaultPage.evaluate(() => localStorage.setItem('SCROLLLER_BETA_1:CONFIRMED_NSFW', true));
     const page = await browser.newPage();
     await page.goto(videoURL, { waitUntil: 'networkidle2' });
     
-    await page.waitForSelector('video', { timeout: 10000 });
+    await page.waitForSelector('video', { timeout: 1000 });
 
     const highestQualityURL = await page.$eval('video', video => {
       if (video.src) return video.src;
@@ -80,7 +115,7 @@ async function searchVideoScroller(videoDocument, user) {
     });
 
     await browser.close();
-    updateSameElements(videoDocument, { highestQualityURL,isdl:true, last_scraped: new Date() });
+    await updateSameElements(videoDocument, { highestQualityURL,isdl:true, last_scraped: new Date() });
 
     return highestQualityURL;
 
@@ -140,14 +175,13 @@ async function searchVideoUrl( videoDocument, user) {
 
   const highestQualityURL = mp4Urls[0] || null;
 
-  updateSameElements(videoDocument, {highestQualityURL:highestQualityURL,last_scraped:new Date()})
-  
+  await updateSameElements(videoDocument, {highestQualityURL:highestQualityURL,last_scraped:new Date()})
   //console.log('Highest Quality URL:', highestQualityURL);
   return highestQualityURL;
 }
 
 async function searchVideoYoutube( videoDocument, user, stream){
-
+console.log(videoDocument)
   if(!stream){
     return videoDocument.link
   }
@@ -158,7 +192,7 @@ async function searchVideoYoutube( videoDocument, user, stream){
     filter: 'audioandvideo', 
     quality: 'highestaudio'
   });
-  updateSameElements(videoDocument, {streamingUrl:format.url,last_scraped:new Date()})
+  await updateSameElements(videoDocument, {streamingUrl:format.url,last_scraped:new Date()})
 
   //console.log('Format found!', format.url);
   return format.url;
