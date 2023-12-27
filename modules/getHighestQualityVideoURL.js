@@ -36,6 +36,10 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
       return isMedia(foundElement.link) ? foundElement.link : foundElement.thumb; 
     }
     
+    if (foundElement.mode == "5") {
+      return foundElement.link ; 
+    }
+    
     if(!foundElement.video && foundElement.mode == "2"){
       if( foundElement.link.includes('scrolller')){
         return foundElement.thumb
@@ -64,7 +68,7 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
 async function downloadMedia(foundElement){
         axios.post('http://192.168.10.115:3100/api/dl', {
           video_id: foundElement._id,
-          title: foundElement.title
+          title: foundElement.title || foundElement._id
         })
         .then(response => {
           console.log(response.data);

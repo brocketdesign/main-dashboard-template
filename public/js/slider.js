@@ -18,7 +18,6 @@ function scrollToCurrentSlide(images) {
   // Get the current slide index
   const currentSlide = getCurrentSlide();
   const imageId = images[currentSlide].id;
-  console.log(`Scrolling to ${imageId}`);
 
   // Find the div element you want to scroll to
   const targetElement = $(`.card.info-container[data-id=${imageId}]`);
@@ -28,10 +27,12 @@ function scrollToCurrentSlide(images) {
       // Calculate the position to scroll to
       const scrollToPosition = targetElement.offset().top;
 
-      // Animate the scroll to the target element
       $('html, body').animate({
-          scrollTop: scrollToPosition
-      }, 1000); // 1000 milliseconds for the scroll animation
+        scrollTop: scrollToPosition
+    }, 1000, function() {
+        enableAllVideo();
+    });
+    
   } else {
       console.log(`Element with ID ${imageId} not found.`);
   }
@@ -91,7 +92,8 @@ $(document).ready(function() {
 
     $('#activeSlider,.expand-card')
     .on('click', function() {
-
+    pauseAllVideo()
+    
     var clickedImageIndex = images.findIndex(function(image) {
       return image.img === $(this).closest('.custom-carousel-item').find('img').attr('src');
     }.bind(this));
@@ -148,3 +150,16 @@ $(document).ready(function() {
         $('#slickCarousel').slick('refresh');
     })
 });
+function pauseAllVideo() {
+  $(document).find(`video`).each(function() {
+    $(this).trigger('pause')
+    $(this).addClass('force-pause')
+  });
+}
+function enableAllVideo(){
+  $(document).find(`video`).each(function() {
+    setTimeout(() => {
+          $(this).removeClass('force-pause')
+    }, 1000);
+  });
+}

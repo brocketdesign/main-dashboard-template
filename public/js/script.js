@@ -223,13 +223,16 @@ $(document).ready(function() {
         e.stopPropagation()
         downloadVideo($(this).attr('data-id'), $(this).attr('data-name'))
     })
- 
+
+    handleInstantVideo();
+    HandleCardSetting();
     activateClickOnVisibleButtons();
     handleFavorite();
     handleSelectCountry();
     handleCopyButtons();
     updateMoments();
     enableTrackScroll();
+    enableReverseTrackScroll();
     handleOpenaiForm();
     handleMemo();
 
@@ -390,16 +393,141 @@ const handleFormResult = (isSuccess, message) => {
 
     //setTimeout(() => $(btnSelector).removeClass(`btn-${btnColor}`).addClass('btn-success'), 5000);
 }
+function HandleCardSetting() {
+    $(document).find('.card.info-container').each(function() {
+        const card = $(this);
+        const settingToggle = card.find('.setting-container');
+        const settingId = card.attr('data-id')
+        // Handle hover event on the card
+        card.hover(
+            function() {
+                // Mouse enters the card
+                    settingToggle.show();
+                if(isLargeScreen()){
+                    //displayCardSetting(settingId)
+                }
+            }, 
+            function() {
+                // Mouse leaves the card
+                    settingToggle.hide();
+                if(isLargeScreen()){
+                    //displayCardSetting(settingId)
+                }
+            }
+        );
 
-// Handling of card clicking
-const handleCardClickable = () => {
-    $(document).on('click',`.play-button`,function(event) {
-    event.stopPropagation();
-    const $thisCard = $(this).closest('.card.info-container')
+        // Handle click event on the settings
+        settingToggle.click(function() {
+            displayCardSetting(settingId)
+        });
+    });
+}
+function displayCardSetting(settingId) {
+    // Ensure the settingId is properly formatted or escaped if necessary
+    // Especially if settingId can contain special characters
+
+    const card = $(`.card.info-container[data-id="${settingId}"]`);
+    const setting = card.find(`.card-title[data-id="${settingId}"]`);
+
+    if (!setting.is(':visible')) {
+        setting.show();
+        setting.addClass('setting-absolute');
+    } else {
+        setting.hide();
+        setting.removeClass('setting-absolute');
+    }
+
+    // Optional: Add error handling if card or setting is not found
+}
+
+function isLargeScreen() {
+    return window.innerWidth > 1024; // Define large screen size threshold here
+}
+$(document).ready(function() {
+    // Call LazyLoad on page load
+    LazyLoad();
+
+    // Call LazyLoad on scroll
+    $(window).scroll(function() {
+        LazyLoad();
+    });
+
+    // Call LazyLoad on window resize
+    $(window).resize(function() {
+        LazyLoad();
+    });
+});
+function manageVideo(isVisible, $element) {
+    // Find the video element within the provided element
+    const $video = $element.find('video');
+    if($video.hasClass('force-pause')){
+        return
+    }
+    // Check if the video element exists
+    if ($video.length) {
+        // If the element is visible and the video is not already playing
+        if (isVisible && $video.get(0).paused) {
+            $video.get(0).play();
+        } 
+        // If the element is not visible and the video is playing
+        else if (!isVisible && !$video.get(0).paused) {
+            $video.get(0).pause();
+        }
+    }
+}
+
+function LazyLoad(){
+    $('.card.info-container').each(function(){
+        const isVisible = checkIfElementIsInViewport($(this))
+        if(isVisible && !$(this).hasClass('lazyLoad') && isFavorite()){
+            $(this).addClass('lazyLoad')
+            downloadAndShow($(this))
+        }
+        manageVideo(isVisible,$(this))
+    })
+}
+function isFavorite(){
+    return !! document.querySelector('#fav')
+}
+function checkIfElementIsInViewport($element) {
+    const elementTop = $element.offset().top;
+    const elementBottom = elementTop + $element.outerHeight();
+
+    const viewportTop = $(window).scrollTop();
+    const viewportBottom = viewportTop + $(window).height();
+
+    return elementBottom > viewportTop && elementTop < viewportBottom;
+}
+function addCardToList(container) {
+    const itemId = container.attr('data-id');
+    if($('#imageList').find(`img[data-id="${itemId}"]`).length > 0 ){
+        return
+    }
+    const thumbnail = container.find('.card-img-top').attr('src');
+    const imgContainer = $('#imageList');
+    const imgElement = document.createElement('img');
+    imgElement.src = thumbnail; // Set the image source
+    imgElement.setAttribute('data-id', itemId); // Add the data-id attribute to the image
+
+    // Add a click event listener to the image
+    $(imgElement).on('click', function() {
+        // Scroll to the .info-container with the matching data-id
+        $('.info-container[data-id="' + itemId + '"]').get(0).scrollIntoView({
+            behavior: 'smooth' // Optional: for smooth scrolling
+        });
+    });
+
+    imgContainer.prepend(imgElement); // Prepend the image to the container
+
+}
+function updateImageList(itemId){
+    $('#imageList').find(`img[data-id="${itemId}"]`).css({'border-color':'white'})
+}
+function downloadAndShow($thisCard){
     var id = $thisCard.data('id');
     var isdl = $thisCard.data('isdl');
+    const playerButton = $thisCard.find(`.play-button`)
     console.log('Clicked card ID:', id);
-    console.log('isdl: ',isdl)
 
       // Check if the card has already been processed
       if ($thisCard.hasClass('done')) {
@@ -409,11 +537,17 @@ const handleCardClickable = () => {
 
       //Reset all the other cards
       $(`.card.info-container`).each(function(){
-        $(this).removeClass('done')
+        playerButton.removeClass('done')
       })
-      $(this).hide()
+
+      playerButton.hide()
       // Mark the card as done to avoid processing it again
       $thisCard.addClass('done');
+
+      if($thisCard.find('.instant-play-button').length>0){
+        instantPlay(id)
+        return
+      }
       // Check if the spinner is already present, if not, create and append it to the card
       if (!$thisCard.find('.spinner-border .for-strm').length) {
           var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute').css({inset:"0px", margin:"auto"}).attr('role', 'status');
@@ -427,7 +561,15 @@ const handleCardClickable = () => {
       var $spinner = $thisCard.find('.spinner-border');
       $spinner.show();
       handleDownloadVideo(id)
-  });
+}
+// Handling of card clicking
+const handleCardClickable = () => {
+    $(document).on('click',`.play-button`,function(event) {
+        event.stopPropagation();
+        const $thisCard = $(this).closest('.card.info-container')
+        addCardToList($thisCard)
+        downloadAndShow($thisCard)
+    });
 }
 function handleDownloadVideo(id){
     const $thisCard = $(`.card.info-container[data-id="${id}"]`)
@@ -437,11 +579,11 @@ function handleDownloadVideo(id){
     // Make a request to the server to get the highest quality video URL for the given ID
     $.get('http://192.168.10.115:3100/api/video?videoId='+id, function(response) {
         console.log('API Response:', response);
-
+        updateImageList(id)
         // Hide the spinner
 
         $spinner.hide();
-        $thisCard.find('.card-body-over').remove()
+        $thisCard.find('.card-body-over').addClass('hover-hide')
             // Assuming the response from the API is a JSON object with a 'url' property
             if (response && response.url) {
                 displayMedia(response.url,id)
@@ -460,33 +602,33 @@ function handleDownloadVideo(id){
                 // If the response does not contain a URL, show an error message or handle it as needed
                 console.error('Error: Video URL not available.');
 
-                $thisCard.find('.card-body-over').hide();
+                $thisCard.find('.card-body-over').addClass('hover-hide');
                 // Hide the spinner if there's an error
                 $spinner.hide();
             }
         });
   }
 function displayMedia(url,id){
-    console.log('displayMedia',{url,id})
+
     $thisCard = $(`.card.info-container[data-id=${id}]`)
 
     if($thisCard.find('img.card-img-top').attr('src').includes('.gif') || url.includes('.jpg')){
         return
     }
-    console.log('checkUrlandCardStatus',checkUrlandCardStatus($thisCard,url))
+
     if(checkUrlandCardStatus($thisCard,url)){
         
-        $thisCard.find('.card-body-over').remove()
+        $thisCard.find('.card-body-over').addClass('hover-hide')
         var $video = $('<video>').attr({
             src: url,
             autoplay: true,
-            width:"100%",
+            width: "100%",
             controls: true,
             playsinline: true,
-            loop:true,
-            muted:true,
-            volume: 0
-        }).on('loadeddata', function() {
+            loop: true
+        })
+        .prop('muted', true)
+        .on('loadeddata', function() {
           updateMasonryLayout()
           $thisCard.find('.video-container').addClass('loaded')
         }).on('error',function(){
@@ -623,6 +765,10 @@ const handleDownloadButton = () => {
   });
 }
 function handleFavorite(){
+    $(document).find('.card.info-container').on('dblclick',function(){
+        $(this).find('.handle-fav').click()
+    })
+ 
     $(document).on('click','.handle-fav',function(){
         const $buttonContainer = $(this);
         const itemID = $(this).data('id') || $(this).closest('.info-container').data('id');
@@ -2019,6 +2165,27 @@ function enableTrackScroll() {
         }
     });
 }
+let lastScrollTop2 = 0; 
+
+function enableReverseTrackScroll() {
+    const threshold = 100; // Define the scroll threshold
+
+    $(window).on("scroll.reverseTrackScroll", function() {
+        let currentScrollTop = $(this).scrollTop();
+        let scrollDifference = Math.abs(currentScrollTop - lastScrollTop2);
+        let atTopOfPage = currentScrollTop === 0;
+        let atBottomOfPage = currentScrollTop + $(window).height() >= $(document).height();
+
+        if (atTopOfPage || atBottomOfPage || scrollDifference >= threshold) {
+            if (!atTopOfPage ) { // Scrolling down
+                $(".auto-show").fadeIn().addClass('d-flex'); // Show elements when scrolling down
+            } else { // Scrolling up or at top/bottom of page
+                $(".auto-show").fadeOut().removeClass('d-flex'); // Hide elements when scrolling up
+            }
+            lastScrollTop2 = currentScrollTop; // Update the last scroll position
+        }
+    });
+}
 
 function disableTrackScroll() {
     $(window).off("scroll.trackScroll");
@@ -2192,6 +2359,7 @@ function cancelSubscription(subscriptionID){
 function handleIframe(){
     $(document).on('click','.iframe-button',function(event){
         event.stopPropagation();
+        
         var targetURL = $(this).data('url')
         const itemID = $(this).data('id')
         const $thisCard = $(this).closest(`.card.info-container[data-id=${itemID}]`)
@@ -2204,21 +2372,26 @@ function handleIframe(){
         $spinner.show()
     // Show the spinner while the download is in progress
       $thisCard.find('.card-body-over').show();
-        $.ajax({
-            type: "POST",
-            url: "/api/downloadFileFromURL",
-            data: { url: targetURL,itemID },
-            success: function(response) {
-                console.log("Success:", response);
-                displayMedia(response.url,itemID)
-                $spinner.hide()
-            },
-            error: function(error) {
-                console.error("Error:", error);
-            }
-        });
+
+    downloadFileFromURL(targetURL,itemID,function(response) {
+        displayMedia(response.url,itemID)
+        $spinner.hide()
+    })
 
     })
+}
+function downloadFileFromURL(targetURL,itemID,callback){
+    $.ajax({
+        type: "POST",
+        url: "/api/downloadFileFromURL",
+        data: { url: targetURL,itemID },
+        success: function(response) {
+            if(callback){ callback(response) }
+        },
+        error: function(error) {
+            console.error("Error:", error);
+        }
+    });
 }
 function generateSpinnerCard($thisCard){
     // Check if the spinner is already present, if not, create and append it to the card
@@ -2554,4 +2727,31 @@ function handleIframeActress(itemID){
     console.log({iframURL})
     const iframeHTML = `<iframe src="${iframURL}" width="600" height="400"></iframe>`
     element.append(iframeHTML)
+}
+function handleInstantVideo() {
+    $('.instant-play-button').on('click', function() {
+        var dataId = $(this).attr('data-id');
+        const $thisCard = $('.info-container[data-id="' + dataId + '"]')
+        addCardToList($thisCard)
+        instantPlay(dataId)
+    });
+}
+function instantPlay(dataId){
+    const $thisCard = $('.info-container[data-id="' + dataId + '"]')
+    $thisCard.find('.card-body-over').addClass('hover-hide').removeClass('d-flex');
+    $('img.card-img-top[data-id="' + dataId + '"]').hide();
+    var videoElement = $('video[data-id="' + dataId + '"]');
+    videoElement.attr('src', videoElement.attr('data-src'));
+    videoElement.show();
+    
+    videoElement.on('loadeddata', function() {
+        updateMasonryLayout()
+        $thisCard.find('.video-container').addClass('loaded')
+    })
+    directDownloadFileFromURL(dataId)
+}
+function directDownloadFileFromURL(dataId){
+    $.post('http://192.168.10.115:3100/api/dl', { video_id: dataId }, function(response) {
+        console.log('Download API Response:', response);
+      })
 }

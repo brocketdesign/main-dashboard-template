@@ -1,25 +1,33 @@
 extends dashboard
 
 block dynamicContent
+  div(id=section)
+  #imageList.image-container.auto-show
   if (scrapedData && scrapedData.length > 0 )|| (medias2 && medias2.length > 0)
     .masonry-container.row.custom-carousel-container
       each data in scrapedData.reverse()
         if data._id
           - displayscr = (mode == 3 )? 'displaysrc':''
           .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode,data-type=data.video?'VIDEO':'IMAGE',data-extractor=data.extractor, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
-            .card.info-container(class=`card-clickable-${mode} ${displayscr}`, style="cursor:pointer", data-id=data._id, data-title=data.title, data-link=data.link)
-              .card-top.position-relative
+            .card.info-container.bg-dark(class=`card-clickable-${mode} ${displayscr}`, style="cursor:pointer", data-id=data._id, data-title=data.title, data-link=data.link)
+              .card-top
                 if data.link && data.link.includes('redgif')
                   .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
                       button.iframe-button.btn.shadow.border.border-white(style="background: #ffffff61;", type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'', data-url=`${data.link.replace('watch','ifr')}`)
                         i.fas.fa-play
-                else
-                  if mode == '1' || (data.link && data.link.includes('scrolller') && data.video)
-                    .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                        button.play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
-                          i.fas.fa-play
-                                      
-                .video-container(data-id=data._id)
+                if mode == '1' || (data.link && data.link.includes('scrolller') && data.video)
+                  .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
+                      button.play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
+                        i.fas.fa-play
+                if mode == '5'
+                  .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
+                      button.instant-play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
+                        i.fas.fa-play
+                
+              .setting-container.position-absolute.btn.shadow-0.text-white(data-id=data._id, style="display:none;top:10px;right:20px")
+                i.fas.fa-ellipsis-v 
+              
+              .video-container.d-flex(data-id=data._id)
                 if mode == 2
                   - favsrc = data.filePath && data.filePath.includes('.mp4') ? false : data.filePath
                   if data.link.includes('redgif') || data.link.includes('scrolller')
@@ -35,8 +43,9 @@ block dynamicContent
                       img.card-img-top(type="button",data-id=data._id, style="object-fit:contain;height: 100%;", data-src=data.url , alt=data.title)
                   else
                     img.card-img-top(type="button", data-id=data._id, style="object-fit:contain;height: 100%;", src=data.imageUrl || data.filePath, alt=data.title )
-
-              .card-title.px-3.my-0
+                  if mode == 5
+                    video(data-id=data._id, data-src=data.link, style="display:none;" width="100%" controls muted autoplay playsinline)
+              .card-title.px-3.my-0(data-id=data._id, style="display:none")
                 .row.justify-content-start.flex-row(style="height:100%")
                   .col-12.col-sm-4.text-start(style="overflow:hidden")
                     a.expand(href=`/dashboard/app/${mode}?searchTerm=${data.subreddit}`)=data.subreddit

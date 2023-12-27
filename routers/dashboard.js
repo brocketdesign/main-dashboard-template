@@ -312,7 +312,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
 
     //medias = getUniqueElement(medias)
 
-    res.render(`search`, { user: req.user,result:true,fav:true, searchTerm,  isSafari:isSafari(userAgent), scrapedData:medias,medias2, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+    res.render(`search`, { user: req.user,result:true,fav:true, searchTerm, section:'fav', isSafari:isSafari(userAgent), scrapedData:medias,medias2, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 
   }catch(err){
     console.log(err)

@@ -21,7 +21,6 @@ const multer = require('multer');
 const searchSubreddits = require('../modules/search.subreddits')
 const summarizeVideo = require('../modules/youtube-summary')
 const postArticleToWordpress = require('../modules/postArticleToWordpress')
-const scrapeMode1GetRelatedVideo = require('../modules/scraper/scrapeMode1GetRelatedVideo')
 const createBookChapters = require('../modules/createBookChapters')
 const ManageScraper = require('../modules/ManageScraper');
 
