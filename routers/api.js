@@ -894,13 +894,13 @@ router.post('/txt2img', async (req, res) => {
   
 
   // Calculate the width based on the aspect ratio and the fixed height of 768
-  const width = getWidthForAspectRatio(512, aspectRatio);
+  const width = getWidthForAspectRatio(768, aspectRatio);
 
   const payload = {
     prompt: prompt.length === 0 ? default_prompt : prompt,
     negative_prompt: negative_prompt.length === 0 ? default_negative_prompt : negative_prompt,
     width, // Use the calculated width
-    height: 512 // Fixed height as provided
+    height: 768 // Fixed height as provided
   };
 
   try {
@@ -944,7 +944,7 @@ router.post('/huggingface/txt2img', async (req, res) => {
   const aspectRatio = req.body.aspectRatio;
 
   // Calculate the width based on the aspect ratio and the fixed height of 512
-  const width = getWidthForAspectRatio(512, aspectRatio);
+  const width = getWidthForAspectRatio(768, aspectRatio);
 
   const huggingFacePayload = {
     inputs: prompt.length === 0 ? default_prompt : prompt,
@@ -982,7 +982,7 @@ router.post('/img2img', async (req, res) => {
   }
 
   // Calculate the width based on the aspect ratio and the fixed height of 768
-  const width = getWidthForAspectRatio(512, aspectRatio);
+  const width = getWidthForAspectRatio(768, aspectRatio);
 
   try {
     // Load the image using sharp
@@ -994,7 +994,7 @@ router.post('/img2img', async (req, res) => {
       prompt: prompt.length === 0 ? default_prompt : prompt,
       negative_prompt: negative_prompt.length === 0 ? default_negative_prompt : negative_prompt,
       width,
-      height: 512
+      height: 768
     };
 
     // Call the img2img method of your API
