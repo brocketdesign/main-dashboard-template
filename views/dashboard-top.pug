@@ -37,7 +37,7 @@ block mainContent
                                 | Reddit
                             p.card-text.text-start.text-muted
                                 | 
-            .col.mb-3
+            .col.mb-3.d-none
                 a.card.btn.bg-white.px-2(href="/dashboard/app/5")
                     .card-body.row.justify-start.items-start.px-2
                         div.col-2.d-flex.align-items-center
@@ -47,7 +47,7 @@ block mainContent
                                 |  ツイッター動画 
                             p.card-text.text-start.text-muted
                                 | 
-            .col.mb-3.d-none
+            .col.mb-3
                 a.card.btn.bg-white.px-2(href="/dashboard/app/actresses")
                     .card-body.row.justify-start.items-start.px-2
                         div.col-2.d-flex.align-items-center
@@ -55,6 +55,16 @@ block mainContent
                         div.col-10
                             h5.card-title.fw-bold.text-start
                                 |  女優リスト 
+                            p.card-text.text-start.text-muted
+                                | 
+            .col.mb-3
+                a.card.btn.bg-white.px-2(href="/dashboard/app/stable-diffusion")
+                    .card-body.row.justify-start.items-start.px-2
+                        div.col-2.d-flex.align-items-center
+                            i.fas.fa-image.mr-3.display-6
+                        div.col-10
+                            h5.card-title.fw-bold.text-start
+                                |  画像生成 
                             p.card-text.text-start.text-muted
                                 | 
     section.my-5

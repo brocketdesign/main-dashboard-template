@@ -1,0 +1,118 @@
+
+.image-container {
+    overflow-x: auto;
+    padding: 10px;
+    position: fixed;
+    z-index: 99;
+    top: 0;
+    width: 100%; 
+  }
+  .image-container img {
+    height: 70px;
+    width: 70px; /* Set a fixed width for the images */
+    margin-right: 10px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid black;
+    cursor: pointer;
+  }
+  #tags-list{
+    overflow-x: auto;
+    padding: 10px;
+    width: 100%; 
+  }
+  .no-scroll {
+    overflow: hidden;
+    height: 100%;
+  }
+  .categories .card-body {
+    padding: 10px 20px;
+    border-radius: 0;
+  }
+  .subcategories .subcategory-body:last-child {
+    margin-bottom: 0 !important;
+  }
+  .categories.selected {
+    background-color: #000000b2 !important;
+  }
+  .image-gallery img{
+    width: auto;
+    height:60vh;
+    object-fit: contain;
+    border-radius: 5%;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  .image-gallery-nav img{
+    width: 150px;
+    height:150px;
+    object-fit: contain;
+    border-radius: 10%;
+    cursor: pointer;
+    max-width: 100%;
+  }
+  .full-screen .slick-slide img {
+    width: 100%;
+    height:100vh;
+    border-radius: 0%;
+  }
+  .full-screen {
+    background-color: #282828;
+    position: fixed; 
+    width: 100%; 
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 9999; 
+  }
+  
+  #imageList .gallery-item {
+    margin: 0 5px;
+    cursor: pointer;
+  }
+  .image-gallery-container{
+    cursor: pointer;
+  }
+
+  #image-gallery img{
+    width:100%;
+    border-radius: 5%;
+    object-fit: contain;
+  }
+  #image-gallery .slick-slide img {
+    width: auto;
+    margin: auto;
+  }
+  .aspect-ratio-btn {
+    padding: 5px 10px;
+    margin: 0 5px;
+    border: 1px solid #ccc;
+    background-color: #f8f8f8;
+    cursor: pointer;
+  }
+  
+  .aspect-ratio-btn span.active {
+    border-color: #6f42c1;
+    background-color: #e0d6eb;
+  }
+  .aspect-ratio-btn > span {
+    display: inline-block;
+    border-radius: 4px;
+    border: 1px solid rgb(0, 0, 0);
+    margin-right: 5px;
+  }
+    
+  @media (max-width: 768px) {  /* assuming 768px is the breakpoint for mobile view */
+    .image-gallery-nav img{
+      width: 50px;
+      height: 100px;
+    }
+    .image-gallery img {
+      height: 60vh;
+      width: 100%;
+    }
+    #image-gallery .slick-slide img{
+      width: 100%;
+    }
+}

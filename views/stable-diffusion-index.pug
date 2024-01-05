@@ -1,54 +1,83 @@
 extends dashboard-base
 
 block mainContent
+  #imageList.image-container.auto-show
   .container.my-4
     .row.position-relative
       .col-12.col-sm-4.order-2.order-sm-1
-        h2 モデルを選択
-        .d-flex.m-2.align-items-center(style="min-height: 30px;")
-            span(data-bs-toggle="tooltip" data-bs-placement="top" title="プロンプト")
-                span.me-2#generate-prompt-btn(type="button" data-feather='file-plus' onclick="updatePrompt()") 
-            span(data-bs-toggle="tooltip" data-bs-placement="top" title="ダウンロード")
-                span.mx-2(type="button" data-feather='arrow-down-circle') ダウンロード
-            span(data-bs-toggle="tooltip" data-bs-placement="top" title="プロンプトをリセット")
-                span.mx-2#reset-prompt-button(type="button" data-feather="refresh-ccw" onclick="promptreload()") プロンプトをリセット
-            .mx-2.d-flex.justify-content-center.align-items-center
-                input#prompt-input.form-control.rounded.d-none(type='text', placeholder='プロンプトを入力', aria-label='プロンプト入力', value=user.latesr_generated_prompt ? user.latesr_generated_prompt : '')
-                span(data-bs-toggle="tooltip" data-bs-placement="top" title="生成")
-                    #generate-button(type="button", onclick="generateDiffusedImage()")
-                        span(data-feather='play-circle') 生成
-                #prompt-loader.loader(style='display:none;')
-                    .spinner-border.spinner-border-sm(role="status") 
-                    span.visually-hidden ローディング...
         .dropdown
           button.btn.btn-secondary.dropdown-toggle.w-100(type="button", id="modelDropdown", data-bs-toggle="dropdown", aria-expanded="false", style='overflow:hidden')
             | モデルを選択
-          ul.dropdown-menu(aria-labelledby="modelDropdown")
+          ul.dropdown-menu(aria-labelledby="modelDropdown" style="max-height:65vh;overflow: auto;")
             each model in models
               li
-                a.dropdown-item(href="#", data-id=`model-${model.hash}`, onclick=`changeModel('${model.hash}')`) #{model.title}
-        each category in categories
-          .col-12
-            .categories.card.h-100.rounded-0(data-id=`category-${category.id}` style=`cursor: pointer;`)
-              .card-body(style=`cursor: pointer;`)
-                h6.d-inline.card-title.mx-2(data-name=category.name) #{category.name_JP}
-                span.tag(data-id=`category-${category.id}`)
-              .subcategories.row.row-cols-1.row-cols-md-2.g-4.mt-1(data-id=`subcategory-${category.id}` style=`display:none;`)
-                each subcategory in category.subcategories
-                  .col-12.m-0.w-100
-                    .card.h-100.rounded-0(style=`cursor: pointer;`)
-                      .card-body.py-1(data-id=`subcategory-${category.id}-${subcategory.id}` style=`cursor: pointer;`)
-                        span.card-title(data-name=subcategory.name) #{subcategory.name_JP}
-                        .row.row-cols-1.row-cols-md-2.g-4.mt-1(data-id=`tag-${category.id}-${subcategory.id}` style=`display:none;`)
-                          each tag in subcategory.tags
-                            - const categoryID = category.id;
-                            - const subcategoryID = subcategory.id;
-                            - const tagID = tag.id;
-                            - const selected = user.tags && user.tags[categoryID] && user.tags[categoryID][subcategoryID] == tagID;
-                            .col-12.m-0.w-100
-                              .card.h-100.tags.rounded-0(style=`cursor: pointer;` data-id=`${categoryID}-${subcategoryID}-${tagID}` class=`${selected ? 'selected' : ''}`)
-                                .card-body.py-1(style=`cursor: pointer;`)
-                                  span.card-title(data-id=`${categoryID}-${subcategoryID}-${tagID}` data-name=tag.name)=tag.name_JP!=undefined?tag.name_JP:tag.name 
+                a.dropdown-item(href="#", data-id=`model-${model.hash}`, onclick=`changeModel('${model.hash}')`)
+                  img(src=`/modelpreview/${model.title.split('safetensors')[0]}preview.png`, style="width: 50px; height: 50px; margin-right: 10px;object-fit: cover;object-position: top;")
+                  | #{model.title.split('.safetensors')[0]}
+        #tags-list.d-flex
+
+        section.mt-2
+          #categories-container.col-12(style="max-height:70vh;overflow: auto;")
+          .col-12.mt-2
+            input#tag-input(type='text' hidden)
+            input#prompt-input.form-control.rounded(type='text', placeholder='プロンプトを入力', aria-label='プロンプト入力', value=user.latesr_generated_prompt ? user.latesr_generated_prompt : '')
+            // Aspect ratio button group
+            div.aspect-ratio-selector.d-flex.flex-row.my-2
+              // 1:1 button
+              button.btn.btn-white.border.d-flex.align-items-center.aspect-ratio-btn#ratio1x1(onclick="changeAspectRatio('1:1')")
+                span(style="width: 16px; height: 16px;")
+                | 1:1
+              // 2:3 button
+              button.btn.btn-white.border.d-flex.align-items-center.aspect-ratio-btn#ratio2x3(onclick="changeAspectRatio('2:3')")
+                span(style="width: 12px; height: 16px;")
+                | 2:3
+              // 3:2 button
+              button.btn.btn-white.border.d-flex.align-items-center.aspect-ratio-btn#ratio3x2(onclick="changeAspectRatio('3:2')")
+                span(style="width: 16px; height: 12px;")
+                | 3:2
+
+
+        .generate-button-container.position-sticky.col-12.order-2.order-sm-1.text-center.py-2.border.border-white.bg-light(style="bottom:0;")
+          div.btn.btn-primary.w-100(onclick="generateDiffusedImage()", style='cursor:pointer;', data-bs-toggle="tooltip", data-bs-placement="top", title="生成")
+            i#generate-button.fas.fa-play-circle
+
+            #prompt-loader.loader(style='display:none;')
+              .spinner-border.spinner-border-sm(role="status")
+              span.visually-hidden ローディング...
+    
+          
       .col-12.col-sm-8.order-1.order-sm-2
-        #diffused-image-gallery.mt-2.row(style="width:100%")
+
+        .contain-carousel.position-relative.my-2
+          .position-absolute.d-flex.flex-row(style="bottom:0;right:0;z-index:1;")
+            button#fullscreen.btn.btn-light.border.mx-1(data-bs-toggle="tooltip", data-bs-placement="top", title="拡大")
+              i.fa.fa-expand
+            button.regeneration.btn.btn-light.border.mx-1(data-bs-toggle="tooltip", data-bs-placement="top", title="生成")
+              i.fa.fa-spinner
+          #diffused-image-gallery.image-gallery
+            for item in images
+              .gallery-item
+                img.m-auto(src=`data:image/png;base64,${item.image}` data-id=`${item.imageId}`)
+
+        .contain-carousel.position-relative
+          #fullscreen-toolbar.position-absolute.flex-row.m-2(style="top:0;right:0;z-index:1;display:none;")
+            button.regeneration.btn.btn-light.mx-1(data-bs-toggle="tooltip", data-bs-placement="top", title="生成")
+              i.fa.fa-spinner
+            button#close-fullscreen.btn.btn-light.mx-1(data-bs-toggle="tooltip", data-bs-placement="top", title="閉じる")
+              i.fa.fa-times
+          #nav-gallery.image-gallery-nav
+            for item of images
+              .gallery-item
+                img.m-auto(src=`data:image/png;base64,${item.image}` data-id=`${item.imageId}`)
+      
+      .col-12.order-3.order-sm-2
+        hr
+        .contain-carousel.position-relative
+          #image-gallery-fullscreen-toolbar.position-absolute.flex-row.m-2(style="top:0;right:0;z-index:1;display:none;")
+            button.image-gallery-regeneration.btn.btn-light.mx-1(data-bs-toggle="tooltip", data-bs-placement="top", title="生成")
+              i.fa.fa-spinner
+            button#close-image-gallery-fullscreen.btn.btn-light.mx-1(data-bs-toggle="tooltip", data-bs-placement="top", title="閉じる")
+              i.fa.fa-times
+          #image-gallery.masonry-container.row
+
   script(src="/js/stable-diffusion-script.js")

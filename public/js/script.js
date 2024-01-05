@@ -479,7 +479,7 @@ function manageVideo(isVisible, $element) {
 function LazyLoad(){
     $('.card.info-container').each(function(){
         const isVisible = checkIfElementIsInViewport($(this))
-        if(isVisible && !$(this).hasClass('lazyLoad') && isFavorite()){
+        if(isVisible && !$(this).hasClass('lazyLoad') && isFavorite() && $('#search').data('mode') != 1){
             $(this).addClass('lazyLoad')
             downloadAndShow($(this))
         }
@@ -2180,7 +2180,7 @@ function enableReverseTrackScroll() {
             if (!atTopOfPage ) { // Scrolling down
                 $(".auto-show").fadeIn().addClass('d-flex'); // Show elements when scrolling down
             } else { // Scrolling up or at top/bottom of page
-                $(".auto-show").fadeOut().removeClass('d-flex'); // Hide elements when scrolling up
+                $(".auto-show").hide().removeClass('d-flex'); // Hide elements when scrolling up
             }
             lastScrollTop2 = currentScrollTop; // Update the last scroll position
         }

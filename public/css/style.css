@@ -164,35 +164,12 @@ button.fav i {
     transform: rotate(0deg);
   }
 }
-
 li.list-group-item{
   cursor:pointer;
 }
 .hashtag-inputs input, .chapters-inputs input, .keyword-inputs input{
   min-width: 150px;
 }
-.image-container {
-
-  overflow-x: auto;
-  padding: 10px;
-  position: fixed;
-  z-index: 99;
-  top: 0;
-  width: 100%; /* Set the width to 100% of the viewport or adjust as necessary */
-}
-
-.image-container img {
-  height: 70px;
-  width: 70px; /* Set a fixed width for the images */
-  margin-right: 10px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid black;
-  cursor: pointer;
-}
-
-
 @media (max-width: 992px) {
   .top-nav .navbar {
     padding: 0 !important;
@@ -200,8 +177,8 @@ li.list-group-item{
   .top-nav img{
     width: 20px;
   }
-
 }
+
 @media (max-width: 768px) {  /* assuming 768px is the breakpoint for mobile view */
   .masonry-item .card-title{
     display:none;

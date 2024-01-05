@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-
+const sharp = require('sharp');
 const getHighestQualityVideoURL = require("../modules/getHighestQualityVideoURL")
 const ensureAuthenticated = require('../middleware/authMiddleware');
 const streamVideoSegments = require('../modules/streamVideoSegments')
@@ -14,6 +14,7 @@ const {
   saveDataSummarize,
   generateFilePathFromUrl
 } = require('../services/tools')
+const fetch = require('node-fetch');
 
 const pornCategories = require('../services/categories')
 const pdfToChunks = require('../modules/pdf-parse')
@@ -869,15 +870,37 @@ router.post('/model', async (req, res) => {
   }
 });
 
+router.get('/categories', async (req, res) => {
+  try {
+    const categories = await global.db.collection('categories').find().toArray();
+    res.json(categories);
+  } catch (err) {
+    res.status(500).send('Ahoy! Trouble fetching categories.');
+  }
+});
+// I'm assuming you have a function that calculates the width based on the height and aspect ratio
+function getWidthForAspectRatio(height, ratio) {
+  const [widthRatio, heightRatio] = ratio.split(':').map(Number);
+  return Math.round((height * widthRatio) / heightRatio);
+}
+const default_prompt = 'ultra realistic 8k cg, picture-perfect face, flawless, clean, masterpiece, professional artwork, famous artwork, cinematic lighting, cinematic bloom, perfect face, beautiful face, beautiful eyes, ((perfect female body, narrow waist, small breast, wide hips)),'
+const default_negative_prompt = 'illustration, 3d, 2d, painting, cartoons, sketch, (worst quality:1.9), (low quality:1.9), (normal quality:1.9), lowres, bad anatomy, bad hands, vaginas in breasts, ((monochrome)), ((grayscale)), collapsed eyeshadow, multiple eyeblows, (cropped), oversaturated, extra limb, missing limbs, deformed hands, long neck, long body, imperfect, (bad hands), signature, watermark, username, artist name, conjoined fingers, deformed fingers, ugly eyes, imperfect eyes, skewed eyes, unnatural face, unnatural body, error, bad image, bad photo, worst quality, low quality:1.5), clothes, lingerie, monochrome, blurry, condom, text, logo, ((child)), ((underage)), ((teenage)), crossed eyes, plain background, futa girl, futa, Sfw censored Blurry pixelated out of frame low resolution poor quality grainy monochrome gloves, horns, lowres, disfigured, ostentatious, ugly, oversaturated, grain, low resolution, disfigured, blurry, bad anatomy, disfigured, poorly drawn face, mutant, mutated, extra limb, ugly, poorly drawn hands, missing limbs, blurred, floating limbs, disjointed limbs, deformed hands, blurred out of focus, long neck, long body, ugly, disgusting, bad drawing, childish, cut off cropped, distorted, imperfect, surreal, bad hands, text, error, extra digit, fewer digits, cropped , worst quality, missing limbs, imperfect anatomy, Oriental, Asian, shiny skin, oily skin, unrealistic lighting, fake, airbrushed skin, deformed, blur, blurry, bokeh, warp hard bokeh, gaussian, out of focus, out of frame, obese, (odd proportions, asymmetrical), super thin, fat,dialog, words, fonts, teeth, ((((ugly)))), (((duplicate))), ((morbid)), monochrome, b&w, [out of frame], extra fingers, mutated hands, ((poorly drawn hands)), ((poorly drawn face)), (((mutation))), (((deformed))), ((ugly)), blurry, ((bad anatomy)), (((bad proportions))), ((extra limbs)), cloned face, (((disfigured))), out of frame, ugly, extra limbs, (bad anatomy), ((gross proportions)), (malformed limbs), ((missing arms)), ((missing legs)), (((extra arms))), (((extra legs))), mutated hands, (fused fingers), (too many fingers), (((long neck))), (worst quality:1.5), (low quality:1.5), (normal quality:1.5), lowres, bad anatomy, bad hands, vaginas in breasts, ((monochrome)), ((grayscale)), collapsed eyeshadow, multiple eyeblows, (cropped), oversaturated, extra limb, missing limbs, deformed hands, long neck, long body, imperfect, (bad hands), signature, watermark, username, artist name, conjoined fingers, deformed fingers, ugly eyes, imperfect eyes, skewed eyes, unnatural face, unnatural body, error, painting by bad-artist, 1girl with penis, 1girl with masculine features, backlight, (worst quality, low quality:1.2), watermark, logo, bad anatomy, topless, fat, bad anatomy'
 
-router.post('/image', async (req, res) => {
+router.post('/txt2img', async (req, res) => {
+
   const prompt = req.body.prompt;
   const negative_prompt = req.body.negative_prompt;
+  const aspectRatio = req.body.aspectRatio;
+  
+
+  // Calculate the width based on the aspect ratio and the fixed height of 768
+  const width = getWidthForAspectRatio(512, aspectRatio);
 
   const payload = {
-    prompt: prompt,
-    negative_prompt: negative_prompt.length == 0 ? "illustration, 3d, 2d, painting, cartoons, sketch, (worst quality:1.9), (low quality:1.9), (normal quality:1.9), lowres, bad anatomy, bad hands, vaginas in breasts, ((monochrome)), ((grayscale)), collapsed eyeshadow, multiple eyeblows, (cropped), oversaturated, extra limb, missing limbs, deformed hands, long neck, long body, imperfect, (bad hands), signature, watermark, username, artist name, conjoined fingers, deformed fingers, ugly eyes, imperfect eyes, skewed eyes, unnatural face, unnatural body, error, bad image, bad photo, worst quality, low quality:1.5), clothes, lingerie, monochrome, blurry, condom, text, logo, ((child)), ((underage)), ((teenage)), crossed eyes, plain background, futa girl, futa, Sfw censored Blurry pixelated out of frame low resolution poor quality grainy monochrome gloves, horns, lowres, disfigured, ostentatious, ugly, oversaturated, grain, low resolution, disfigured, blurry, bad anatomy, disfigured, poorly drawn face, mutant, mutated, extra limb, ugly, poorly drawn hands, missing limbs, blurred, floating limbs, disjointed limbs, deformed hands, blurred out of focus, long neck, long body, ugly, disgusting, bad drawing, childish, cut off cropped, distorted, imperfect, surreal, bad hands, text, error, extra digit, fewer digits, cropped , worst quality, missing limbs, imperfect anatomy, Oriental, Asian, shiny skin, oily skin, unrealistic lighting, fake, airbrushed skin, deformed, blur, blurry, bokeh, warp hard bokeh, gaussian, out of focus, out of frame, obese, (odd proportions, asymmetrical), super thin, fat,dialog, words, fonts, teeth, ((((ugly)))), (((duplicate))), ((morbid)), monochrome, b&w, [out of frame], extra fingers, mutated hands, ((poorly drawn hands)), ((poorly drawn face)), (((mutation))), (((deformed))), ((ugly)), blurry, ((bad anatomy)), (((bad proportions))), ((extra limbs)), cloned face, (((disfigured))), out of frame, ugly, extra limbs, (bad anatomy), ((gross proportions)), (malformed limbs), ((missing arms)), ((missing legs)), (((extra arms))), (((extra legs))), mutated hands, (fused fingers), (too many fingers), (((long neck))), (worst quality:1.5), (low quality:1.5), (normal quality:1.5), lowres, bad anatomy, bad hands, vaginas in breasts, ((monochrome)), ((grayscale)), collapsed eyeshadow, multiple eyeblows, (cropped), oversaturated, extra limb, missing limbs, deformed hands, long neck, long body, imperfect, (bad hands), signature, watermark, username, artist name, conjoined fingers, deformed fingers, ugly eyes, imperfect eyes, skewed eyes, unnatural face, unnatural body, error, painting by bad-artist, 1girl with penis, 1girl with masculine features, backlight, (worst quality, low quality:1.2), watermark, logo, bad anatomy, topless, fat, bad anatomy" : negative_prompt,
-    height:768
+    prompt: prompt.length === 0 ? default_prompt : prompt,
+    negative_prompt: negative_prompt.length === 0 ? default_negative_prompt : negative_prompt,
+    width, // Use the calculated width
+    height: 512 // Fixed height as provided
   };
 
   try {
@@ -897,6 +920,175 @@ router.post('/image', async (req, res) => {
   }
 });
 
+// Hugging Face API Configuration
+const API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
+const headers = {
+  Authorization: "Bearer your_huggingface_api_key"
+};
+
+
+
+async function queryHuggingFaceAPI(data) {
+  const response = await fetch(API_URL, {
+    headers,
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  const imageBytes = await response.arrayBuffer();
+  return Buffer.from(imageBytes);
+}
+
+router.post('/huggingface/txt2img', async (req, res) => {
+  const prompt = req.body.prompt;
+  const negative_prompt = req.body.negative_prompt;
+  const aspectRatio = req.body.aspectRatio;
+
+  // Calculate the width based on the aspect ratio and the fixed height of 512
+  const width = getWidthForAspectRatio(512, aspectRatio);
+
+  const huggingFacePayload = {
+    inputs: prompt.length === 0 ? default_prompt : prompt,
+    // Include other necessary parameters here as per Hugging Face API requirements
+  };
+
+  try {
+    // Ensure that the output folder exists
+    await ensureFolderExists('./public/output');
+
+    const imageBuffer = await queryHuggingFaceAPI(huggingFacePayload);
+    const imageID = await saveImageToDB(global.db, req.user._id, prompt, imageBuffer);
+
+    const imagePath = `./public/output/${imageID}.png`;
+    await fs.writeFile(imagePath, imageBuffer);
+
+    const base64Image = await convertImageToBase64(imagePath);
+    res.json({ image_id: imageID, image: base64Image });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error generating image');
+  }
+});
+
+// /img2img router
+router.post('/img2img', async (req, res) => {
+  const prompt = req.body.prompt;
+  const negative_prompt = req.body.negative_prompt;
+  const aspectRatio = req.body.aspectRatio;
+  const imagePath = req.body.imagePath;
+
+  // Validate the imagePath
+  if (!imagePath) {
+    return res.status(400).send('An image path must be provided for img2img.');
+  }
+
+  // Calculate the width based on the aspect ratio and the fixed height of 768
+  const width = getWidthForAspectRatio(512, aspectRatio);
+
+  try {
+    // Load the image using sharp
+    const image = sharp(imagePath);
+
+    // Prepare the payload for the img2img API
+    const payload = {
+      init_images: [image],
+      prompt: prompt.length === 0 ? default_prompt : prompt,
+      negative_prompt: negative_prompt.length === 0 ? default_negative_prompt : negative_prompt,
+      width,
+      height: 512
+    };
+
+    // Call the img2img method of your API
+    const result = await global.sdapi.img2img(payload);
+
+    // Save the resulting image to the database
+    const imageID = await saveImageToDB(global.db, req.user._id, prompt, result.image);
+
+    // Ensure that the output folder exists
+    await ensureFolderExists('./public/output');
+    
+    // Save the resulting image to a file
+    const outputImagePath = `./public/output/${imageID}.png`;
+    await result.image.toFile(outputImagePath);
+    
+    // Convert the resulting image to Base64 for the response
+    const base64Image = await convertImageToBase64(outputImagePath);
+    
+    // Send the response
+    res.json({ image_id: imageID, image: base64Image });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error generating image');
+  }
+});
+
+router.get('/sdimage/:id', async (req, res) => {
+  try {
+    const imageID = req.params.id;
+    const image = await getImageFromDB(db, imageID);
+    if (image === "Image not found") {
+      res.status(404).send("Ahoy! No image found with that ID!");
+    } else {
+      res.json(image);
+    }
+  } catch (error) {
+    res.status(500).send("Oops! Something went wrong in our image quest.");
+  }
+});
+
+router.get('/sdgallery', ensureAuthenticated, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 20; // This is your images-per-page setting
+
+    const base64Images = await getUserImage(req, page, limit);
+    
+    // Prepare the JSON response
+    const response = {
+      user: req.user, 
+      images: base64Images, 
+      currentPage: page,
+      hasNextPage: base64Images.length === limit
+    };
+
+    // Send the JSON response to the client
+    res.json(response);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error retrieving user images.' });
+  }
+});
+
+async function getUserImage(req, page = 1, limit = 20){
+  const images = req.user.images || [];
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+
+  const paginatedImages = images.slice(startIndex, endIndex);
+  const base64Images = await getImageArray(paginatedImages) ;
+
+  return base64Images.reverse()
+}
+
+async function getImageArray(images){
+  const base64Images = [];
+  for (const image of images) {
+    if (image && image.image_id) {
+      const imagePath = `./public/output/${image.image_id}.png`;
+      if (fs.existsSync(imagePath)) {
+        const imageBuffer = await fs.promises.readFile(imagePath);
+        const base64Image = imageBuffer.toString('base64');
+
+        // Retrieve the prompt from the images collection based on the image_id
+        const imageCollection = db.collection('images');
+        const imageDoc = await imageCollection.findOne({ _id: new ObjectId(image.image_id) });
+        const prompt = imageDoc.prompt;
+
+        base64Images.push({ image: base64Image,imagePath, prompt: prompt, imageId:image.image_id });
+      }
+    }
+  }
+  return base64Images
+}
 router.post('/hide', async (req, res) => {
   let { element_id, category} = req.body;
 
@@ -1070,6 +1262,11 @@ async function saveImageToDB(db, userID, prompt, image) {
     );
   
   return imageID;
+}
+async function getImageFromDB(db, imageID) {
+  const collection = db.collection('images');
+  const image = await collection.findOne({ _id: new ObjectId(imageID) });
+  return image || "Image not found"; // In case the image ID plays hide and seek and isn't found
 }
 
 async function convertImageToBase64(imagePath) {

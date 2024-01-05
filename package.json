@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@justalk/pornhub-api": "^3.5.0",
+    "a1111-webui-api": "^1.6.10002",
     "axios": "^1.4.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
@@ -18,7 +19,7 @@
     "firebase": "^10.1.0",
     "firebase-admin": "^11.10.1",
     "fluent-ffmpeg": "^2.1.2",
-    "fs": "0.0.1-security",
+    "fs": "^0.0.1-security",
     "googleapis": "^125.0.0",
     "handlebars": "^4.7.7",
     "images-scraper": "^6.4.2",
@@ -42,6 +43,7 @@
     "redgifs-downloader": "^2.1.1",
     "request-promise-native": "^1.0.9",
     "rss-parser": "^3.13.0",
+    "sharp": "^0.33.1",
     "stable-diffusion-api": "0.0.7",
     "stripe": "^12.14.0",
     "tmp": "^0.2.1",

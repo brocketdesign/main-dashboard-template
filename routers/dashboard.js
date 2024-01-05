@@ -116,13 +116,13 @@ router.get('/app/stable-diffusion', ensureAuthenticated, ensureMembership, async
 
   try {
       // Retrieve categories from MongoDB
-      const categories = await global.db.collection('categories').find().toArray();
       const models = await global.sdapi.getSdModels()
-  
-      res.render('stable-diffusion-index', { user:req.user, categories,models,mode:'stable-diffusion', title:'Stable Diffusion' });
+      let base64Images = await getUserImage(req)
+      base64Images = base64Images.slice(0,10)
+      res.render('stable-diffusion-index', { user:req.user,models,images:base64Images,mode:'stable-diffusion', title:'Stable Diffusion' });
   
   } catch (error) {
-    console.log('error')
+    console.log(error)
     req.flash('error','Stable diffusion API is not ready')
     res.redirect('/dashboard/app/stable-diffusion/gallery')
   }
@@ -130,26 +130,7 @@ router.get('/app/stable-diffusion', ensureAuthenticated, ensureMembership, async
   
 router.get('/app/stable-diffusion/gallery', ensureAuthenticated,ensureMembership, async (req, res) => {
   try {
-    const images = req.user.images || [];
-    // Convert the image data to base64
-    const base64Images = [];
-    for (const image of images) {
-      if (image && image.image_id) {
-        const imagePath = `./public/output/${image.image_id}.png`;
-        if (fs.existsSync(imagePath)) {
-          const imageBuffer = await fs.promises.readFile(imagePath);
-          const base64Image = imageBuffer.toString('base64');
-
-          // Retrieve the prompt from the images collection based on the image_id
-          const imageCollection = db.collection('images');
-          const imageDoc = await imageCollection.findOne({ _id: new ObjectId(image.image_id) });
-          const prompt = imageDoc.prompt;
-
-          base64Images.push({ image: base64Image, prompt: prompt });
-        }
-      }
-    }
-
+    const base64Images = await getUserImage(req)
     // Render the gallery page with the retrieved image data
     res.render('stable-diffusion-gallery', { user: req.user, images: base64Images, mode:'stable-diffusion', title:'Stable Diffusion Gallery' });
   } catch (err) {
@@ -157,6 +138,29 @@ router.get('/app/stable-diffusion/gallery', ensureAuthenticated,ensureMembership
     res.status(500).send('Error retrieving user images.');
   }
 });
+
+async function getUserImage(req){
+  const images = req.user.images || [];
+  // Convert the image data to base64
+  const base64Images = [];
+  for (const image of images) {
+    if (image && image.image_id) {
+      const imagePath = `./public/output/${image.image_id}.png`;
+      if (fs.existsSync(imagePath)) {
+        const imageBuffer = await fs.promises.readFile(imagePath);
+        const base64Image = imageBuffer.toString('base64');
+
+        // Retrieve the prompt from the images collection based on the image_id
+        const imageCollection = db.collection('images');
+        const imageDoc = await imageCollection.findOne({ _id: new ObjectId(image.image_id) });
+        const prompt = imageDoc.prompt;
+
+        base64Images.push({ image: base64Image, prompt: prompt, imageId:image.image_id });
+      }
+    }
+  }
+  return base64Images.reverse()
+}
 
 const Parser = require('rss-parser');
 const parser = new Parser();
@@ -302,7 +306,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
       }
     }
     let medias = await findDataInMedias(req.user._id, page, query_obj);
-    
+    medias = medias.reverse()
     console.log(`Found ${medias.length} element(s).`)
     let medias2 = []
     if(mode == 'actresses'){
@@ -312,7 +316,19 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
 
     //medias = getUniqueElement(medias)
 
-    res.render(`search`, { user: req.user,result:true,fav:true, searchTerm, section:'fav', isSafari:isSafari(userAgent), scrapedData:medias,medias2, mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+    res.render(`search`, { 
+      user: req.user,
+      result:true,
+      fav:true, 
+      searchTerm, 
+      section:'fav', 
+      isSafari:isSafari(userAgent), 
+      scrapedData:medias ,
+      medias2, 
+      mode, 
+      page, 
+      title: `Mode ${mode}` 
+    }); // Pass the user data and scrapedData to the template
 
   }catch(err){
     console.log(err)

@@ -9,7 +9,7 @@ const http = require('http');
 const LocalStrategy = require('passport-local').Strategy;
 const { MongoClient, ObjectId } = require('mongodb');
 const MongoDBStore = require('connect-mongodb-session')(session);
-const { StableDiffusionApi } = require("stable-diffusion-api");
+const { StableDiffusionApi } = require("a1111-webui-api");
 
 const passport = require('passport');
 const path = require('path'); // Add path module
@@ -43,6 +43,8 @@ function startServer() {
         protocol: "http",
         defaultSampler: "DPM++ 2M Karras",
         defaultStepCount: 50,
+        safety_checker: true,
+        enhance_prompt: true,
       });
 
       global.sdapi = sd_api; //Save the API for stable diffusion in a global variable
