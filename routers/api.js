@@ -15,7 +15,7 @@ const {
   generateFilePathFromUrl
 } = require('../services/tools')
 const fetch = require('node-fetch');
-
+const FormData = require('form-data');
 const pornCategories = require('../services/categories')
 const pdfToChunks = require('../modules/pdf-parse')
 const multer = require('multer');
@@ -883,6 +883,32 @@ function getWidthForAspectRatio(height, ratio) {
   const [widthRatio, heightRatio] = ratio.split(':').map(Number);
   return Math.round((height * widthRatio) / heightRatio);
 }
+function getClosestAllowedDimension(height, ratio) {
+  const [widthRatio, heightRatio] = ratio.split(':').map(Number);
+  const targetAspectRatio = widthRatio / heightRatio;
+
+  // Define allowed dimensions
+  const allowedDimensions = [
+    { width: 1024, height: 1024 }, { width: 1152, height: 896 },
+    { width: 1216, height: 832 }, { width: 1344, height: 768 },
+    { width: 1536, height: 640 }, { width: 640, height: 1536 },
+    { width: 768, height: 1344 }, { width: 832, height: 1216 },
+    { width: 896, height: 1152 }
+  ];
+
+  // Sort dimensions by closeness to the target aspect ratio
+  const sortedDimensions = allowedDimensions.sort((a, b) => {
+    const ratioA = a.width / a.height;
+    const ratioB = b.width / b.height;
+    return Math.abs(ratioA - targetAspectRatio) - Math.abs(ratioB - targetAspectRatio);
+  });
+
+  // Return the first (closest) dimension
+  return sortedDimensions[0];
+}
+
+//LOCAL GENERATION
+
 const default_prompt = 'ultra realistic 8k cg, picture-perfect face, flawless, clean, masterpiece, professional artwork, famous artwork, cinematic lighting, cinematic bloom, perfect face, beautiful face, beautiful eyes, ((perfect female body, narrow waist, small breast, wide hips)),'
 const default_negative_prompt = 'illustration, 3d, 2d, painting, cartoons, sketch, (worst quality:1.9), (low quality:1.9), (normal quality:1.9), lowres, bad anatomy, bad hands, vaginas in breasts, ((monochrome)), ((grayscale)), collapsed eyeshadow, multiple eyeblows, (cropped), oversaturated, extra limb, missing limbs, deformed hands, long neck, long body, imperfect, (bad hands), signature, watermark, username, artist name, conjoined fingers, deformed fingers, ugly eyes, imperfect eyes, skewed eyes, unnatural face, unnatural body, error, bad image, bad photo, worst quality, low quality:1.5), clothes, lingerie, monochrome, blurry, condom, text, logo, ((child)), ((underage)), ((teenage)), crossed eyes, plain background, futa girl, futa, Sfw censored Blurry pixelated out of frame low resolution poor quality grainy monochrome gloves, horns, lowres, disfigured, ostentatious, ugly, oversaturated, grain, low resolution, disfigured, blurry, bad anatomy, disfigured, poorly drawn face, mutant, mutated, extra limb, ugly, poorly drawn hands, missing limbs, blurred, floating limbs, disjointed limbs, deformed hands, blurred out of focus, long neck, long body, ugly, disgusting, bad drawing, childish, cut off cropped, distorted, imperfect, surreal, bad hands, text, error, extra digit, fewer digits, cropped , worst quality, missing limbs, imperfect anatomy, Oriental, Asian, shiny skin, oily skin, unrealistic lighting, fake, airbrushed skin, deformed, blur, blurry, bokeh, warp hard bokeh, gaussian, out of focus, out of frame, obese, (odd proportions, asymmetrical), super thin, fat,dialog, words, fonts, teeth, ((((ugly)))), (((duplicate))), ((morbid)), monochrome, b&w, [out of frame], extra fingers, mutated hands, ((poorly drawn hands)), ((poorly drawn face)), (((mutation))), (((deformed))), ((ugly)), blurry, ((bad anatomy)), (((bad proportions))), ((extra limbs)), cloned face, (((disfigured))), out of frame, ugly, extra limbs, (bad anatomy), ((gross proportions)), (malformed limbs), ((missing arms)), ((missing legs)), (((extra arms))), (((extra legs))), mutated hands, (fused fingers), (too many fingers), (((long neck))), (worst quality:1.5), (low quality:1.5), (normal quality:1.5), lowres, bad anatomy, bad hands, vaginas in breasts, ((monochrome)), ((grayscale)), collapsed eyeshadow, multiple eyeblows, (cropped), oversaturated, extra limb, missing limbs, deformed hands, long neck, long body, imperfect, (bad hands), signature, watermark, username, artist name, conjoined fingers, deformed fingers, ugly eyes, imperfect eyes, skewed eyes, unnatural face, unnatural body, error, painting by bad-artist, 1girl with penis, 1girl with masculine features, backlight, (worst quality, low quality:1.2), watermark, logo, bad anatomy, topless, fat, bad anatomy'
 
@@ -897,7 +923,7 @@ router.post('/txt2img', async (req, res) => {
   const width = getWidthForAspectRatio(768, aspectRatio);
 
   const payload = {
-    prompt: prompt.length === 0 ? default_prompt : prompt,
+    prompt: prompt.length === 0 ? default_prompt : default_prompt + prompt,
     negative_prompt: negative_prompt.length === 0 ? default_negative_prompt : negative_prompt,
     width, // Use the calculated width
     height: 768 // Fixed height as provided
@@ -905,7 +931,7 @@ router.post('/txt2img', async (req, res) => {
 
   try {
     const result = await global.sdapi.txt2img(payload);
-    const imageID = await saveImageToDB(global.db, req.user._id, prompt, result.image);
+    const imageID = await saveImageToDB(global.db, req.user._id, prompt, result.image, aspectRatio);
     // Ensure that the output folder exists
     await ensureFolderExists('./public/output');
 
@@ -919,57 +945,6 @@ router.post('/txt2img', async (req, res) => {
     res.status(500).send('Error generating image');
   }
 });
-
-// Hugging Face API Configuration
-const API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
-const headers = {
-  Authorization: "Bearer your_huggingface_api_key"
-};
-
-
-
-async function queryHuggingFaceAPI(data) {
-  const response = await fetch(API_URL, {
-    headers,
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-  const imageBytes = await response.arrayBuffer();
-  return Buffer.from(imageBytes);
-}
-
-router.post('/huggingface/txt2img', async (req, res) => {
-  const prompt = req.body.prompt;
-  const negative_prompt = req.body.negative_prompt;
-  const aspectRatio = req.body.aspectRatio;
-
-  // Calculate the width based on the aspect ratio and the fixed height of 512
-  const width = getWidthForAspectRatio(768, aspectRatio);
-
-  const huggingFacePayload = {
-    inputs: prompt.length === 0 ? default_prompt : prompt,
-    // Include other necessary parameters here as per Hugging Face API requirements
-  };
-
-  try {
-    // Ensure that the output folder exists
-    await ensureFolderExists('./public/output');
-
-    const imageBuffer = await queryHuggingFaceAPI(huggingFacePayload);
-    const imageID = await saveImageToDB(global.db, req.user._id, prompt, imageBuffer);
-
-    const imagePath = `./public/output/${imageID}.png`;
-    await fs.writeFile(imagePath, imageBuffer);
-
-    const base64Image = await convertImageToBase64(imagePath);
-    res.json({ image_id: imageID, image: base64Image });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error generating image');
-  }
-});
-
-// /img2img router
 router.post('/img2img', async (req, res) => {
   const prompt = req.body.prompt;
   const negative_prompt = req.body.negative_prompt;
@@ -994,14 +969,19 @@ router.post('/img2img', async (req, res) => {
       prompt: prompt.length === 0 ? default_prompt : prompt,
       negative_prompt: negative_prompt.length === 0 ? default_negative_prompt : negative_prompt,
       width,
-      height: 768
+      height: 768,
+      strength: 0.8,              // Transformation strength of the reference image
+      num_inference_steps: 50,    // Number of denoising steps
+      guidance_scale: 7.5,        // Guidance scale value
+      num_images_per_prompt: 1,   // Number of images to generate per prompt
+      eta: 0.0,                        
     };
 
     // Call the img2img method of your API
     const result = await global.sdapi.img2img(payload);
 
     // Save the resulting image to the database
-    const imageID = await saveImageToDB(global.db, req.user._id, prompt, result.image);
+    const imageID = await saveImageToDB(global.db, req.user._id, prompt, result.image, aspectRatio);
 
     // Ensure that the output folder exists
     await ensureFolderExists('./public/output');
@@ -1015,6 +995,318 @@ router.post('/img2img', async (req, res) => {
     
     // Send the response
     res.json({ image_id: imageID, image: base64Image });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error generating image');
+  }
+});
+
+//STABLE DIFFUSION STABILITY
+const STABILITY_API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image";
+const STABILITY_IMAGE_API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image";
+const diffusionHeaders = {
+  'Content-Type': 'application/json',
+  Authorization: `Bearer ${process.env.STABLE_DIFFUSION_API_KEY}`
+};
+
+async function fetchStabilityMagic(data) {
+  try {
+    const response = await fetch(STABILITY_API_URL, {
+      headers: diffusionHeaders,  // Updated this part!
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server said 'nope': ${await response.text()}`);
+    }
+
+    const responseJSON = await response.json();
+
+    // Transform each image into a Buffer of awesomeness
+    return responseJSON.artifacts.map((image) => Buffer.from(image.base64, 'base64'));
+
+  } catch (error) {
+    console.error("Oopsie-daisy! Trouble in paradise: ", error.message);
+    throw error;
+  }
+}
+async function transmogrifyImage(data) {
+  try {
+    const response = await fetch(STABILITY_IMAGE_API_URL, { 
+      method: 'POST',
+      headers: {
+        ...data.getHeaders(),
+        Accept: 'application/json',
+        Authorization: `Bearer ${process.env.STABLE_DIFFUSION_API_KEY}`
+      }, 
+      body: data,
+    });
+
+    if (!response.ok) {
+      throw new Error(`The server is being a bit grumpy: ${await response.text()}`);
+    }
+
+    const responseJSON = await response.json();
+
+    // Magically transform each image into a Buffer of wonders
+    return responseJSON.artifacts.map((image) => Buffer.from(image.base64, 'base64'));
+
+  } catch (error) {
+    console.error("Whoops! Hit a snag: ", error.message);
+    throw error;
+  }
+}
+function createStabilityPayload(imagePath, prompt) {
+  const formData = new FormData();
+
+  // Add the image file
+  formData.append('init_image', fs.readFileSync(imagePath), 'init_image.png');
+
+  // Add the other parameters
+  formData.append('init_image_mode', "IMAGE_STRENGTH");
+  formData.append('image_strength', 0.35);
+  formData.append('steps', 40);
+  formData.append('seed', 0);
+  formData.append('cfg_scale', 5);
+  formData.append('samples', 1);
+
+  // Text prompts
+  formData.append('text_prompts[0][text]', prompt);
+  formData.append('text_prompts[0][weight]', 1);
+  formData.append('text_prompts[1][text]', 'blurry, bad');
+  formData.append('text_prompts[1][weight]', -1);
+
+  return formData;
+}
+router.post('/stablediffusion/txt2img', async (req, res) => {
+  const prompt = req.body.prompt;
+  const negative_prompt = req.body.negative_prompt;
+  const aspectRatio = req.body.aspectRatio;
+  const closestDimension = getClosestAllowedDimension(1024, aspectRatio);
+  const stableDiffusionPayload = {
+    steps: 20,
+    width: closestDimension.width,
+    height: closestDimension.height,
+    seed: 0,
+    cfg_scale: 5,
+    samples: 1,
+    text_prompts: [
+      {
+        "text": prompt,
+        "weight": 1
+      },
+      {
+        "text": 'bad,blurry',
+        "weight": -1
+      }
+    ],
+  };
+  try {
+    // Ensure that the output folder exists
+    await ensureFolderExists('./public/output');
+
+    const imageBuffer = await fetchStabilityMagic(stableDiffusionPayload);
+    const imageID = await saveImageToDB(global.db, req.user._id, prompt, imageBuffer, aspectRatio);
+
+    const imagePath = `./public/output/${imageID}.png`;
+
+    const fs2 = require('fs').promises; // Notice the .promises here
+    await fs2.writeFile(imagePath, imageBuffer);
+
+    const base64Image = await convertImageToBase64(imagePath);
+    res.json({ image_id: imageID, image: base64Image });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error generating image');
+  }
+});  
+router.post('/stablediffusion/img2img', async (req, res) => {
+  const prompt = req.body.prompt;
+  const negative_prompt = req.body.negative_prompt;
+  const aspectRatio = req.body.aspectRatio;
+  const imagePath = req.body.imagePath;
+
+  // Validate the imagePath
+  if (!imagePath) {
+    return res.status(400).send('An image path must be provided for img2img.');
+  }
+
+  try {
+    // Prepare the payload for the Hugging Face API
+    const stabilityPayload = createStabilityPayload(imagePath, prompt);
+
+    // Call the Hugging Face API
+    const resultImageBuffer = await transmogrifyImage(stabilityPayload);
+
+    // Save the resulting image to the database
+    const imageID = await saveImageToDB(global.db, req.user._id, prompt, resultImageBuffer, aspectRatio);
+
+    // Ensure that the output folder exists
+    await ensureFolderExists('./public/output');
+    
+    // Save the resulting image to a file
+    const outputImagePath = `./public/output/${imageID}.png`;
+    await fs.writeFile(outputImagePath, resultImageBuffer);
+    
+    // Convert the resulting image to Base64 for the response
+    const base64ResultImage = await convertImageToBase64(outputImagePath);
+    
+    // Send the response
+    res.json({ image_id: imageID, image: base64ResultImage });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error generating image');
+  }
+});
+
+// Hugging Face API Configuration
+const API_URL_Hugging = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
+const HuggingFaceHeaders = {
+  Authorization: "Bearer "+process.env.HUGGINGFACEAPI
+};
+async function queryHuggingFaceAPI(data) {
+
+
+  try {
+    const response = await fetch(API_URL_Hugging, {
+      HuggingFaceHeaders,
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+
+    // Check if the response is successful
+    if (!response.ok) {
+      //throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Non-200 response: ${await response.text()}`)
+
+    }
+
+    const imageBytes = await response.arrayBuffer();
+
+    return Buffer.from(imageBytes);
+  } catch (error) {
+    console.error("Oops! Ran into an issue: ", error.message);
+    // Handle the error based on your app's flow
+    // Maybe return a default value or rethrow the error
+    throw error; // or return something else
+  }
+}
+
+router.post('/huggingface/txt2img', async (req, res) => {
+  const prompt = req.body.prompt;
+  const negative_prompt = req.body.negative_prompt;
+  const aspectRatio = req.body.aspectRatio;
+
+  // Calculate the width based on the aspect ratio and the fixed height of 512
+  const width = getWidthForAspectRatio(768, aspectRatio);
+
+  const huggingFacePayload = {
+    inputs: prompt.length === 0 ? default_prompt : default_prompt+prompt,
+    parameters: {
+        "num_inference_steps": 20, 
+        "width": width,              
+        "height": 768,            
+        "negative_prompt": negative_prompt.length === 0 ? default_negative_prompt : negative_prompt,
+    }
+  };
+  const stableDiffusionPayload = {
+    steps: 40,
+	width: 1024,
+	height: 1024,
+	seed: 0,
+	cfg_scale: 5,
+	samples: 1,
+	text_prompts: [
+	  {
+	    "text": prompt,
+	    "weight": 1
+	  },
+	  {
+	    "text": 'bad,blurry',
+	    "weight": -1
+	  }
+	],
+  };
+  try {
+    // Ensure that the output folder exists
+    await ensureFolderExists('./public/output');
+
+    const imageBuffer = await queryHuggingFaceAPI(stableDiffusionPayload);
+    const imageID = await saveImageToDB(global.db, req.user._id, prompt, imageBuffer, aspectRatio);
+
+    const imagePath = `./public/output/${imageID}.png`;
+
+    const fs2 = require('fs').promises; // Notice the .promises here
+    await fs2.writeFile(imagePath, imageBuffer);
+
+    const base64Image = await convertImageToBase64(imagePath);
+    res.json({ image_id: imageID, image: base64Image });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error generating image');
+  }
+});
+// /img2img router
+router.post('/huggingface/img2img', async (req, res) => {
+  const prompt = req.body.prompt;
+  const negative_prompt = req.body.negative_prompt;
+  const aspectRatio = req.body.aspectRatio;
+  const imagePath = req.body.imagePath;
+
+  // Validate the imagePath
+  if (!imagePath) {
+    return res.status(400).send('An image path must be provided for img2img.');
+  }
+
+  // Calculate the width based on the aspect ratio and the fixed height of 768
+  const width = getWidthForAspectRatio(768, aspectRatio);
+
+  try {
+    // Load and convert the image to base64 using sharp
+    const imageBuffer = await sharp(imagePath)
+      .resize(width, 768) // Optional: Resize to match the output dimensions
+      .toBuffer();
+    const base64Image = imageBuffer.toString('base64');
+
+    // Prepare the payload for the Hugging Face API
+    const huggingFacePayload = {
+      inputs: {
+          prompt: prompt.length === 0 ? default_prompt : prompt,  // Text prompt
+          init_image: base64Image,  // Base64 encoded initial image
+          negative_prompt: negative_prompt.length === 0 ? default_negative_prompt : negative_prompt,  // Negative prompt
+      },
+      parameters: {
+          strength: 0.8,              // Transformation strength of the reference image
+          num_inference_steps: 50,    // Number of denoising steps
+          guidance_scale: 7.5,        // Guidance scale value
+          num_images_per_prompt: 1,   // Number of images to generate per prompt
+          eta: 0.0,                   // Eta parameter for DDIMScheduler
+          width: width,                 // Width of the output image
+          height: 768,                // Height of the output image
+          // Add other parameters as needed
+      }
+  };
+  
+
+    // Call the Hugging Face API
+    const resultImageBuffer = await queryHuggingFaceAPI(huggingFacePayload);
+
+    // Save the resulting image to the database
+    const imageID = await saveImageToDB(global.db, req.user._id, prompt, resultImageBuffer, aspectRatio);
+
+    // Ensure that the output folder exists
+    await ensureFolderExists('./public/output');
+    
+    // Save the resulting image to a file
+    const outputImagePath = `./public/output/${imageID}.png`;
+    await fs.writeFile(outputImagePath, resultImageBuffer);
+    
+    // Convert the resulting image to Base64 for the response
+    const base64ResultImage = await convertImageToBase64(outputImagePath);
+    
+    // Send the response
+    res.json({ image_id: imageID, image: base64ResultImage });
   } catch (err) {
     console.error(err);
     res.status(500).send('Error generating image');
@@ -1246,13 +1538,14 @@ router.post('/category/remove', async (req, res) => {
 });
 
 
-async function saveImageToDB(db, userID, prompt, image) {
+async function saveImageToDB(db, userID, prompt, image, aspectRatio) {
   const imageID = new ObjectId();
   const collection = db.collection('images');
   await collection.insertOne({
     _id: imageID,
     user_id: userID,
-    prompt: prompt,
+    prompt,
+    aspectRatio
   });
     // Save the image in the user's document
     const userCollection = db.collection('users');

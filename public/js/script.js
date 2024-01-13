@@ -396,7 +396,7 @@ const handleFormResult = (isSuccess, message) => {
 function HandleCardSetting() {
     $(document).find('.card.info-container').each(function() {
         const card = $(this);
-        const settingToggle = card.find('.setting-container');
+        const settingToggle = card.find('.card-title'); //card.find('.setting-container');
         const settingId = card.attr('data-id')
         // Handle hover event on the card
         card.hover(
@@ -418,7 +418,7 @@ function HandleCardSetting() {
 
         // Handle click event on the settings
         settingToggle.click(function() {
-            displayCardSetting(settingId)
+            //displayCardSetting(settingId)
         });
     });
 }
@@ -467,7 +467,7 @@ function manageVideo(isVisible, $element) {
     if ($video.length) {
         // If the element is visible and the video is not already playing
         if (isVisible && $video.get(0).paused) {
-            $video.get(0).play();
+            //$video.get(0).play();
         } 
         // If the element is not visible and the video is playing
         else if (!isVisible && !$video.get(0).paused) {
@@ -787,13 +787,13 @@ function handleFavorite(){
 function removeFromFav(video_id,callback){
     $.post('/api/removeFromFav',{video_id},function(response){
         if(callback){callback()}
-        handleFormResult(response.status, response.message) 
+        //handleFormResult(response.status, response.message) 
     })
 }
 function addtofav(video_id,callback){
     $.post('/api/addtofav',{ video_id },function(response){
         if(callback){callback()}
-        handleFormResult(response.status, response.message) 
+        //handleFormResult(response.status, response.message) 
     })
   }
 const handleCOmparePDF = () => {

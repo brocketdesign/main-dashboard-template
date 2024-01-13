@@ -23,9 +23,6 @@ block dynamicContent
                   .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
                       button.instant-play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
                         i.fas.fa-play
-                
-              .setting-container.position-absolute.btn.shadow-0.text-white(data-id=data._id, style="display:none;top:10px;right:20px")
-                i.fas.fa-ellipsis-v 
               
               .video-container.d-flex(data-id=data._id)
                 if mode == 2
@@ -45,30 +42,30 @@ block dynamicContent
                     img.card-img-top(type="button", data-id=data._id, style="object-fit:contain;height: 100%;", src=data.imageUrl || data.filePath, alt=data.title )
                   if mode == 5
                     video(data-id=data._id, data-src=data.link, style="display:none;" width="100%" controls muted autoplay playsinline)
-              .card-title.px-3.my-0(data-id=data._id, style="display:none")
+              .setting-absolute.card-title.px-3.my-0(data-id=data._id, style="display:none;")
                 .row.justify-content-start.flex-row(style="height:100%")
-                  .col-12.col-sm-4.text-start(style="overflow:hidden")
+                  .col-12.text-start(style="overflow:hidden")
                     a.expand(href=`/dashboard/app/${mode}?searchTerm=${data.subreddit}`)=data.subreddit
-                  .col-12.col-sm-8.text-start
-                    button.expand.delete-button.btn.btn-transparent.border.border-0.my-1.shadow-0(type="button", data-id=data._id)
+                  .col-12.text-start.justify-content-between.d-flex
+                    button.expand.delete-button.btn.btn-light.border.border-0.m-1.shadow-0(type="button", data-id=data._id)
                         i.fas.fa-trash-alt
-                    button.d-none.expand-button.btn.btn-transparent.border.border-0.my-1.shadow-0(type="button", data-id=data._id)
+                    button.d-none.expand-button.btn.btn-light.border.border-0.m-1.shadow-0(type="button", data-id=data._id)
                         i.fas.fa-expand
                     if data.link && data.link.includes('redgif')
-                      button.expand.handle-fav.btn.btn-transparent.shadow-0.border.border-0.my-1(type="button", data-id=data._id, class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'', data-url=`${data.link.replace('watch','ifr')}`)
+                      button.expand.handle-fav.btn.btn-light.shadow-0.border.border-0.m-1(type="button", data-id=data._id, class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'', data-url=`${data.link.replace('watch','ifr')}`)
                         i.fas.fa-heart
                     else
-                      button.expand.handle-fav.btn.btn-transparent.shadow-0.border.border-0.my-1(type="button", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'')
+                      button.expand.handle-fav.btn.btn-light.shadow-0.border.border-0.m-1(type="button", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'')
                         i.fas.fa-heart
-                    a.source.expand.btn.btn-transparent.border.border-0.my-1.shadow-0(target="_blank", href=data.source||data.link||data.webm||data.url)
+                    a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target="_blank", href=data.source||data.link||data.webm||data.url)
                       i.fas.fa-link
                     if mode == 2 && data.extractor == 'scrolller'
-                      a.source.expand.btn.btn-transparent.border.border-0.my-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.link}/discover`)
+                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.link}/discover`)
                         i.fas.fa-plus-square    
                     else 
-                      a.source.expand.btn.btn-transparent.border.border-0.my-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.title || data.alt}`)
+                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.title || data.alt}`)
                         i.fas.fa-plus-square    
-                    button.expand-card.btn.btn-transparent.shadow-0.border.border-0.my-1(type="button")
+                    button.expand-card.btn.btn-light.shadow-0.border.border-0.m-1(type="button")
                         i.fas.fa-expand
                 if data.title
                   p=data.title 

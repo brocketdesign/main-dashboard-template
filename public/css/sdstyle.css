@@ -1,4 +1,6 @@
-
+.tags.selected {
+  background-color: #3b71ca !important;
+}
 .image-container {
     overflow-x: auto;
     padding: 10px;

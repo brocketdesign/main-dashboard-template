@@ -1,7 +1,7 @@
 extends dashboard-base
 
 block mainContent
-  #imageList.image-container.auto-show
+  #imageList.image-container.auto-show(style="display:none;")
   .container.my-4
     .row.position-relative
       .col-12.col-sm-4.order-2.order-sm-1
@@ -38,12 +38,15 @@ block mainContent
 
 
         .generate-button-container.position-sticky.col-12.order-2.order-sm-1.text-center.py-2.border.border-white.bg-light(style="bottom:0;")
-          div.btn.btn-primary.w-100(onclick="generateDiffusedImage()", style='cursor:pointer;', data-bs-toggle="tooltip", data-bs-placement="top", title="生成")
-            i#generate-button.fas.fa-play-circle
+          .row
+            #keepGenerating-button.col-3.btn.btn-warning.shadow-0(data-bs-toggle="tooltip", data-bs-placement="top", title="生成")
+              i.fa.fa-spinner
 
-            #prompt-loader.loader(style='display:none;')
-              .spinner-border.spinner-border-sm(role="status")
-              span.visually-hidden ローディング...
+            #gen-container.col-9.btn.btn-primary.shadow-0(data-api=API,onclick="generateDiffusedImage()", style='cursor:pointer;', data-bs-toggle="tooltip", data-bs-placement="top", title="生成")
+              i#generate-button.fas.fa-play-circle
+              #prompt-loader.loader(style='display:none;' )
+                .spinner-border.spinner-border-sm(role="status")
+                span.visually-hidden ローディング...
     
           
       .col-12.col-sm-8.order-1.order-sm-2
@@ -53,7 +56,7 @@ block mainContent
             button#fullscreen.btn.btn-light.border.mx-1(data-bs-toggle="tooltip", data-bs-placement="top", title="拡大")
               i.fa.fa-expand
             button.regeneration.btn.btn-light.border.mx-1(data-bs-toggle="tooltip", data-bs-placement="top", title="生成")
-              i.fa.fa-spinner
+              i.fa.fa-sync-alt
           #diffused-image-gallery.image-gallery
             for item in images
               .gallery-item

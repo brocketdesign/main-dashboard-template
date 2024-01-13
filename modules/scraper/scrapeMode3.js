@@ -8,7 +8,8 @@ const path = require('path');
 const { promisify } = require('util');
 const streamPipeline = promisify(require('stream').pipeline);
 const { exec } = require('child_process');
-
+const { includes } = require('lodash');
+const urlLib = require('url');
 async function searchGoogleImage(query, mode, nsfw, url) {
 
   try {
@@ -80,37 +81,58 @@ async function convertWebpTo(filePath,mediaType) {
     });
 }
 
-async function downloadResource(response, dirPath,mediaType) {
-  try {
-      const url = response.url();
-      const stringUntilWebp = url.split(`.${mediaType}`)[0]+".webp";
+async function downloadResource(response, dirPath, mediaType) {
+    try {
+        const url = response.url();
+        let parsedUrl = urlLib.parse(url);
+        let baseName = path.basename(parsedUrl.pathname);
 
-      const filePath = path.join(dirPath,  path.basename(stringUntilWebp));
-      const content = await response.buffer();
-      await fs.promises.writeFile(filePath, content);
-      return filePath;
-  } catch (error) {
-      console.error(`Error downloading or saving the resource from URL: ${response.url()}`);
-      throw error;
-  }
+        // Let's play 'Guess the Extension'!
+        let extension = baseName.endsWith('.jpg') ? 'jpg' : 'webp';
+
+        // Time to build the file path, now with more precision!
+        const filePath = path.join(dirPath, `${path.basename(baseName, `.${extension}`)}.${extension}`);
+        const content = await response.buffer();
+
+        // Write the file like it's the next bestseller
+        await fs.promises.writeFile(filePath, content);
+        console.log(`Downloaded and saved: ${filePath} (with a little twist!)`);
+        return filePath;
+    } catch (error) {
+        console.error(`Oops! Sherlock Holmes couldn't download or save the resource from URL: ${response.url()} - Error: ${error}`);
+        throw error;
+    }
 }
+
+
+
 async function allImagesLazyLoaded(page) {
   return await page.evaluate(() => {
       const images = document.querySelectorAll('.image');
       return Array.from(images).every(img => img.classList.contains('lazy-loaded'));
   });
 }
+async function isElementPresent(page, selector) {
+  const element = await page.$(selector);
+  return element !== null;
+}
+
+
 
 async function scrollToBottom(page, viewportN = 1) {
   let previousScrollPosition = 0;
   let currentScrollPosition;
   let count = 0;
-
+  // Check for page error
+  const hasErrorPage = await isElementPresent(page, '#error_page');
+  if (hasErrorPage) {
+    return false
+  }
   try {
       previousScrollPosition = await page.evaluate(() => window.scrollY);
   } catch (error) {
       console.error("Error getting initial scroll position:", error);
-      return; // Exit if we can't get the initial scroll position
+      return false; // Exit if we can't get the initial scroll position
   }
 
   while (true) {
@@ -119,7 +141,7 @@ async function scrollToBottom(page, viewportN = 1) {
           await page.evaluate(`window.scrollBy(0, window.innerHeight * ${viewportN})`);
 
           // Wait for any lazy-loaded content to load or animations
-          await page.waitForTimeout(1000); // adjust timeout as needed
+          //await page.waitForTimeout(1000); // adjust timeout as needed
       } catch (error) {
           console.error("Error during scrolling or waiting:", error);
           break; // Break the loop on error
@@ -143,7 +165,7 @@ async function scrollToBottom(page, viewportN = 1) {
               // Decide whether to break or continue based on your use case
           }
 
-          if (loaded || count >= 3) {
+          if (loaded || count > 1) {
               break;
           }
 
@@ -154,100 +176,219 @@ async function scrollToBottom(page, viewportN = 1) {
 
       previousScrollPosition = currentScrollPosition;
   }
+  return true
 }
 
 
-async function searchImage(query, page = 1) {
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
-  });
+
+function generateUrl(query,page){
+  return `https://www.sex.com/search/gifs?query=${query}&page=${page}`
+}
+function generateUrlPics(query,page){
+  return `https://www.sex.com/search/pics?query=${query}&page=${page}`
+}
+
+function getExtractor(){
+  return `sex`
+}
+
+const LAST_PAGE_RESET_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+async function searchImage(query, isReset = false ){
+  const lastPageIndex = await getLastPageIndex(`pics_${query}`);
+  const startTime = Date.now();
+
+  if (isReset || (startTime - lastPageIndex.time) > LAST_PAGE_RESET_INTERVAL) {
+    await resetLastPageIndex(query);
+    page = 1;
+  } else {
+    page = lastPageIndex.page;
+  }
+  const maxGifCount = 30;
+  const browser = await puppeteer.launch({ headless: 'new' });
   const [tab] = await browser.pages();
+  await tab.setViewport({ width: 1920, height: 5000 });
+  let gifResponseCount = 0;
 
   const filePaths = [];
-  tab.on('response', async (response) => {
-      if (response.url().includes('.jpg')) {
-          try {
-              const filePath = await downloadResource(response, path.join(__dirname, '..', '..', 'public', 'downloads', 'downloaded_images'),'jpg');
-              const convertedGifPath = await convertWebpTo(filePath,'jpg');
-              filePaths.push({
-                  link: response.url(),
-                  filePath: convertedGifPath.split('public')[1],
-                  type:'image',
-                  extractor: "sex"
-              });
-          } catch (error) {
-              //console.error(`Failed processing URL: ${response.url()}`, error);
-          }
+  const processGifResponse= async (response) => {
+    if (response.url().includes('.jpg') && !response.url().includes('abc.gif')) {
+      const imageData = await handleImage(response);
+      if (imageData) {
+        filePaths.push(imageData);
+        gifResponseCount++;
       }
-  });
+    }
+  };
 
+  tab.on('response', processGifResponse);
 
-  // Open a page with the given query (you might need to adjust the URL)
-  await tab.goto(`https://www.sex.com/search/pics?query=${query}&page=${page}`, { waitUntil: 'networkidle2' });
+  while (gifResponseCount < maxGifCount) {
+    await tab.goto(generateUrlPics(query, page), { waitUntil: 'networkidle2' });
+    let pageStatus = false
+    try {
+      pageStatus = await scrollToBottom(tab);
+    } catch (error) {
+      console.log('End scrolling:', error);
+    }
+    
+    //await processGifResponseQueue();
+    console.log(`${gifResponseCount} new images on this page`);
 
-  await scrollToBottom(tab);
-  
+    if (gifResponseCount === 0 && pageStatus) {
+      page++;
+    } else {
+      await saveLastPageIndex(page, startTime, query);
+      break;
+    }
+  }
+
   await browser.close();
-
   return filePaths;
 }
 
-async function searchGifImage(query, page = 1, isAsync) {
-  const maxGifCount = isAsync ? false : 10
-    const browser = await puppeteer.launch({
-        headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
-    });
-    const [tab] = await browser.pages();
+async function searchGifImage(query, isReset = false) {
+  const lastPageIndex = await getLastPageIndex(query);
+  const startTime = Date.now();
 
-    let gifResponseCount = 0;
-    let listenerActive = true;
-    const filePaths = [];
-    const gifResponseListener = async (response) => {
+  if (isReset || (startTime - lastPageIndex.time) > LAST_PAGE_RESET_INTERVAL) {
+    await resetLastPageIndex(query);
+    page = 1;
+  } else {
+    page = lastPageIndex.page;
+  }
+  
+  const maxGifCount = 30;
+  const browser = await puppeteer.launch({ headless: 'new' });
+  const [tab] = await browser.pages();
+  await tab.setViewport({ width: 1920, height: 5000 });
+  let gifResponseCount = 0;
+  const filePaths = [];
+  const gifResponseQueue = [];
 
-       if (!listenerActive || (maxGifCount? gifResponseCount >= maxGifCount : false)) return;
-        if (response.url().includes('.gif')) {
-            try {
-                const isAlreadyDownloaded = await global.db.collection('medias').findOne({link:response.url()})
-                if(!isAlreadyDownloaded){
-                  const filePath = await downloadResource(response, path.join(__dirname, '..', '..', 'public', 'downloads', 'downloaded_images'), 'gif');
-                  const convertedGifPath = await convertWebpTo(filePath, 'gif');
-                  filePaths.push({
-                      link: response.url(),
-                      filePath: convertedGifPath.split('public')[1],
-                      type: 'image_gif',
-                      extractor: "sex"
-                  });
-                  gifResponseCount++;
-                }
-            } catch (error) {
-                console.error(`Failed processing URL: ${response.url()}`, error);
-            }
-
-            if (maxGifCount? gifResponseCount >= maxGifCount : false) {
-                console.log('Got the required number of items.');
-                listenerActive = false;
-                tab.off('response', gifResponseListener);
-                await browser.close();
-                return
-            }
-        }
-    };
-
-    tab.on('response', gifResponseListener);
-
-    await tab.goto(`https://www.sex.com/search/gifs?query=${query}&page=${page}`, { waitUntil: 'networkidle2' });
-    try {
-      await scrollToBottom(tab);
-    } catch (error) {
-      console.log('End scrolling : ',error)
+  const gifResponseListener = async (response) => {
+    if (response.url().includes('.gif')) {
+      gifResponseQueue.push(response);
     }
+  };
+  
+  const processGifResponseQueue = async () => {
+    while (gifResponseQueue.length > 0 && gifResponseCount < maxGifCount) {
+      const response = gifResponseQueue.shift();
+      const imageData = await handleGif(response);
+      if (imageData) {
+        filePaths.push(imageData);
+        gifResponseCount++;
+        console.log({ url:response.url(),gifResponseCount });
+      }
+    }
+  };
 
-    await browser.close();
-    return filePaths;
+  const processGifResponse= async (response) => {
+    if (response.url().includes('.gif') && !response.url().includes('abc.gif')) {
+      const imageData = await handleGif(response);
+      if (imageData) {
+        filePaths.push(imageData);
+        gifResponseCount++;
+      }
+    }
+  };
+
+  tab.on('response', processGifResponse);
+
+  while (gifResponseCount < maxGifCount) {
+    await tab.goto(generateUrl(query, page), { waitUntil: 'networkidle2' });
+    let pageStatus = false
+    try {
+      pageStatus = await scrollToBottom(tab);
+    } catch (error) {
+      console.log('End scrolling:', error);
+    }
+    
+    //await processGifResponseQueue();
+    console.log(`${gifResponseCount} new images on this page`);
+
+    if (gifResponseCount === 0 && pageStatus) {
+      page++;
+    } else {
+      await saveLastPageIndex(page, startTime, query);
+      break;
+    }
+  }
+
+  await browser.close();
+  return filePaths;
 }
 
+async function getLastPageIndex(query) {
+  try {
+    const lastPageInfo = await global.db.collection('scrapInfo').findOne({ extractor: getExtractor() +'_'+ query});
+    return lastPageInfo || { page: 1, time: 0 };  // Default to page 1 and time 0 if nothing is found
+  } catch (error) {
+    console.error('Error fetching last page index:', error);
+    return { page: 1, time: 0 };  // In case of error, also default to page 1 and time 0
+  }
+}
+async function saveLastPageIndex(page, time, query) {
+  try {
+    await global.db.collection('scrapInfo').updateOne(
+      { extractor: getExtractor() +'_'+ query },
+      { $set: { page, time } },
+      { upsert: true }
+    );
+  } catch (error) {
+    console.error('Error saving last page index:', error);
+  }
+}
+async function resetLastPageIndex(query) {
+  try {
+    await global.db.collection('scrapInfo').updateOne(
+      { extractor: getExtractor() +'_'+ query },
+      { $set: { page: 1, time: Date.now() } }
+    );
+  } catch (error) {
+    console.error('Error resetting last page index:', error);
+  }
+}
+
+async function handleGif(response){
+  try {
+    const isAlreadyDownloaded = await global.db.collection('medias').findOne({link:response.url()})
+    if(!isAlreadyDownloaded){
+      const filePath = await downloadResource(response, path.join(__dirname, '..', '..', 'public', 'downloads', 'downloaded_images'), 'gif');
+      //const convertedGifPath = await convertWebpTo(filePath, 'gif');
+      return {
+          link: response.url(),
+          filePath: filePath.split('public')[1], // convertedGifPath.split('public')[1],
+          type: 'gif',
+          extractor: getExtractor() +'(GIF)'
+      };
+    }
+  } catch (error) {
+      console.error(`Failed processing URL`);
+      return false
+  }
+  return false
+}
+async function handleImage(response){
+  try {
+    const isAlreadyDownloaded = await global.db.collection('medias').findOne({link:response.url()})
+    if(!isAlreadyDownloaded){
+      const filePath = await downloadResource(response, path.join(__dirname, '..', '..', 'public', 'downloads', 'downloaded_images'), 'gif');
+      //const convertedGifPath = await convertWebpTo(filePath, 'gif');
+      return {
+          link: response.url(),
+          filePath: filePath.split('public')[1], // convertedGifPath.split('public')[1],
+          type: 'image',
+          extractor: getExtractor()
+      };
+    }
+  } catch (error) {
+      console.error(`Failed processing URL`);
+      return false
+  }
+  return false
+}
 async function scrapeMode3(url, mode, nsfw, page, user, isAsync) {
   const query = url
   try {
@@ -259,11 +400,11 @@ async function scrapeMode3(url, mode, nsfw, page, user, isAsync) {
       return await searchGoogleImage(query, mode, nsfw, url, page);
     }
     //const data1 = await searchPorn(query, mode, nsfw, url, page);
-    const SexGifPromise =  searchGifImage(query, page, isAsync).catch(error => {
+    const SexGifPromise =  searchGifImage(query).catch(error => {
       console.error("Failed to scrape data from Sex Gif", error);
       return []; // Return empty array on failure
     });
-    const sexImagePromise = [] || searchImage(query, page).catch(error => {
+    const sexImagePromise = [] || searchImage(query).catch(error => {
       console.error("Failed to scrape data from Sex Image", error);
       return []; // Return empty array on failure
     });

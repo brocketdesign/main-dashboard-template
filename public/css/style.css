@@ -91,7 +91,9 @@ button.fav i {
   bottom: 0;
   left: 0;
   right: 0;
-  background: #ffffff82 !important
+}
+.slick-slide .setting-absolute{
+  display: block !important;
 }
 .slick-slide video{
   max-height: 90vh;

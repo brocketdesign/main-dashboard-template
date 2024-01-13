@@ -113,13 +113,17 @@ async function getBookById(userId, bookId) {
 }
 // Stable diffusion 
 router.get('/app/stable-diffusion', ensureAuthenticated, ensureMembership, async (req, res) => {
-
+  let API = null
+  let models = []
+  try{
+     models = await global.sdapi.getSdModels()
+  }catch{
+    API = `stablediffusion`
+  }
   try {
-      // Retrieve categories from MongoDB
-      const models = await global.sdapi.getSdModels()
       let base64Images = await getUserImage(req)
       base64Images = base64Images.slice(0,10)
-      res.render('stable-diffusion-index', { user:req.user,models,images:base64Images,mode:'stable-diffusion', title:'Stable Diffusion' });
+      res.render('stable-diffusion-index', { user:req.user,API,models,images:base64Images,mode:'stable-diffusion', title:'Stable Diffusion' });
   
   } catch (error) {
     console.log(error)

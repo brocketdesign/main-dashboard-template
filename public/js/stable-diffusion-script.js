@@ -35,6 +35,8 @@ $(document).ready(function() {
 
   initializeUserPreference();
 
+  handleGenerateForever();
+
   //Image gallery
   loadImages();
   $(window).scroll(function() {
@@ -93,10 +95,18 @@ function manageCategoriesBehavior() {
     $(this).find('.tags').show();
   });
 
+  //handleTagBehavior
+  $(document).on('click','#tags-list .tag',function(){
+    const tagId = $(this).data('id')
+    disableTag(tagId);
+    updatePrompt();
+    updateTagsList();
+  })
 }
 
 function selectTag(el){
   selectSingleTagPerCategory(el);
+  //updatePromptAndGenerate();
   updatePrompt();
   updateTagsList();
 }
@@ -176,7 +186,7 @@ function handleCategories(callback) {
           // Iterate over tags to create their elements
           subcategory.tags.forEach(tag => {
             const tagBadge = $('<span>', { 
-              'class': 'tags badge text-bg-primary me-2 mb-2', 
+              'class': 'tags badge text-bg-dark me-2 mb-2', 
               'style': 'cursor: pointer;', 
               'data-id': `${category.id}-${subcategory.id}-${tag.id}`,
               'data-name': tag.name,
@@ -209,12 +219,12 @@ function selectSingleTagPerCategory(el) {
   // Deselect all other tags in the same category
   $(`[data-id^="category-${categoryID}"] .tags.selected`).each(function() {
     if ($(this).data('id') !== selectedTagId) {
-      $(this).removeClass('selected');
+      //$(this).removeClass('selected');
     }
   });
 
   // Select the clicked tag
-  $(el).addClass('selected');
+  $(el).toggleClass('selected');
 }
 
 function generateThis(itemId) {
@@ -222,7 +232,25 @@ function generateThis(itemId) {
   var url = "/api/sdimage/" + itemId;
   $.get(url, function(data) {
     const imagePath = `./public/output/${itemId}.png`;
-    generateDiffusedImage(data.prompt,imagePath)
+    generateDiffusedImage(data.prompt,imagePath,data.aspectRatio)
+  })
+  .fail(function() {
+    console.log("Oops! Couldn't fetch the item. Maybe it's on a coffee break?");
+  });
+}
+let keepGenerating = false;
+
+function generateForever(itemId) {
+  if (!keepGenerating) {
+    return;
+  }
+
+  var url = "/api/sdimage/" + itemId;
+  $.get(url, function(data) {
+    const imagePath = `./public/output/${itemId}.png`;
+    generateDiffusedImage(data.prompt, imagePath, data.aspectRatio);
+    // Call generateThis again after generating the image
+    generateForever(itemId);
   })
   .fail(function() {
     console.log("Oops! Couldn't fetch the item. Maybe it's on a coffee break?");
@@ -230,23 +258,47 @@ function generateThis(itemId) {
 }
 
 
+function handleGenerateForever() {
+  $('#keepGenerating-button').click(function() {
+    keepGenerating = !keepGenerating;
+    $(this).find('i').addClass('rotate')
+    if (keepGenerating) {
+      var $navGallery = $('#nav-gallery');
+      var slideIndex = $navGallery.slick('slickCurrentSlide');
+      const currentSlideElement = $navGallery.find('.slick-slide[data-slick-index="' + slideIndex + '"]');
+      const itemId = currentSlideElement.find('img').data('id');    
+      console.log("Let the image generation party begin!");
+      generateForever(itemId);
+    } else {
+      console.log("Party's over, folks!");
+      $(this).find('i').removeClass('rotate')
+    }
+  });
+}
 
-function generateDiffusedImage(prompt,imagePath) {
+
+function generateDiffusedImage(prompt,imagePath,aspectRatio) {
   if($('#generate-button').hasClass('isLoading')){
     return
   }
+  const API = $('#gen-container').data('api')
+  const API_ENDPOINT = {
+    img2img : !API ? '/api/img2img' : `/api/${API}/img2img`,
+    txt2img : !API ? '/api/txt2img' : `/api/${API}/txt2img`
+  }
   $('.loader').show();
-  $('.fa-spinner').addClass('rotate');
+  $('.isgenerating').addClass('rotate');
   
   $('#generate-button').hide().addClass('isLoading')
 
   const inputString = prompt ? '' : $('#tag-input').val();
   const promptString = prompt || $('#prompt-input').val();
-  const aspectRatio = getCurrentActiveAspect()
+  const aspectRatioData = aspectRatio || getCurrentActiveAspect()
+  const modelName = $('#modelDropdown').text()
 
-  console.log(`Generate ${aspectRatio} ${inputString} ${promptString}  `)
+  console.log(`Generate ${aspectRatioData} ${inputString} ${promptString} ${modelName} `)
  
-  const query = imagePath ? '/api/img2img' : '/api/txt2img'
+  const query = imagePath ? API_ENDPOINT.img2img : API_ENDPOINT.txt2img
   fetch(query, { // Update the URL to match the API endpoint on your Node.js server
     method: 'POST',
     headers: {
@@ -255,8 +307,9 @@ function generateDiffusedImage(prompt,imagePath) {
     body: JSON.stringify({ 
       prompt: promptString+',('+inputString+')', 
       negative_prompt: '', 
-      aspectRatio,
-      imagePath:imagePath ? imagePath : null
+      aspectRatio:aspectRatioData,
+      imagePath:imagePath ? imagePath : null,
+      modelName
     })
   })
     .then(response => {
@@ -274,7 +327,7 @@ function generateDiffusedImage(prompt,imagePath) {
     })
     .finally(() => {
       $('.loader').hide();
-      $('.fa-spinner').removeClass('rotate');
+      $('.isgenerating').removeClass('rotate isgenerating');
       $('#generate-button').show()
       $('#generate-button').removeClass('isLoading')
     });
@@ -340,6 +393,26 @@ function updatePrompt(){
   const inputString = selectedTags.join(', ');  
   $('#tag-input').val(inputString);
 
+}
+
+function updatePromptAndGenerate(){
+  const selectedTags = [];
+  $('.tags.selected').each(function() {
+    const [categoryID, subcategoryID, tagID] = $(this).data('id').split('-');
+
+    // Grabbing the names using the IDs
+    const categoryName = $(`[data-id='category-${categoryID}']`).find('[data-name]').attr('data-name');
+    const subcategoryName = $(`[data-id='subcategory-${categoryID}-${subcategoryID}']`).find('[data-name]').attr('data-name');
+    const tagName = $(this).attr('data-name');
+
+    // Push the combined names to the array
+    selectedTags.push(`${categoryName} ${subcategoryName} ${tagName}`);
+  });
+
+  // Join the tags with a comma and update the input field
+  const inputString = selectedTags.join(', ');  
+  $('#tag-input').val(inputString);
+
   generateDiffusedImage();
 }
 
@@ -350,9 +423,15 @@ function updateTagsList() {
   $('.tags.selected').each(function() {
     // Get the name of the tag
     const tagName = $(this).data('namejp');
+    const tagId = $(this).data('id');
 
     // Append it to the list
-    tagsList.append($('<div class="d-inline badge bg-white text-dark shadow border mx-1">').text(tagName));
+    tagsList.append(
+      $('<div class="tag d-inline badge bg-white text-dark shadow border mx-1">')
+      .attr('data-id',tagId)
+      .css({'cursor':'pointer'})
+      .text(tagName)
+    );
   });
 
   // Save the updated list of selected tags
@@ -363,7 +442,7 @@ function saveSelectedTags() {
   const selectedTags = [];
 
   $('.tags.selected').each(function() {
-    selectedTags.push($(this).data('namejp'));
+    selectedTags.push($(this).data('id'));
   });
 
   // Save the array of selected tags to local storage
@@ -373,15 +452,16 @@ function initializeTags() {
   const savedTags = JSON.parse(localStorage.getItem('selectedTags'));
 
   if (savedTags) {
-    savedTags.forEach(tagName => {
+    savedTags.forEach(tagId => {
       // Add the 'selected' class to the tags that were saved
       $('.tags').filter(function() {
-        return $(this).data('namejp') === tagName;
+        return $(this).data('id') === tagId;
       }).addClass('selected');
     });
 
     // Now update the tags list
     updateTagsList();
+    updatePrompt();
   }
 }
 
@@ -413,7 +493,7 @@ function initMainGallery(slideIndex){
     ]
   });
   if(slideIndex){
-    $gallery.slick('slickGoTo', slideIndex);
+    goToSlideWhenReady($gallery, slideIndex);
   }
 }
 function initNavGallery(slideIndex){
@@ -441,7 +521,7 @@ function initNavGallery(slideIndex){
   });
   
   if(slideIndex){
-    $gallery.slick('slickGoTo', slideIndex, true);
+    goToSlideWhenReady($gallery, slideIndex);
   }
 }
 function addSlide(imgElement) {
@@ -461,16 +541,17 @@ function addSlide(imgElement) {
   var newIndex = $gallery.slick('getSlick').slideCount - 1;
 
   // Slide right to the new slide in the main gallery
-  $gallery.slick('slickGoTo', newIndex, true);
+  goToSlideWhenReady($gallery, newIndex);
 }
 function addImageToList(imgElement) {
   var $gallery = $('#diffused-image-gallery');
-  var slideIndex = $gallery.slick('slickCurrentSlide');
+  // Get the index of the last slide (which is the new one)
+  var newIndex = $gallery.slick('getSlick').slideCount - 1;
 
   const imgContainer = $('#imageList');
   // Add a click event listener to the image
   $(imgElement).on('click', function() {
-    makeNavGalleryFullScreen(slideIndex)
+    makeNavGalleryFullScreen(newIndex)
   });
   imgContainer.prepend(imgElement);
 }
@@ -505,7 +586,7 @@ function makeNavGalleryFullScreen(slideIndex) {
   });
   
   disableScrolling();
-  $navGallery.slick('slickGoTo', slideIndex, true);
+  goToSlideWhenReady($navGallery, slideIndex);
 }
 
 function revertNavGallery() {
@@ -582,7 +663,7 @@ function makeImageGalleryFullScreen(slideIndex) {
   });
   
   disableScrolling();
-  $navGallery.slick('slickGoTo', slideIndex, true);
+  goToSlideWhenReady($navGallery, slideIndex);
 }
 
 function handleCarouselBehavior(){
@@ -598,6 +679,7 @@ function handleCarouselBehavior(){
     var slideIndex = $navGallery.slick('slickCurrentSlide');
     const currentSlideElement = $navGallery.find('.slick-slide[data-slick-index="' + slideIndex + '"]');
     const itemId = currentSlideElement.find('img').data('id');    
+    $(this).find('i').addClass('isgenerating')
     generateThis(itemId)
   }); 
 
@@ -614,6 +696,7 @@ function handleCarouselBehavior(){
     var slideIndex = $navGallery.slick('slickCurrentSlide');
     const currentSlideElement = $navGallery.find('.slick-slide[data-slick-index="' + slideIndex + '"]');
     const itemId = currentSlideElement.find('img').data('id');    
+    $(this).find('i').addClass('isgenerating')
     generateThis(itemId)
   }); 
 }
@@ -637,7 +720,7 @@ function loadImages() {
               response.images.forEach(function(image, index) {
                   const order = (currentPage - 1) * response.images.length + index;
                   $('#image-gallery').append(
-                      $('<div>').addClass('image-gallery-container masonry-item col-6 col-sm-4 col-lg-3 p-1').append(
+                      $('<div>').addClass('image-gallery-container masonry-item col-6 col-sm-4 col-lg-3 p-1 m-auto').append(
                           $('<img>').attr('src', 'data:image/png;base64,' + image.image).attr('data-id', image.imageId)
                       )
                   );
@@ -709,4 +792,21 @@ function getCurrentActiveAspect() {
   
   // Return the ratio to whoever's asking
   return aspectRatio;
+}
+
+function disableTag(tagId){
+  $(document).find(`.subcategories .tags.selected[data-id="${tagId}"]`).removeClass('selected');
+}
+
+function goToSlideWhenReady($gallery, newIndex) {
+  // Check if the slider is initialized
+  if ($gallery.hasClass('slick-initialized')) {
+      // The slider is ready, let's jump to the slide!
+      $gallery.slick('slickGoTo', newIndex, true);
+      console.log("Slider was ready! Jumped to slide:", newIndex);
+  } else {
+      // The slider isn't ready, let's wait a bit and try again
+      console.log("Waiting for the slider... 🕒");
+      setTimeout(() => goToSlideWhenReady($gallery, newIndex), 500); // Checks every half a second
+  }
 }

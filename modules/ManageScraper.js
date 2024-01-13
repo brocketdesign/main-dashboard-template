@@ -81,7 +81,7 @@ async function AsyncManageScraper(url, nsfw, mode, user, page) {
 
   updateUserScrapInfo(user,url,page)
   const result =  await insertInDB(scrapedData)
-  return result
+  return result.slice(0,30)
 }
 
 async function updateOrInsert(criteria, updateQuery) {
