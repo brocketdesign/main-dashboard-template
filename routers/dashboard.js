@@ -194,11 +194,11 @@ router.get('/app/actresses', ensureAuthenticated, ensureMembership, async (req, 
   try {
     const { actressesList, searchActresses } = require('../modules/actressesList');
     const page = parseInt(req.query.page )|| 1
-    const searchTerm = req.query.searchTerm || false
+    const searchterm = req.query.searchterm || false
     const debut = req.query.debut || false
     try {
-      if(searchTerm){
-        let actresses = await searchActresses(searchTerm)
+      if(searchterm){
+        let actresses = await searchActresses(searchterm)
         res.render('actresses/list', { user: req.user, actresses, page, mode: 'actresses'});
         return
       }
@@ -234,36 +234,18 @@ router.get('/app/actresses/profile/:actressID', ensureAuthenticated, ensureMembe
 });
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) => {
-
   const userAgent = req.headers['user-agent'];
   try {
-      const { mode } = req.params; // Get the 'mode' parameter from the route URL
-      let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
+      const { mode } = req.params; 
+      let { searchterm, nsfw, page } = req.query; 
       nsfw = req.user.nsfw === 'true'?true:false
       page = parseInt(page) || 1
-    
-      console.log(`Dashboard mode ${mode} requested`);
-
-      if(!searchTerm){
+      if(!searchterm){
         res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
         return
       }
-      // If 'mode' is not provided, use the mode from the session (default to '1')
-      const currentMode = mode || req.session.mode || '1';
-    
-      await initCategories(req.user._id)
-      let scrapedData = await ManageScraper(searchTerm,nsfw,mode,req.user, page);
-      if(mode == 2 || mode == 1 ){
-        AsyncManageScraper(searchTerm,nsfw,mode,req.user, page);
-      }
-      let scrapInfo  
-      try {
-        const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
-        scrapInfo = userInfo.scrapInfo.find(info => info.url === searchTerm);
-      } catch (error) {
-        console.log(error)
-      }
-      res.render(`search`, { user: req.user, result:true, isSafari:isSafari(userAgent), searchTerm, scrapedData, scrapInfo, mode, page, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
+      let scrapedData = await ManageScraper(searchterm,nsfw,mode,req.user, page);
+      res.render(`search`, { user: req.user,scrapedData, result:true, isSafari:isSafari(userAgent), searchterm, mode, page, title: `Mode ${mode} : ${searchterm}` });
   } catch (error) {
     console.error('An error occurred:', error);
     res.status(500).send('An error occurred while scraping.');
@@ -276,7 +258,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
   console.log('Dashboard page requested');
   const userAgent = req.headers['user-agent'];
   const { mode } = req.params; // Get the 'mode' parameter from the route URL
-  let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
+  let { searchterm, nsfw, page } = req.query; // Get the search term from the query parameter
   nsfw = req.user.nsfw === 'true'?true:false
   page = parseInt(page) || 1
 
@@ -286,14 +268,14 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
   try{
     let query_obj = {
       query: {
-        $regex: searchTerm,
+        $regex: searchterm,
       },
       mode:mode,
       nsfw:nsfw,
       fav_user_list:req.user._id,
       hide: { $exists: false },
     }
-    if(!searchTerm){
+    if(!searchterm){
       query_obj = {
         mode:mode,
         nsfw:nsfw,
@@ -301,7 +283,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
         hide: { $exists: false },
       }
     }
-    if(searchTerm=='All'){
+    if(searchterm=='All'){
       query_obj = {
         mode:mode,
         nsfw:nsfw,
@@ -319,12 +301,11 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
     }
 
     //medias = getUniqueElement(medias)
-
     res.render(`search`, { 
       user: req.user,
       result:true,
-      fav:true, 
-      searchTerm, 
+      favmode:true, 
+      searchterm, 
       section:'fav', 
       isSafari:isSafari(userAgent), 
       scrapedData:medias ,
@@ -336,7 +317,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
 
   }catch(err){
     console.log(err)
-    res.render(`search`, { user: req.user, searchTerm,fav:true, scrapedData:[], mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+    res.render(`search`, { user: req.user, searchterm,fav:true, scrapedData:[], mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
 
   }
   
@@ -405,35 +386,20 @@ function elementFilter(type, medias) {
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (req, res) => {
 
-  console.log('Dashboard history page requested');
-  const { mode, categoryId } = req.params; // Get the 'mode' parameter from the route URL
-
-  // If 'mode' is not provided, use the mode from the session (default to '1')
-  const currentMode = mode || req.session.mode || '1';
-  const userId = new ObjectId(req.user._id);
-
-  const nsfw = req.user.nsfw === 'true'
+  const { mode } = req.params; // Get the 'mode' parameter from the route URL
 
   try{
 
-    const medias = await findDataInMedias(userId, false, {
-      mode: mode,
-      nsfw: nsfw,
-      hide_query: { $exists: false },
-    }, categoryId);
-    const data = mapArrayHistory(medias)
-    //const userOpenAi = await mapArrayOpenai(req.user)
-    const categories = await global.db.collection('category').find({nsfw}).toArray()
-    
-    console.log(`Dashboard userId is : ${req.user._id}`)
-    res.render('history', { user: req.user, data, categories, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
+    res.render('history', { user: req.user, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
 
   } catch (error) {
     console.log(error);
-    res.render('history', { user: req.user, data:[], mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
+    res.render('history', { user: req.user, mode, title: `History of mode ${mode}` }); // Pass the user data and uniqueCurrentPages to the template
 
   }
+
 });
+
 async function mapArrayOpenai(user){
   const summarize = user.openai_summarize
 
@@ -495,43 +461,5 @@ async function findAllData(data){
   }
 }
 
-function mapArrayHistory(medias) {
-  let highestPagePerQuery = {}; // Map to keep track of the highest page for each query
-  let queryMap = {};
 
-  medias.forEach(item => {
-    if (!item.query) return;
-
-    const page = parseInt(item.page);
-
-    // If this is the highest page for this query, update highestPagePerQuery
-    if (!highestPagePerQuery[item.query] || page > highestPagePerQuery[item.query]) {
-      highestPagePerQuery[item.query] = page;
-    }
-  });
-
-  // Iterate through filteredData again, adding items to queryMap only if they are on the highest page for that query
-  medias.forEach(item => {
-    if (!item.query) return;
-
-    const page = parseInt(item.page);
-
-    if (page === highestPagePerQuery[item.query]) {
-      const key = item.query;
-      if (!queryMap[key]) {
-        queryMap[key] = [];
-      }
-
-      if (queryMap[key].length < 4 && item.hide !== true) {
-        queryMap[key].push(item);
-      }
-    }
-  });
-  for (let key in queryMap) {
-    if (queryMap[key].length === 0) {
-        delete queryMap[key];
-    }
-}
-  return queryMap
-}
 module.exports = router;

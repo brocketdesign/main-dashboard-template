@@ -77,15 +77,23 @@
     cursor: pointer;
   }
 
-  #image-gallery img{
+  #image-gallery img, #image-gallery-civitai img{
     width:100%;
     border-radius: 5%;
     object-fit: contain;
   }
-  #image-gallery .slick-slide img {
+  #image-gallery .slick-slide img, #image-gallery-civitai .slick-slide img {
     width: auto;
     margin: auto;
   }
+  .toolbar {
+    display: none;
+}
+
+.image-gallery-container:hover .toolbar {
+    display: block;
+}
+
   .aspect-ratio-btn {
     padding: 5px 10px;
     margin: 0 5px;

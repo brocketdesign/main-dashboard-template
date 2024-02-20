@@ -418,7 +418,7 @@ async function scrapeMode3(url, mode, nsfw, page, user, isAsync) {
 
       // Combine the results
       data = results.flat(); // Flattens the array of arrays into a single array
-      console.log("Successfully scraped data from Reddit and Scrolller");
+      console.log("Successfully scraped data from  Sex.com for Image and GIFs...");
     } catch (error) {
       // Handle any unexpected error that wasn't caught earlier
       console.error("An unexpected error occurred during scraping", error);

@@ -5,27 +5,9 @@ block dynamicContent
   - gridclass='col-12 col-sm-3'
   .row.w-100.m-0(class=colclass)
     .col.order-1.pb-3
+      hr.mb-4
+      #osusume-history.row-cols-1.row-cols-md-3.horizontal-scroll(data-mode=mode)
+    .col.order-1.pb-3
       h3 Latest
       hr.mb-4
-      if data
-        .masonry-container.row.custom-carousel-container
-          each query, index in Object.keys(data).reverse()
-            a.masonry-item.mb-3.px-2.rounded(class=gridclass, href=`/dashboard/app/${mode}/?searchTerm=${data[query][0].query}&page=1`)
-              .card.hover(style="overflow: hidden;", data-query=query)
-                .card-top.py-2.px-3.position-absolute
-                  .d-flex.justify-content-between
-                      button.delete-button-history.btn.btn-dark.border-white.border.hover.shadow(type="button", style="display:none")
-                          i.fas.fa-trash-alt
-                .card-body.row.p-0.rounded
-                  each item,index in data[query]
-                    if (mode == 4) && index > 0
-                      break
-                    else
-                      if item.link && item.link.includes('redgif')
-                        img.col-6.p-0(style="width:50%;height:100px;object-fit:cover", data-id=item.video_id, src=item.thumb ,  alt=item.title)
-                      else
-                        img.col-6.p-0(style="width:50%;height:100px;object-fit:cover", data-id=item.video_id, src=item.filePath || item.url || item.imageUrl || item.thumb || item.link ,  alt=item.title)
-                  .text-dark.px-4.py-2.fw-bold
-                    span=data[query][0].query
-      else
-        p Your search history will be displayed here.
+      #display-history.row.row-cols-1.row-cols-md-3(data-mode=mode)

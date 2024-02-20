@@ -50,11 +50,13 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     page:parseInt(page),
     userId: userId,
     categories:categories,
-    favoriteCountry: userInfo.favoriteCountry
+    favoriteCountry: userInfo.favoriteCountry,
+    time :new Date()
   })); 
 
   updateUserScrapInfo(user,url,page)
-  const result =  await insertInDB(scrapedData)
+  let result =  await insertInDB(scrapedData)
+  if(result){result=result.reverse()}
   return result
 }
 async function AsyncManageScraper(url, nsfw, mode, user, page) {

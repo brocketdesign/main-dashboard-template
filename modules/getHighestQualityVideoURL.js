@@ -4,9 +4,10 @@ const ytdl = require('ytdl-core');
 const { saveData, updateSameElements, lessThan24Hours, isMedia } = require('../services/tools')
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 const axios = require('axios');
+const cheerio = require('cheerio');
+
 async function getHighestQualityVideoURL(video_id, user, stream = true) {
   try {
-    
     const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
 
     if(foundElement.filePath){
@@ -32,11 +33,11 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
       const medialink = foundElement.webm || foundElement.url
       return medialink; 
     }
-    if (foundElement.mode == "4") {
+    if (foundElement.mode == "4" ) {
       return isMedia(foundElement.link) ? foundElement.link : foundElement.thumb; 
     }
     
-    if (foundElement.mode == "5") {
+    if (foundElement.mode == "6") {
       return foundElement.link ; 
     }
     
@@ -47,7 +48,6 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
       return foundElement.link
     }
     
-
     const result = await searchVideo(foundElement, user, stream);
 
     if(!foundElement.isdl_process){
@@ -82,6 +82,9 @@ async function downloadMedia(foundElement){
 async function searchVideo(videoDocument, user, stream) {
   const videoLink = videoDocument.link; // Assuming 'link' field contains the video link
 
+  if( videoLink.includes('monsnode')){
+    return await searchVideoDirectLink(videoDocument, user)
+  }
   if( videoLink.includes('youtube') ){
     return await searchVideoYoutube(videoDocument, user, stream)
   }
@@ -200,6 +203,18 @@ console.log(videoDocument)
 
   //console.log('Format found!', format.url);
   return format.url;
+}
+
+async function searchVideoDirectLink(videoDocument, user){
+  const url = videoDocument.link
+
+  const { data } = await axios.get(url);
+
+  const $ = cheerio.load(data);
+
+  const videoDirectLink = $('a').attr('href')
+  console.log({videoDirectLink})
+  return videoDirectLink
 }
 
 module.exports = getHighestQualityVideoURL;

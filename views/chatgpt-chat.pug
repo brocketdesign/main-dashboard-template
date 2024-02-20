@@ -11,11 +11,11 @@ block mainContent
           each item in userOpenaiDocs.reverse()
             li.p-4.bg-white
               p.mb-3.userName(style="font-size:12px") #{user.username}
-              p.rounded.border.border-dark.bg-.p-2.message.chat-message.user.p-3.d-inline-block.w-100= item.prompt
+              p.rounded.border.border-dark.bg-.p-2.message.chat-message.user.p-3.d-inline-block.w-100= item.prompt? item.prompt:''
               p.text-muted.mt-2.time(style="font-size:9px") #{new Date(item.prompt_time).toLocaleDateString()+' - '+new Date(item.prompt_time).toLocaleTimeString()}
             li.p-4.text-end.bg-dark.text-white
               p.mb-3.userName(style="font-size:12px") エージェント
-              p.text-start.rounded.bg-.p-2.border.message.chat-message.agent.p-3.d-inline-block.w-100= item.completion[0]
+              p.text-start.rounded.bg-.p-2.border.message.chat-message.agent.p-3.d-inline-block.w-100= item.completion ? item.completion[0]:''
               p.mt-2.time(style="font-size:9px") #{new Date(item.completion_time).toLocaleDateString()+' - '+new Date(item.completion_time).toLocaleTimeString()}
     #chat-input-section.d-flex.align-items-center.py-3.pe-3.bg-white.position-fixed(style="bottom: 0;right:0;left:0;")
       .input-group.shadow.m-auto(style="width:75%;")

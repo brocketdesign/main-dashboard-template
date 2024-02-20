@@ -6,6 +6,11 @@ main#dashboard {
   font-size: 12px;
   display:none;
 }
+.one-line {
+  white-space: nowrap;
+  overflow: hidden; /* This keeps anything beyond the container's bounds under wraps. */
+  text-overflow: ellipsis; /* This adds a nice '...' to signify there's more to see. */
+}
 
 #video-holder .card-title, #mobile-toolbar .card-title{
   color:white;
@@ -88,7 +93,7 @@ button.fav i {
 }
 .setting-absolute{
   position: absolute;
-  bottom: 0;
+  bottom: 35px;
   left: 0;
   right: 0;
 }
@@ -172,6 +177,26 @@ li.list-group-item{
 .hashtag-inputs input, .chapters-inputs input, .keyword-inputs input{
   min-width: 150px;
 }
+
+#display-history .img-fluid, #osusume-history .img-fluid {
+  width: 100%; /* Ensures the image takes the full width of its container */
+  height: 250px; /* Adjust this value to fit your design */
+  object-fit: cover; /* This makes sure the image covers the area without stretching */
+  object-position: center; /* Keeps the image centered */
+}
+.horizontal-scroll {
+  display: flex;
+  flex-wrap: nowrap; /* Prevents the items from wrapping */
+  overflow-x: auto; /* Enables horizontal scrolling */
+  gap: 10px; /* Optional: Adds some space between the cards */
+}
+
+/* Optional: Style for the cards to ensure they have a consistent width */
+.horizontal-scroll .card.col {
+  flex: 0 0 auto; /* Prevents the cards from growing or shrinking */
+}
+
+
 @media (max-width: 992px) {
   .top-nav .navbar {
     padding: 0 !important;

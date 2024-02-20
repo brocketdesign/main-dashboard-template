@@ -32,7 +32,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         downloadFileFromURL,
         downloadYoutubeVideo } = require('./services/tools')
   const ManageScraper = require('./modules/ManageScraper');
-  const getVideoFromSB = require('./modules/getVideoFromSB')
+  const {getVideoFromSB,scrapeWebsiteTopPage} = require('./modules/getVideoFromSB')
 
     router.post('/dl', async (req, res) => {
         const video_id = req.body.video_id;
@@ -185,7 +185,54 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         const result = await getVideoFromSB(query, mode, nsfw, url, pageNum, userId)
         res.status(200).json({result})
       })
+      
+      router.post('/scrapeWebsiteTopPage',async (req,res) => { 
+        const {mode, nsfw, userId, extractor}=req.body
+        try {
+          const latestItems = await global.db.collection('pageTop').findOne({extractor}) //check if the date in latestItems.time is more than 24h ago. if no return latestItems.data if  yes fetch the data and sanve in latestItems.data 
+          const result = await updateDataIfNeeded(extractor, mode, nsfw, userId)
+          res.status(200).json({result,status:true})
+        } catch (error) {
+          res.status(500).json({status:false})
+        }
+      })
 
+      async function updateDataIfNeeded(extractor, mode, nsfw, userId) {
+        try {
+          const collection = global.db.collection('pageTop');
+      
+          // Find the latest item for the given extractor
+          const latestItems = await collection.findOne({ extractor });
+      
+          if (latestItems) {
+            const currentTime = new Date();
+            const lastUpdateTime = new Date(latestItems.time);
+            const timeDifference = currentTime - lastUpdateTime;
+      
+            // Check if the time difference is more than 24 hours (24 * 60 * 60 * 1000 milliseconds)
+            if (timeDifference > 86400000) {
+              // If more than 24 hours, fetch new data
+              const result = await scrapeWebsiteTopPage(mode, nsfw, userId);
+      
+              // Update the document in the database with the new data and time
+              await collection.updateOne({ extractor }, { $set: { data: result, time: new Date() } });
+              return result;
+            } else {
+              // If less than 24 hours, return the existing data
+              console.log(`Less than 24 hours, return the existing data`)
+              return latestItems.data;
+            }
+          } else {
+            // If no document found, fetch and insert new data
+            const result = await scrapeWebsiteTopPage(mode, nsfw, userId);
+            await collection.insertOne({ extractor, data: result, time: new Date() });
+            return result;
+          }
+        } catch (error) {
+          console.error("Error occurred: ", error);
+        } 
+      }
+            
       // Define a route to handle video requests
       router.get('/video', async (req, res) => {
         try {

@@ -7,7 +7,8 @@ const axios = require('axios'); // You'll need to install axios: npm install axi
 const { createParser } = require('eventsource-parser');
 const fetch = require('node-fetch');
 const https = require('https');
-
+const ytdl = require('ytdl-core');
+var ffmpeg = require('ffmpeg');
 // Initialize OpenAI with your API key
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
@@ -132,7 +133,9 @@ async function findDataInMedias(userId, page, query, categoryId = null) {
   }
 
   const mediasColelction = global.db.collection('medias');
+
   if(!page){
+    
     const medias = await mediasColelction.find(query).toArray();
     return medias;
   }else{
@@ -206,6 +209,71 @@ async function getOpenaiTypeForUser(userId, type) {
 
   return openaiDocs;
 }
+const fetchOllamaCompletion = async (messages, res) => {
+  console.log('Starting fetchOllamaCompletion');
+  let fullCompletion = ""; // Initialize the variable to accumulate the full response
+
+  try {
+    let response = await fetch(
+      "http://localhost:11434/api/chat",
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        body: JSON.stringify({
+          model: 'mistral',
+          messages,
+          temperature: 0.75,
+          top_p: 0.95,
+          frequency_penalty: 0,
+          presence_penalty: 0,
+          max_tokens: 1000,
+          n: 1,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Bad response:", await response.text());
+      res.status(response.status).send("Error fetching data from Ollama.");
+      return;
+    }
+
+    for await (const chunk of response.body) {
+      const decodedChunk = new TextDecoder('utf-8').decode(chunk);
+
+      try {
+        const jsonChunk = JSON.parse(decodedChunk);
+
+        if (!jsonChunk.done) {
+          const content = jsonChunk.message.content;
+          fullCompletion += content; // Accumulate the content
+          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+          res.flush();
+        } else {
+          // Optionally, send fullCompletion as a final piece of data
+          res.write(`data: ${JSON.stringify({ content: fullCompletion, done: true })}\n\n`);
+          res.flush();
+          res.end(); // End the stream
+          break; // Exit the loop since we're done
+        }
+      } catch (error) {
+        console.error("Error parsing chunk:", error);
+        // Handle parsing error, maybe break or continue based on your needs
+      }
+    }
+    
+    // Here you can log, store, or otherwise handle the fullCompletion
+    return fullCompletion
+  } catch (error) {
+    console.error("Error during fetch or stream processing:", error);
+    res.status(500).send("Server encountered an error.");
+  }
+};
+
+
+
 const fetchOpenAICompletion = async (messages, res) => {
   try {
       let response = await fetch(
@@ -506,6 +574,7 @@ module.exports = {
   updateSameElements,
   getOpenaiTypeForUser,
   fetchOpenAICompletion,
+  fetchOllamaCompletion,
   initCategories,
   saveDataSummarize,
   downloadVideo,

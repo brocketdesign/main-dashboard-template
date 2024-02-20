@@ -37,6 +37,7 @@ $(document).ready(function() {
 
   handleGenerateForever();
 
+  displaySomeCivitAi();
   //Image gallery
   loadImages();
   $(window).scroll(function() {
@@ -232,7 +233,7 @@ function generateThis(itemId) {
   var url = "/api/sdimage/" + itemId;
   $.get(url, function(data) {
     const imagePath = `./public/output/${itemId}.png`;
-    generateDiffusedImage(data.prompt,imagePath,data.aspectRatio)
+    generateDiffusedImage({prompt:data.prompt,imagePath,aspectRatio:data.aspectRatio})
   })
   .fail(function() {
     console.log("Oops! Couldn't fetch the item. Maybe it's on a coffee break?");
@@ -248,7 +249,7 @@ function generateForever(itemId) {
   var url = "/api/sdimage/" + itemId;
   $.get(url, function(data) {
     const imagePath = `./public/output/${itemId}.png`;
-    generateDiffusedImage(data.prompt, imagePath, data.aspectRatio);
+    generateDiffusedImage({prompt:data.prompt, imagePath, aspectRatio:data.aspectRatio});
     // Call generateThis again after generating the image
     generateForever(itemId);
   })
@@ -277,38 +278,43 @@ function handleGenerateForever() {
 }
 
 
-function generateDiffusedImage(prompt,imagePath,aspectRatio) {
+function generateDiffusedImage(option = {}) {
   if($('#generate-button').hasClass('isLoading')){
-    return
+    return;
   }
-  const API = $('#gen-container').data('api')
+  const {
+    tags = $('#tag-input').val(),
+    negativePrompt = $('#negativePrompt-input').val(),
+    prompt = $('#prompt-input').val(),
+    imagePath = null,
+    aspectRatio = getCurrentActiveAspect()
+  } = option;
+
+  const API = $('#gen-container').data('api');
   const API_ENDPOINT = {
     img2img : !API ? '/api/img2img' : `/api/${API}/img2img`,
     txt2img : !API ? '/api/txt2img' : `/api/${API}/txt2img`
-  }
+  };
+
   $('.loader').show();
   $('.isgenerating').addClass('rotate');
-  
-  $('#generate-button').hide().addClass('isLoading')
+  $('#generate-button').hide().addClass('isLoading');
 
-  const inputString = prompt ? '' : $('#tag-input').val();
-  const promptString = prompt || $('#prompt-input').val();
-  const aspectRatioData = aspectRatio || getCurrentActiveAspect()
-  const modelName = $('#modelDropdown').text()
+  const modelName = $('#modelDropdown').text();
 
-  console.log(`Generate ${aspectRatioData} ${inputString} ${promptString} ${modelName} `)
- 
-  const query = imagePath ? API_ENDPOINT.img2img : API_ENDPOINT.txt2img
-  fetch(query, { // Update the URL to match the API endpoint on your Node.js server
+  console.log({tags,negativePrompt,prompt,imagePath,aspectRatio});
+
+  const query = imagePath ? API_ENDPOINT.img2img : API_ENDPOINT.txt2img;
+  fetch(query, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ 
-      prompt: promptString+',('+inputString+')', 
+      prompt: prompt + ',(' + tags + ')', 
       negative_prompt: '', 
-      aspectRatio:aspectRatioData,
-      imagePath:imagePath ? imagePath : null,
+      aspectRatio,
+      imagePath: imagePath ? imagePath : null,
       modelName
     })
   })
@@ -720,7 +726,7 @@ function loadImages() {
               response.images.forEach(function(image, index) {
                   const order = (currentPage - 1) * response.images.length + index;
                   $('#image-gallery').append(
-                      $('<div>').addClass('image-gallery-container masonry-item col-6 col-sm-4 col-lg-3 p-1 m-auto').append(
+                      $('<div>').addClass('image-gallery-container col-6 col-sm-4 col-lg-3 p-1 m-auto').append(
                           $('<img>').attr('src', 'data:image/png;base64,' + image.image).attr('data-id', image.imageId)
                       )
                   );
@@ -810,3 +816,139 @@ function goToSlideWhenReady($gallery, newIndex) {
       setTimeout(() => goToSlideWhenReady($gallery, newIndex), 500); // Checks every half a second
   }
 }
+
+function checkInputAndParty() {
+  // Grab that input value like it's the last piece of pizza
+  const query = $('#civitai-input').val();
+  
+  // Is it a number or is it a cleverly disguised letter?
+  if ($.isNumeric(query)) {
+      // If it's a number, let's party 🎉
+      _getCivitAiData(page=1);
+      console.log("Woo! That's a number. Party on!");
+  } else {
+      // If not, well, let's have a different kind of party 🎭
+      getCivitAiModelData(page=1);
+      console.log("Oh no! That's not a number. Party elsewhere!");
+  }
+}
+
+
+function displaySomeCivitAi(){
+  const gallery = $('#image-gallery-civitai-home');
+  $.get('https://civitai.com/api/v1/images?limit=20&nsfw=true',function(response){
+    displayCivitGallery(gallery,response.items)
+  })
+}
+
+
+function getCivitAiModelData(page=1){
+  const query = $('#civitai-input').val()
+  const gallery = $('#civitai-gallery-civitai');
+  if(!query){
+    console.log('No ID provided')
+  }
+  $.get(`https://civitai.com/api/v1/models?limit=5&nsfw=true&page=${page}&query=${query}`,function(response){
+    const allImages = response.items.reduce((imageArray, item) => {
+      const modelVersionImages = item.modelVersions.reduce((acc, modelVersion) => {
+        return acc.concat(modelVersion.images);
+      }, []);
+    
+      return imageArray.concat(modelVersionImages);
+    }, []);
+    
+    console.log("Feast your eyes on these images!", allImages);
+    displayCivitGallery(gallery,allImages)
+  })
+
+}
+function _getCivitAiData(){
+  const civitaiID = $('#civitai-input').val()
+  const gallery = $('#civitai-gallery-civitai');
+  if(!civitaiID){
+    console.log('No ID provided')
+  }
+  $.get('https://civitai.com/api/v1/model-versions/'+civitaiID,function(response){
+    displayCivitGallery(gallery,response.images)
+  })
+
+}
+function getCivitAiData(page=1){
+  const civitaiID = $('#civitai-input').val()
+  const gallery = $('#civitai-gallery-civitai');
+  if(!civitaiID){
+    console.log('No ID provided')
+  }
+  $.get(`https://civitai.com/api/v1/images?limit=20&page=${page}&modelVersionId=${civitaiID}`,function(response){
+    console.log(response)
+    displayCivitGallery(gallery,response.items)
+  })
+
+}
+function displayCivitGallery(gallery,images) {
+
+  gallery.empty();
+  for (let image of images) {
+    if(!image.meta){
+      continue;
+    }
+      gallery.append(
+          $('<div>').addClass('image-gallery-container col-6 col-sm-4 col-lg-3 p-1 m-auto position-relative')
+          .append($('<img>')
+              .addClass('lazy')
+              .attr('data-src', image.url)
+              .attr('data-prompt', image.meta.prompt)
+              .attr('data-negativePrompt', image.meta.negativePrompt)
+              .css('width', '100%')
+          )
+          .append($('<div>')
+              .addClass('toolbar show-on-hover position-absolute')
+              .css({ 'bottom': '0', 'left': '0', 'right': '0' })
+              .append($('<button>')
+                  .addClass('btn btn-light')
+                  .html('<i class="fa fa-spinner"></i>') // Add spinner icon here
+                  .on('click', function () {
+                      generateDiffusedImage({prompt: image.meta.prompt, negativePrompt: image.meta.negativePrompt,tags:'', aspectRatio: findClosestAspectRatio(image.width, image.height) });
+                  })
+              )
+              .append($('<button>')
+                  .addClass('btn btn-light')
+                  .html('<i class="fa fa-image"></i>') // Add spinner icon here
+                  .on('click', function () {
+                      generateDiffusedImage({imagePath:image.url, prompt: image.meta.prompt, negativePrompt: image.meta.negativePrompt,tags:'', aspectRatio: findClosestAspectRatio(image.width, image.height) });
+                  })
+              )
+          )
+      );
+      $(document).find(".image-gallery-container img.lazy").Lazy();
+  }
+}
+
+
+function findClosestAspectRatio(width, height) {
+  // Calculate the actual aspect ratio
+  const actualRatio = width / height;
+
+  // Define our eligible aspect ratios
+  const ratios = {
+      '1:1': 1,
+      '2:3': 2 / 3,
+      '3:2': 3 / 2
+  };
+
+  // Find the closest aspect ratio
+  let closestMatch = '';
+  let smallestDifference = Infinity;
+
+  for (const ratio in ratios) {
+      const difference = Math.abs(ratios[ratio] - actualRatio);
+      if (difference < smallestDifference) {
+          smallestDifference = difference;
+          closestMatch = ratio;
+      }
+  }
+
+  // Return the closest aspect ratio
+  return closestMatch;
+}
+

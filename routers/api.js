@@ -10,7 +10,9 @@ const {
   downloadVideo, 
   updateSameElements,
   fetchOpenAICompletion,
+  fetchOllamaCompletion,
   initCategories,
+  findDataInMedias,
   saveDataSummarize,
   generateFilePathFromUrl
 } = require('../services/tools')
@@ -23,7 +25,7 @@ const searchSubreddits = require('../modules/search.subreddits')
 const summarizeVideo = require('../modules/youtube-summary')
 const postArticleToWordpress = require('../modules/postArticleToWordpress')
 const createBookChapters = require('../modules/createBookChapters')
-const ManageScraper = require('../modules/ManageScraper');
+const {ManageScraper,AsyncManageScraper} = require('../modules/ManageScraper');
 
 const axios = require('axios');
 const path = require('path');
@@ -215,11 +217,12 @@ router.get('/openai/stream/:type', async (req, res) => {
 
       const prompt = record.prompt;
       const messages = [
-          { role: 'system', content: 'You are a powerful assistant' },
+          { role: 'system', content: 'You are a powerful assistant. That respond in markdown if necessary.' },
           { role: 'user', content: prompt },
       ];
 
-      const fullCompletion = await fetchOpenAICompletion(messages, res);
+      //const fullCompletion = await fetchOpenAICompletion(messages, res);
+      const fullCompletion = await fetchOllamaCompletion(messages, res);
 
       // Update the database with the full completion
       await global.db.collection('openai').updateOne(
@@ -395,39 +398,74 @@ router.get('/openai/summarize', async (req, res) => {
 });
 // ルーターを定義して '/loadpage' への POST リクエストを処理します
 router.post('/loadpage', async (req, res) => {
-  console.log('API request loadmore')
-  try {
-      // リクエストボディをコンソールにログ
-  
-      const data = { 
-        nsfw: req.body.nsfw == 'true',
-        searchTerm: req.body.searchterm || req.body.searchTerm , 
-        page: req.body.page ,
-        mode: req.body.mode,
-        user: req.user
-      }
-
-      let scrapedData = await ManageScraper(
-        data.searchTerm,
-        data.nsfw,
-        data.mode,
-        data.user, 
-        parseInt(data.page)
-        );
+    try {
+      let { searchterm, nsfw, page, mode } = req.body; // Get the search term from the query parameter
+      nsfw = req.user.nsfw === 'true'?true:false
+      page = parseInt(page) || 1
     
-      // JSON 応答を送る
-      res.status(200).json({
-        status: '成功', // Status as success
-        message: 'ページが正常にロードされました' // Message indicating the page has been successfully loaded
-      });
+      console.log({mode,page,searchterm,nsfw})
+
+      if(!searchterm){
+        res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
+        return
+      }
+      // If 'mode' is not provided, use the mode from the session (default to '1')
+      const currentMode = mode || req.session.mode || '1';
+    
+      await initCategories(req.user._id)
+      let scrapedData = await ManageScraper(searchterm,nsfw,mode,req.user, page);
+      if(mode == 2 || mode == 1 ){
+        AsyncManageScraper(searchterm,nsfw,mode,req.user, page);
+      }
+      updateUserScrapInfo(req.user._id, page, searchterm, mode).then(async ()=>{
+        const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
+        scrapInfo = userInfo.scrapInfo.find(info => info.url === searchterm);
+        console.log({scrapInfo})
+      })      
+      if(scrapedData.length == 0 ){
+        res.status(200).send('No results');
+        return
+      }
+      res.status(200).send('Founded '+ scrapedData.length);
   } catch (error) {
-    console.log(error)
-    res.status(500).json({
-      status: 'Error', // Status as success
-      message: 'An error occured' // Message indicating the page has been successfully loaded
-    });
+    console.error('An error occurred:', error);
+    res.status(500).send('An error occurred while scraping.');
   }
-  });
+});
+
+async function updateUserScrapInfo(userId, page, searchterm, mode) {
+  try {
+    // Find the user by their ID
+    const user = await global.db.collection('users').findOne({_id: new ObjectId(userId)});
+
+    // If the user doesn't have scrapInfo, initialize it as an empty array
+    if (!user.scrapInfo) {
+      user.scrapInfo = [];
+    }
+
+    // Find the scrapInfo for the given search term
+    let scrap = user.scrapInfo.find(info => info.searchterm === searchterm);
+
+    if (scrap) {
+      // If found, update the page
+      scrap.page = page;
+    } else {
+      // If not found, add a new scrapInfo
+      user.scrapInfo.push({ searchterm: searchterm, page: page, mode:mode });
+    }
+
+    // Update the user document
+    await global.db.collection('users').updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: { scrapInfo: user.scrapInfo } }
+    );
+
+    console.log('User scrapInfo updated successfully!');
+  } catch (error) {
+    console.error('Error updating user scrapInfo:', error);
+  }
+}
+
   router.post('/addtofav', async (req, res) => {
     const {video_id}=req.body
     const user = req.user
@@ -914,8 +952,8 @@ const default_negative_prompt = 'illustration, 3d, 2d, painting, cartoons, sketc
 
 router.post('/txt2img', async (req, res) => {
 
-  const prompt = req.body.prompt;
-  const negative_prompt = req.body.negative_prompt;
+  const prompt = req.body.prompt ? default_prompt + req.body.prompt : default_prompt;
+  const negative_prompt = req.body.negativePrompt || default_negative_prompt;
   const aspectRatio = req.body.aspectRatio;
   
 
@@ -923,8 +961,8 @@ router.post('/txt2img', async (req, res) => {
   const width = getWidthForAspectRatio(768, aspectRatio);
 
   const payload = {
-    prompt: prompt.length === 0 ? default_prompt : default_prompt + prompt,
-    negative_prompt: negative_prompt.length === 0 ? default_negative_prompt : negative_prompt,
+    prompt,
+    negative_prompt,
     width, // Use the calculated width
     height: 768 // Fixed height as provided
   };
@@ -946,8 +984,8 @@ router.post('/txt2img', async (req, res) => {
   }
 });
 router.post('/img2img', async (req, res) => {
-  const prompt = req.body.prompt;
-  const negative_prompt = req.body.negative_prompt;
+  const prompt = req.body.prompt ? default_prompt + req.body.prompt : default_prompt;
+  const negative_prompt = req.body.negativePrompt || default_negative_prompt;
   const aspectRatio = req.body.aspectRatio;
   const imagePath = req.body.imagePath;
 
@@ -960,14 +998,22 @@ router.post('/img2img', async (req, res) => {
   const width = getWidthForAspectRatio(768, aspectRatio);
 
   try {
-    // Load the image using sharp
-    const image = sharp(imagePath);
+    let image
+    try {
+      // Let's see if this flies as a URL
+      new URL(imagePath);
+      const response = await axios.get(imagePath, { responseType: 'arraybuffer' });
+      image = sharp(response.data);
+    } catch (error) {
+        // Oops! Not a URL, must be a local path!
+        image = sharp(imagePath);
+    }
 
-    // Prepare the payload for the img2img API
+
     const payload = {
       init_images: [image],
-      prompt: prompt.length === 0 ? default_prompt : prompt,
-      negative_prompt: negative_prompt.length === 0 ? default_negative_prompt : negative_prompt,
+      prompt,
+      negative_prompt,
       width,
       height: 768,
       strength: 0.8,              // Transformation strength of the reference image
@@ -1438,8 +1484,83 @@ router.post('/hide', async (req, res) => {
     res.status(500).json({ message: 'エラーが発生しました' });
   }
 });
+router.post('/getSBtop', async (req, res) => {
+  const {mode,extractor} = req.body
+  const userId = new ObjectId(req.user._id);
+  const nsfw = req.user.nsfw == 'true'
+  try {
+    const data = await scrapeWebsiteTopPageFromOtherServer(mode, nsfw, userId,extractor)
+    res.status(200).json({data})
+  } catch (error) {
+    res.status(500)
+  }
+});
+async function scrapeWebsiteTopPageFromOtherServer(mode, nsfw, userId,extractor) {
+  try {
+    // Make a POST request to the download server
+    const response = await axios.post('http://192.168.10.115:3100/api/scrapeWebsiteTopPage', {
+      mode, nsfw, userId,extractor
+    });
+    // You might want to return something here, depending on your use case
 
+    return response.data.result;
+  } catch (error) {
+    // Log the error if the request fails
+    console.error('Error connecting to the download server:');
+    //throw error; // Optionally throw the error to be handled by the caller
+  }
+}
+router.post('/history', async (req, res) => {
+  const {mode} = req.body
+  const userId = new ObjectId(req.user._id);
+  const nsfw = req.user.nsfw == 'true'
+  try{
+    const medias = await findDataInMedias(userId, false, {
+      mode: mode,
+      nsfw: nsfw,
+      hide_query: { $exists: false },
+    });
+    const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
+    const scrapInfo = userInfo.scrapInfo.filter(item => item.mode !== undefined && item.searchterm !== undefined);
 
+    const data = mapArrayHistory(medias,scrapInfo,mode)
+    const categories = await global.db.collection('category').find({nsfw}).toArray()
+    res.json({status:true,data,categories}); 
+  } catch (error) {
+    res.json({status:false});
+  }
+});
+function mapArrayHistory(medias,scrapInfo, mode) {
+  let queryMap = {};
+  const highestPagePerQuery = scrapInfo.reduce((accumulator, current) => {
+    accumulator[current.searchterm] = current.page;
+    return accumulator;
+  }, {});
+
+  // Iterate through filteredData again, adding items to queryMap only if they are on the highest page for that query
+  medias.forEach(item => {
+    if (!item.query) return;
+
+    const page = parseInt(item.page);
+
+    if (page === highestPagePerQuery[item.query]) {
+      const key = item.query;
+      if (!queryMap[key]) {
+        queryMap[key] = [];
+      }
+
+      if (queryMap[key].length < 4 && item.hide !== true) {
+        queryMap[key].push(item);
+      }
+    }
+  });
+  for (let key in queryMap) {
+    if (queryMap[key].length === 0) {
+        delete queryMap[key];
+    }
+}
+  return queryMap
+}
 router.post('/hideHistory', async (req, res) => {
   const { query, category } = req.body;
   console.log('クエリを非表示にする:', query); // Hide the query: query
@@ -1536,7 +1657,36 @@ router.post('/category/remove', async (req, res) => {
     res.status(500).json({ message: 'エラーが発生しました' }); // An error occurred
   }
 });
+router.post('/scrapeWebsiteTopPage', async (req,res)=>{
+  const userId = req.user._id;
+  const {mode, nsfw}=req.body
+  const  scrapeWebsiteFromOtherServer = async (mode, nsfw, userId) => {
+    try {
+      const response = await axios.post('http://192.168.10.115:3100/api/getVideoFromSB', {
+       mode, nsfw, userId
+      });
+      // You might want to return something here, depending on your use case
+  
+      return response.data.result;
+    } catch (error) {
+      // Log the error if the request fails
+      console.error('Error connecting to the download server:');
+      //throw error; // Optionally throw the error to be handled by the caller
+    }
+  }
+  try {
+      const data = await scrapeWebsiteFromOtherServer(mode, nsfw, userId)
+      console.log(data)
+      res.status(200).json({data,status:true})
+  } catch (error) {
+    res.status(500).json({data,status:false})
+  }
 
+});
+
+router.get('/userID',(req,res)=>{
+  return req.user._id;
+})
 
 async function saveImageToDB(db, userID, prompt, image, aspectRatio) {
   const imageID = new ObjectId();

@@ -1,9 +1,9 @@
 extends dashboard
 
 block dynamicContent
-  div(id=section)
+  div.mode-container(id=section data-mode=mode)
   #imageList.image-container.auto-show
-  if (scrapedData && scrapedData.length > 0 )|| (medias2 && medias2.length > 0)
+  if (scrapedData && scrapedData.length > 0 ) || (medias2 && medias2.length > 0)
     .masonry-container.row.custom-carousel-container
       each data in scrapedData.reverse()
         if data._id
@@ -15,13 +15,13 @@ block dynamicContent
                   .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
                       button.iframe-button.btn.shadow.border.border-white(style="background: #ffffff61;", type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'', data-url=`${data.link.replace('watch','ifr')}`)
                         i.fas.fa-play
-                if mode == '1' || (data.link && data.link.includes('scrolller') && data.video)
+                if mode == '1' || mode == '5' || (data.link && data.link.includes('scrolller') && data.video)
                   .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
                       button.play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
                         i.fas.fa-play
-                if mode == '5'
+                if mode == '6'
                   .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                      button.instant-play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
+                      button.instant-play-button.now.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
                         i.fas.fa-play
               
               .video-container.d-flex(data-id=data._id)
@@ -40,12 +40,12 @@ block dynamicContent
                       img.card-img-top(type="button",data-id=data._id, style="object-fit:contain;height: 100%;", data-src=data.url , alt=data.title)
                   else
                     img.card-img-top(type="button", data-id=data._id, style="object-fit:contain;height: 100%;", src=data.imageUrl || data.filePath, alt=data.title )
-                  if mode == 5
+                  if mode == 6
                     video(data-id=data._id, data-src=data.link, style="display:none;" width="100%" controls muted autoplay playsinline)
               .setting-absolute.card-title.px-3.my-0(data-id=data._id, style="display:none;")
                 .row.justify-content-start.flex-row(style="height:100%")
                   .col-12.text-start(style="overflow:hidden")
-                    a.expand(href=`/dashboard/app/${mode}?searchTerm=${data.subreddit}`)=data.subreddit
+                    a.expand(href=`/dashboard/app/${mode}?searchterm=${data.subreddit}`)=data.subreddit
                   .col-12.text-start.justify-content-between.d-flex
                     button.expand.delete-button.btn.btn-light.border.border-0.m-1.shadow-0(type="button", data-id=data._id)
                         i.fas.fa-trash-alt
@@ -59,16 +59,17 @@ block dynamicContent
                         i.fas.fa-heart
                     a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target="_blank", href=data.source||data.link||data.webm||data.url)
                       i.fas.fa-link
-                    if mode == 2 && data.extractor == 'scrolller'
-                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.link}/discover`)
+                    if mode == 2 && data.extractor == 'scrolller' || mode == 5
+                      - moreLink = (mode == 5 ? data.moreLink : `/dashboard/app/${mode}?searchterm=${data.link}/discover`)
+                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=moreLink)
                         i.fas.fa-plus-square    
                     else 
-                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=`/dashboard/app/${mode}?searchTerm=${data.title || data.alt}`)
+                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=`/dashboard/app/${mode}?searchterm=${data.title || data.alt}`)
                         i.fas.fa-plus-square    
                     button.expand-card.btn.btn-light.shadow-0.border.border-0.m-1(type="button")
                         i.fas.fa-expand
                 if data.title
-                  p=data.title 
+                  p.one-line=data.title 
 
       if medias2 && medias2.length > 0 && mode == 'actresses'
         .card.bg-transparent.shadow-0
@@ -88,14 +89,14 @@ block dynamicContent
     p ここには何もありません！
   if scrapedData && scrapedData.length > 0 
     .position-fixed.d-flex.justify-content-center.w-100(style="bottom:10px;right:10px;left:10px")
-      a.btn.btn-dark.border(type="button",class=page<=1?'d-none':'', href=`/dashboard/app/${mode}${fav?'/fav':''}?page=${page>1?page-1:''}&searchTerm=${searchTerm?searchTerm:''}&nsfw=${user.nsfw}`)        
+      .btn.btn-dark.border.load-more(type="button",class=page<=1?'d-none':'', data-fav=favmode ? true : false, data-userId=user._id data-mode=mode, data-page=page<=1?1:page-1, data-searchterm=searchterm, data-nsfw= user.nsfw)             
         i.fas.fa-angle-left
         //| 前へ
       span.px-3.btn.btn-white #{page}
-      a.btn.btn-dark.bordert.load-more-next(type="button", href=`/dashboard/app/${mode}${fav?'/fav':''}?page=${page+1}&searchTerm=${searchTerm?searchTerm:''}&nsfw=${user.nsfw}`, data-fav=!!fav, data-userId=user._id data-mode=mode, data-page=page+1, data-searchTerm=searchTerm, data-nsfw= user.nsfw)        
+      .btn.btn-dark.bordert.load-more.load-more-next(type="button", data-fav=favmode ? "true" : "false", data-userId=user._id data-mode=mode, data-page=page+1, data-searchterm=searchterm, data-nsfw= user.nsfw)        
         //| 次へ
         i.fas.fa-angle-right
-      a.btn.btn-dark.bordert.d-none(type="button", class=scrapInfo&&scrapInfo.page==page?'d-none':'',href=`/dashboard/app/${mode}${fav?'/fav':''}?page=${scrapInfo?scrapInfo.page:'1'}&searchTerm=${searchTerm?searchTerm:''}&nsfw=${user.nsfw}`)        
+      a.btn.btn-dark.bordert.d-none(type="button", class=scrapInfo&&scrapInfo.page==page?'d-none':'',href=`/dashboard/app/${mode}${fav?'/fav':''}?page=${scrapInfo?scrapInfo.page:'1'}&searchterm=${searchterm?searchterm:''}&nsfw=${user.nsfw}`)        
         i.fas.fa-angle-double-right
   .position-fixed(style="bottom:10px;right:10px")
     button#activeSlider.btn.btn-dark.shadow-0.rouded 

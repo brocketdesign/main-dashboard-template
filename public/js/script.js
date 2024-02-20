@@ -1,7 +1,8 @@
 // Utility functions
 const logout = () => window.location.href = '/user/logout';
 const YOUR_LARGE_SCREEN_BREAKPOINT = 992
-
+// Use showdown library to convert markdown to HTML
+const converter = new showdown.Converter();
 const checkFormChange = (initialData, form) => {
     return Array.from(form.entries()).some(([name, value]) => value !== initialData.get(name));
 }
@@ -41,6 +42,22 @@ const updateMasonryLayout = () => {
         msnry.layout();
     }
 }
+document.addEventListener('DOMContentLoaded', (event) => {
+    // Ensure the DOM is fully loaded
+    const chatInput = document.querySelector('#chat-input-section input'); // Adjust the selector if your input has a more specific identifier
+    const submitButton = document.querySelector('#chat-input-section button[type="submit"]');
+  
+    // Check if both the input and the button are found
+    if(chatInput && submitButton) {
+      chatInput.addEventListener('keypress', function(e) {
+        // Check if Enter is pressed without the Shift key
+        if(e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault(); // Prevent the default action to avoid submitting the form or adding a new line
+          submitButton.click(); // Trigger the button click
+        }
+      });
+    }
+  });
 // Masonry setup
 $(window).on('load', function() {
     handleMasonry()
@@ -196,7 +213,7 @@ $(document).ready(function() {
         $(this).find('.hover').hide();
     });
 
-    $('input#searchTerm').on('change',function(){$('#page').val(1)})
+    $('input#searchterm').on('change',function(){$('#page').val(1)})
       
       
         $(document).on('mouseenter', '.tool-button', function() {
@@ -224,6 +241,9 @@ $(document).ready(function() {
         downloadVideo($(this).attr('data-id'), $(this).attr('data-name'))
     })
 
+
+      
+    handleHistory();
     handleInstantVideo();
     HandleCardSetting();
     activateClickOnVisibleButtons();
@@ -282,13 +302,29 @@ const handleScrollDownButton = () => {
             // If not at the bottom, fade in the scroll down button
             $('.scroll-down').fadeIn();
         }
+
+          // Calculate the distance from the bottom
+            var scrollPosition = $(this).scrollTop() + $(this).innerHeight();
+            var nearBottom = $(this)[0].scrollHeight - 100; // Adjust '100' based on your needs
+
+            allowAutoScroll = scrollPosition >= nearBottom;
+
     });
     $('.scroll-down').on('click', function() {
-        $('.chat-window').animate({ scrollTop: $('.chat-window')[0].scrollHeight }, 'slow');
+        scrollChatDown()
         return false;
     });
 }
+let allowAutoScroll = true; // Global flag to control auto-scroll behavior
 
+function scrollChatDown() {
+  if (allowAutoScroll) {
+    $('.chat-window').stop().animate({ scrollTop: $('.chat-window')[0].scrollHeight }, 'slow');
+  }
+}
+
+
+// Remember to call scrollChatDown() after appending each new message to the chat window
 
 const handleCardButton = () => {
     $(document).on('click','.info-button',function(){
@@ -396,32 +432,33 @@ const handleFormResult = (isSuccess, message) => {
 function HandleCardSetting() {
     $(document).find('.card.info-container').each(function() {
         const card = $(this);
-        const settingToggle = card.find('.card-title'); //card.find('.setting-container');
-        const settingId = card.attr('data-id')
-        // Handle hover event on the card
+        const settingToggle = card.find('.card-title'); // or .setting-container
+        let hideTimer;
+
+        // Show settings when hovered
         card.hover(
             function() {
-                // Mouse enters the card
-                    settingToggle.show();
-                if(isLargeScreen()){
-                    //displayCardSetting(settingId)
-                }
+                clearTimeout(hideTimer);
+                settingToggle.show();
+                hideTimer = setTimeout(() => settingToggle.hide(), 3000);
             }, 
             function() {
-                // Mouse leaves the card
-                    settingToggle.hide();
-                if(isLargeScreen()){
-                    //displayCardSetting(settingId)
-                }
+                settingToggle.hide()
             }
         );
 
-        // Handle click event on the settings
-        settingToggle.click(function() {
-            //displayCardSetting(settingId)
+        // Also stop the timer if we touch the card (for touch devices)
+        card.on('touchstart', function() {
+            clearTimeout(hideTimer);
+            settingToggle.show();
+            hideTimer = setTimeout(() => settingToggle.hide(), 3000);
         });
+
+        // Start the initial timer when the card is first set up
+        hideTimer = setTimeout(() => settingToggle.hide(), 3000);
     });
 }
+
 function displayCardSetting(settingId) {
     // Ensure the settingId is properly formatted or escaped if necessary
     // Especially if settingId can contain special characters
@@ -479,7 +516,10 @@ function manageVideo(isVisible, $element) {
 function LazyLoad(){
     $('.card.info-container').each(function(){
         const isVisible = checkIfElementIsInViewport($(this))
-        if(isVisible && !$(this).hasClass('lazyLoad') && isFavorite() && $('#search').data('mode') != 1){
+        if(
+            isVisible && !$(this).hasClass('lazyLoad') && isFavorite() && $('#search').data('mode') != 1 
+            || isVisible && !$(this).hasClass('lazyLoad') && isLargeScreen() &&  $('#search').data('mode') != 1 
+        ){
             $(this).addClass('lazyLoad')
             downloadAndShow($(this))
         }
@@ -499,6 +539,10 @@ function checkIfElementIsInViewport($element) {
     return elementBottom > viewportTop && elementTop < viewportBottom;
 }
 function addCardToList(container) {
+    const mode = parseInt($('.mode-container').data('mode'))
+    if(mode == 6){
+        return
+    }
     const itemId = container.attr('data-id');
     if($('#imageList').find(`img[data-id="${itemId}"]`).length > 0 ){
         return
@@ -881,7 +925,7 @@ function initNsfw(){
 const handleSwitchNSFW= () => {
        // Save the state of the switch to a local variable when it's toggled
        $('#nsfw').change(function() {
-        $('input#searchTerm').val('')
+        $('input#searchterm').val('')
         const nsfw = $(this).is(':checked')
         handleNSFWlabel(nsfw === 'true' )
         nsfwUpdateData({nsfw},function(){
@@ -991,6 +1035,15 @@ const handleCOmpare = () => {
 }
 
  const handleChat = () => {
+
+    //Convert all message to HTML
+    $('.chat-message.agent').each(function(){
+        const text = $(this).text()
+        const HTML = convertMarkdownToHTML(text)
+        console.log(HTML)
+        $(this).html(HTML)
+    })
+
     $('#chat-input-section button').on('click', function(e) {
         e.preventDefault();
 
@@ -1024,7 +1077,7 @@ const handleCOmpare = () => {
             url: '/api/openai/custom/chat', // replace with your endpoint
             method: 'POST',
             data: { 
-                prompt:prompt+ `\n\nNote: Respond using markdown`,
+                prompt:prompt,
                 time:new Date() },
             success: function(response) {
                 $('#temporary').html('')
@@ -1043,13 +1096,12 @@ const handleCOmpare = () => {
                     }
                     
                     $(`#temp-${response.insertedId}`).append(message);
+                    scrollChatDown();
                 });
      
-                scrollBottomWindow()
                 $this.find('.spinner-border').remove(); // remove spinner
                 $this.find('i').show(); // show plane icon
 
-                $('.chat-window').scrollTop($('.chat-window').prop('scrollHeight'));
             },
             error: function(error) {
                 console.error(error);
@@ -1236,6 +1288,12 @@ function updategridlayout(value) {
         const $buttonContainer = $(this)
         const $spinner = showSpinner($buttonContainer,'loadmore')
 
+        if($(this).data('fav')){
+            const url =`/dashboard/app/${data.mode}/fav?page=${parseInt(data.page)}&searchterm=${data.searchterm}&nsfw=${data.nsfw}`
+            window.location = url 
+            return
+            
+        }
         
         if(!$buttonContainer.hasClass('process')){
             $buttonContainer.addClass('process')
@@ -1250,11 +1308,8 @@ function updategridlayout(value) {
   }
   function sendSearchForm(data,callback) {
     
-    const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchTerm=${data.searchterm?data.searchterm:data.searchTerm}&nsfw=${data.nsfw}`
-    window.location=url
-    return 
- 
-    console.log(data)
+    const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchterm=${data.searchterm}&nsfw=${data.nsfw}`
+    
     $.ajax({
         url: `/api/loadpage`,
         type: 'POST',
@@ -1289,8 +1344,8 @@ function updategridlayout(value) {
     }); 
 }
 function enableSubRedit(){
-        // Listen for focus event on the input element with id "searchTerm"
-        $('#searchTerm').on('focus', function() {
+        // Listen for focus event on the input element with id "searchterm"
+        $('#searchterm').on('focus', function() {
           // Check the value of the 'data-mode' attribute
           const dataMode = $(this).attr('data-mode');
           
@@ -1302,7 +1357,7 @@ function enableSubRedit(){
         });
       
         // Listen for keyup event to capture when something is being typed
-        $('#searchTerm').on('keyup', function() {
+        $('#searchterm').on('keyup', function() {
           // Check the value of the 'data-mode' attribute
           const dataMode = $(this).attr('data-mode');
       
@@ -1329,7 +1384,7 @@ $('#subRedditSearchRes').append(`
 let debounceTimeout; // To hold debounce timer
 
 async function searchSubreddits() {
-  const searchTermEl = $('#searchTerm');
+  const searchtermEl = $('#searchterm');
   const subRedditSearchResEl = $('#subRedditSearchRes');
   const loadingSpinnerEl = $('#loadingSpinner');
 
@@ -1337,11 +1392,11 @@ async function searchSubreddits() {
 
   debounceTimeout = setTimeout(async () => {
     // Checking if the element does not have a 'wait' class
-    if (!searchTermEl.hasClass('wait')) {
+    if (!searchtermEl.hasClass('wait')) {
       console.log('Search started.');
   
       // Adding 'wait' class to prevent multiple requests
-      searchTermEl.addClass('wait');
+      searchtermEl.addClass('wait');
   
       // Clearing previous results
       subRedditSearchResEl.empty();
@@ -1350,7 +1405,7 @@ async function searchSubreddits() {
       loadingSpinnerEl.show();
   
       // Getting the search term from the input
-      const key = searchTermEl.val();
+      const key = searchtermEl.val();
   
       // Forming the API URL
       const apiUrl = `/api/searchSubreddits?query=${key}`;
@@ -1362,7 +1417,7 @@ async function searchSubreddits() {
         loadingSpinnerEl.hide();
   
         // Remove wait class
-        searchTermEl.removeClass('wait');
+        searchtermEl.removeClass('wait');
         return;
       }
   
@@ -1396,7 +1451,7 @@ async function searchSubreddits() {
         console.error('Error in API call:', error);
       } finally {
         // Remove the 'wait' class to allow new requests
-        searchTermEl.removeClass('wait');
+        searchtermEl.removeClass('wait');
       }
     } else {
       console.log('Waiting for the previous request to complete.');
@@ -1472,7 +1527,7 @@ function handleBookEditing(){
   function searchFor(el){
     let url = $(el).data('url')
     let value = $(el).data('value')
-    $('#searchTerm').val(value)
+    $('#searchterm').val(value)
     $('form#search').submit()
   }
   function getCurrentPageQueries() {
@@ -2228,13 +2283,17 @@ function showSpinner($buttonContainer,type) {
 
     return $spinner
 }
+
+
+
+
+function convertMarkdownToHTML(markdownContent) {
+    return converter.makeHtml(markdownContent);
+}
+
 function watchAndConvertMarkdown(sourceSelector, outputSelector) {
-    // Use showdown library to convert markdown to HTML
-    const converter = new showdown.Converter();
     
-    function convertMarkdownToHTML(markdownContent) {
-        return converter.makeHtml(markdownContent);
-    }
+
 
     // Initialize MutationObserver to watch for changes in the source selector
     const observer = new MutationObserver(function(mutations) {
@@ -2735,6 +2794,7 @@ function handleInstantVideo() {
         addCardToList($thisCard)
         instantPlay(dataId)
     });
+    $('.instant-play-button.now').click()
 }
 function instantPlay(dataId){
     const $thisCard = $('.info-container[data-id="' + dataId + '"]')
@@ -2754,4 +2814,151 @@ function directDownloadFileFromURL(dataId){
     $.post('http://192.168.10.115:3100/api/dl', { video_id: dataId }, function(response) {
         console.log('Download API Response:', response);
       })
+}
+function handleHistory(){
+    if($('#display-history').length == 0 ){
+        return
+    }
+    const mode = $('#display-history').data('mode')
+    $.post('/api/history', { mode }, function(response) {
+        displayHistory(response.data)
+    })
+    getTopPageSB(function(response){
+        displayHistoryTop(response)
+    })
+}
+function displayHistory(data) {
+    // Clear the current content
+    $('#display-history').empty();
+    
+    // Loop through each category in the data
+    $.each(data, function(category, items) {
+        // Check if there are items in the category
+        if (items.length > 0) {
+            // Pick a random item from the category
+            let randomIndex = Math.floor(Math.random() * items.length);
+            let randomItem = items[randomIndex];
+
+            // Grab the imageUrl and link from the random item
+            let imageUrl = randomItem.imageUrl || randomItem.filePath || randomItem.thumb;
+            let itemLink = `/dashboard/app/${randomItem.mode}?page=${randomItem.page}&searchterm=${category}&nsfw=true`; // Adjust this based on your data structure
+
+            // Create an anchor tag to wrap the card
+            let cardLink = $('<a>').attr('href', itemLink).data('time',randomItem.time).addClass('text-decoration-none item');
+
+            // Create a card for each category
+            let card = $('<div>').addClass('card mb-3 col');
+            let cardBody = $('<div>').addClass('card-body');
+
+            // Add category name as card title
+            cardBody.append($('<h5>').addClass('card-title').text(category));
+
+            // Create an image tag for the imageUrl
+            // Add 'lazy' class and set 'data-src' for lazy loading
+            let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', category);
+
+            // Append the image to the card
+            card.append(imgTag);
+
+            // Append card body to the card
+            card.append(cardBody);
+
+            // Wrap the card with the link
+            cardLink.append(card);
+
+            // Append the linked card to the display history
+            $('#display-history').append(cardLink);
+        }
+    });
+
+    // Initialize lazy loading
+    reorderElementByTime($('#display-history'))
+    $('.lazy').lazy();
+}
+function reorderElementByTime(container) {
+    // Retrieve and store the .item elements and their time data in an array
+    var items = container.find('.item').map(function() {
+        var timeData = $(this).data('time');
+        var time = new Date(timeData);
+        return {
+            element: this,
+            time: time,
+            isValidDate: !isNaN(time.getTime()) // Check if the date is valid
+        };
+    }).get();
+
+    // Sort the array based on the time, placing invalid dates at the end
+    items.sort(function(a, b) {
+        if (!a.isValidDate) return 1; // Push invalid a dates to the end
+        if (!b.isValidDate) return -1; // Push invalid b dates to the end
+        return a.time - b.time; // Sorts in ascending order of valid time
+    });
+
+    // Append the sorted elements back to the container
+    $.each(items, function() {
+        container.append(this.element);
+    });
+}
+
+
+function getTopPageSB(callback){
+    const mode = $('#display-history').data('mode');
+
+ 
+    if($('#display-history').length == 0 || mode != 1){
+        return
+    }
+    getUserNSFW(function(nsfw){
+        if(nsfw != 'true'){
+            return
+        }
+        $.post('/api/getSBtop', {mode, nsfw, extractor:'spankbang'}, function(result){
+            if (callback) {callback(result.data)} 
+        });
+    })
+}
+
+function displayHistoryTop(data){
+
+    $('#osusume-history').empty();
+        // Loop through each category in the data
+        $.each(data, function(index, item) {
+            if(item == null){
+                return
+            }
+            // Grab the imageUrl and link from the random item
+            let imageUrl = item.imageUrl || item.filePath || item.thumb;
+            let itemLink = `/dashboard/app/${item.mode}?page=1&searchterm=${item.alt}&nsfw=true`; // Adjust this based on your data structure
+
+            // Create an anchor tag to wrap the card
+            let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
+
+            // Create a card for each category
+            let card = $('<div>').addClass('card mb-3 col');
+            let cardBody = $('<div>').addClass('card-body');
+
+            // Add category name as card title
+            cardBody.append($('<h5>').addClass('card-title').text(item.alt));
+
+            // Create an image tag for the imageUrl
+            // Add 'lazy' class and set 'data-src' for lazy loading
+            let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', item.alt);
+
+            // Append the image to the card
+            card.append(imgTag);
+
+            // Append card body to the card
+            card.append(cardBody);
+
+            // Wrap the card with the link
+            cardLink.append(card);
+
+            // Append the linked card to the display history
+            $('#osusume-history').append(cardLink);
+            
+        });
+    
+        // Initialize lazy loading
+        $('.lazy').lazy();
+
 }

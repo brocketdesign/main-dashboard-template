@@ -21,6 +21,7 @@ block mainContent
           .col-12.mt-2
             input#tag-input(type='text' hidden)
             input#prompt-input.form-control.rounded(type='text', placeholder='プロンプトを入力', aria-label='プロンプト入力', value=user.latesr_generated_prompt ? user.latesr_generated_prompt : '')
+            input#negativePrompt-input.form-control.rounded(type='text', placeholder='Negativeプロンプトを入力', aria-label='プロンプト入力', value=user.latesr_generated_negative_prompt ? user.latesr_generated_negative_prompt : '' hidden)
             // Aspect ratio button group
             div.aspect-ratio-selector.d-flex.flex-row.my-2
               // 1:1 button
@@ -75,12 +76,27 @@ block mainContent
       
       .col-12.order-3.order-sm-2
         hr
+        .input-group.mb-3
+          input#civitai-input.form-control.rounded(type='text', placeholder='CivitAI ID', aria-label='CivitAI ID')
+          .input-group-text.p-0.bg-primary
+            #gen-civitai.btn.btn-primary.shadow-0(onclick="checkInputAndParty()", style='cursor:pointer;', data-bs-toggle="tooltip", data-bs-placement="top", title="CivitAI")
+              i#generate-button-civitai.fas.fa-play-circle
+        h3 CivitAI
+        hr
+        .contain-carousel.position-relative
+          #civitai-gallery-civitai.row
+        h3 New Images
+        hr
+        .contain-carousel.position-relative
+          #image-gallery-civitai-home.row
+        h3 My creations
+        hr
         .contain-carousel.position-relative
           #image-gallery-fullscreen-toolbar.position-absolute.flex-row.m-2(style="top:0;right:0;z-index:1;display:none;")
             button.image-gallery-regeneration.btn.btn-light.mx-1(data-bs-toggle="tooltip", data-bs-placement="top", title="生成")
               i.fa.fa-spinner
             button#close-image-gallery-fullscreen.btn.btn-light.mx-1(data-bs-toggle="tooltip", data-bs-placement="top", title="閉じる")
               i.fa.fa-times
-          #image-gallery.masonry-container.row
+          #image-gallery.row
 
   script(src="/js/stable-diffusion-script.js")

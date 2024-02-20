@@ -1,7 +1,7 @@
 // Importing required modules
 const ObjectId = require('mongodb').ObjectId;
 const cheerio = require('cheerio');
-const got = require('got');
+const axios = require('axios');
 
 // Function to search subreddits
 async function searchSubreddits(query) {
@@ -25,14 +25,11 @@ async function searchSubreddits(query) {
     // Finalizing the URL
     url += after;
 
-    // Fetching the URL using got
-    const response = await got(url);
-
-    // Parsing the HTML body with cheerio
-    const $ = cheerio.load(response.body);
+    // Fetching the URL using axios
+    const response = await axios.get(url);
 
     // Parsing the JSON
-    const parsedData = JSON.parse($('body').html().replace(/&quot;/g, '"'));
+    const parsedData = response.data;
 
       // Updating 'after' in the database with the new value
       await db.collection('subreddits').updateOne(
@@ -45,7 +42,7 @@ async function searchSubreddits(query) {
     const result = parsedData.data.children.map(item => {
 
       if(item.data.over18 == undefined){
-        return null;
+        //return null;
       }
       const obj = {
         title: item.data.title,
@@ -55,7 +52,7 @@ async function searchSubreddits(query) {
       return obj;
       
     }).filter(item => item !== null);
-    
+    console.log(result)
     return result;
 
   } catch (err) {
