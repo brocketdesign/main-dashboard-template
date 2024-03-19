@@ -194,7 +194,7 @@ function getExtractor(){
   return `sex`
 }
 
-const LAST_PAGE_RESET_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const LAST_PAGE_RESET_INTERVAL = 0 // 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 async function searchImage(query, isReset = false ){
   const lastPageIndex = await getLastPageIndex(`pics_${query}`);
@@ -265,7 +265,7 @@ async function searchGifImage(query, isReset = false, topPage = false) {
     page = lastPageIndex.page;
   }
   
-  const maxGifCount = 30;
+  const maxGifCount = 20;
   const browser = await puppeteer.launch({ headless: 'new' });
   const [tab] = await browser.pages();
   await tab.setViewport({ width: 1920, height: 5000 });
@@ -366,6 +366,7 @@ async function handleGif(response,topPage){
     if(topPage){
      return isAlreadyDownloaded
     }
+    
     if(!isAlreadyDownloaded){
       const filePath = await downloadResource(response, path.join(__dirname, '..', '..', 'public', 'downloads', 'downloaded_images'), 'gif');
       //const convertedGifPath = await convertWebpTo(filePath, 'gif');
@@ -376,6 +377,8 @@ async function handleGif(response,topPage){
           mode:3,
           extractor: getExtractor() +'(GIF)'
       };
+    }else{
+      return isAlreadyDownloaded
     }
   } catch (error) {
       console.error(`Failed processing URL`);
