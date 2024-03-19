@@ -33,7 +33,7 @@ async function ManageScraper(url, nsfw, mode, user, page) {
 
   console.log(`Found ${scrapedData.length} items in the medias collection`)
 
-  if(scrapedData && scrapedData.length > 0 && !isNaN(url)){
+  if(scrapedData && scrapedData.length > 0 && url != 'undefined'){
     return scrapedData
   }
   

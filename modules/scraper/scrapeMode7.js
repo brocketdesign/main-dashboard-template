@@ -40,7 +40,7 @@ function getExtractor(){
   return `pornpics`
 }
 
-const LAST_PAGE_RESET_INTERVAL = 0 //24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const LAST_PAGE_RESET_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 
 
