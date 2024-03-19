@@ -1,74 +1,3 @@
-const getCurrentSlide = () => {
-        // Get a reference to the Slick slider instance
-        var slickSlider = $('#slickCarousel').slick('getSlick');
-
-        // Assuming you want to remove the currently active slide (current slide)
-        return slickSlider.currentSlide
-}
-const removeCurrentSlide = (images) => {
-    // Get a reference to the Slick slider instance
-    var slickSlider = $('#slickCarousel').slick('getSlick');
-    const currentIndex = slickSlider.currentSlide;
-    // Use the slickRemove method to remove the current slide
-    slickSlider.slickRemove(currentIndex);  
-    // Remove the corresponding card from images array
-    images.splice(currentIndex, 1);
-}
-function scrollToCurrentSlide(images) {
-  // Get the current slide index
-  const currentSlide = getCurrentSlide();
-  const imageId = images[currentSlide].id;
-
-  // Find the div element you want to scroll to
-  const targetElement = $(`.card.info-container[data-id=${imageId}]`);
-
-  // Check if the element exists
-  if (targetElement.length > 0) {
-      // Calculate the position to scroll to
-      const scrollToPosition = targetElement.offset().top;
-
-      $('html, body').animate({
-        scrollTop: scrollToPosition
-    }, 1000, function() {
-        enableAllVideo();
-    });
-    
-  } else {
-      console.log(`Element with ID ${imageId} not found.`);
-  }
-}
-
-const updateSliderToolBar = (images) => {
-    const currentSlide = getCurrentSlide();
-    $('#slickCarousel-tool-bar').attr('data-id',images[currentSlide].id)
-    $('#slickCarousel-tool-bar').attr('data-title',images[currentSlide].title)
-    $('#slickCarousel-tool-bar').find('.source').attr('href',images[currentSlide].source)
-    console.log(images[currentSlide])
-    const $buttonDownload = $('#slickCarousel-tool-bar').find('.download-button')
-    $buttonDownload
-    .removeClass('done text-primary')
-    .data('id',images[currentSlide].id)
-    .data('title',images[currentSlide].title)
-}
-function managevideo(images){
-  const currentSlide = getCurrentSlide();
-  const playButton = '.slick-slide.slick-current.slick-active .play-button'
-  const iframeButton = '.slick-slide.slick-current.slick-active .iframe-button'
-  const videoElement = '.slick-slide.slick-current.slick-active video'
-  if(!!document.querySelector(playButton)){$(playButton).click()}
-  if(!!document.querySelector(iframeButton)){$(iframeButton).click()}
-  if(!!document.querySelector(videoElement)){$(videoElement)[0].play()}
-  //Stop previous video
-  const previousIndex = $(`.slick-slide[data-slick-index=${currentSlide-1}]`);
-  const previousVideo = previousIndex.find('video');
-  if (previousVideo.length > 0) {
-      previousVideo[0].pause(); // Access the native video element
-  }
-  const videoId = images[currentSlide-1]? images[currentSlide-1].id : false
-  if( $(`.video-container[data-id=${videoId}] video`).length>0){
-    $(`.video-container[data-id=${videoId}] video`)[0].pause();
-  }
-}
 function generateNavigation(){
   const preveNav = $('#slickCarousel .slick-prev')
   const nextNav = $('#slickCarousel .slick-next')
@@ -79,87 +8,147 @@ function generateNavigation(){
 }
 
 $(document).ready(function() {
-    var currentSLideIndex = 0
-    const images = $('.custom-carousel-item').map(function() {
-      return {
-        img: $(this).find('img').attr('src'),
-        id: $(this).find('.info-container').attr('data-id'),
-        source: $(this).find('.source').attr('href'),
-        delete: $(this).find('.info-container').attr('data-id'),
-        title:$(this).find('.info-container').attr('data-title')
-      };
-    }).get();
 
-    $('#activeSlider,.expand-card')
-    .on('click', function() {
-    pauseAllVideo()
-    
-    var clickedImageIndex = images.findIndex(function(image) {
-      return image.img === $(this).closest('.custom-carousel-item').find('img').attr('src');
-    }.bind(this));
+    $('#activeSlider,.expand-card').on('click', function() {
+      const currentItemId = $(this).closest('.card-title ').data('id')
+      pauseAllVideoExept(currentSlideId)
+      $('.carousel-toolbar').show().addClass('d-flex')
 
-    clickedImageIndex = clickedImageIndex>=0? clickedImageIndex : currentSLideIndex
-    $('#slickCarousel').empty();
-
-    for (var i = 0; i < images.length; i++) {
-      const currentCard = $(`.card.info-container[data-id="${images[i].id}"]`).parent().clone()
-      currentCard.find('img').css({'object-fit':'contain','height':'','min-height':'auto'})
-      //$('#slickCarousel').append('<div><img src="' + images[i].img + '" class="d-block w-100"></div>');
-      $('#slickCarousel').append('<div style="height:100vh">'+currentCard.html()+'</div>');
-    }
-
-    $('#slickCarousel').on('afterChange swipe', function(event, slick, currentSlide) {
-        updateSliderToolBar(images) 
-        managevideo(images)
-        currentSLideIndex = currentSlide
-    });
-    if(clickedImageIndex){
-      $('#slickModal').on('shown.bs.modal', function () {
-        $('#slickCarousel').slick('slickGoTo', clickedImageIndex);
-      }); 
-    }
-
-    $('#slickCarousel').slick({
-      arrows: true,
-      dots: false,
-      infinite: true,
-      speed: 300,
-      slidesToShow: 1,
-      adaptiveHeight: true
+      destroyMasonryLayout();
+      activateCarousel(currentItemId) 
+      generateNavigation()
+      scrollToCurrentSlide(currentItemId)
     });
 
-    generateNavigation()
-    //$('#slickCarousel').slick('slickGoTo', clickedImageIndex);
-
-
-    $('#slickModal').modal('show');
-  });
   $('#closeSlickModal').on('click', function() {
-    $('#slickModal').modal('hide');
-    scrollToCurrentSlide(images)
+    $('.carousel-toolbar').hide().removeClass('d-flex')
+    deactivateCarousel()
+    scrollToCurrentSlide()
   });
-  $('#slickModal').on('hidden.bs.modal', function () {
-    $('#slickCarousel').slick('unslick');
-    $('#slickModal').off('shown.bs.modal');
-  });
-
-    $('#slickCarousel-tool-bar').find('.slider-delete-button').on('click',function(){
-        handleHiding($(this).closest('#slickCarousel-tool-bar').attr('data-id'))
-        removeCurrentSlide(images);
-        // Call 'slick("refresh")' to reinitialize the slider after slide removal
-        $('#slickCarousel').slick('refresh');
-    })
 });
-function pauseAllVideo() {
+// Let's assume 'currentSlideId' is already declared as you mentioned
+var currentSlideId = 0;
+
+// Function to update the currentSlideId based on which image is closest to the top of the viewport
+function updateCurrentSlideId() {
+    var closestDistance = Infinity; // Start with a really high number
+    $('.custom-carousel-item').each(function() {
+        var distanceFromTop = $(this).offset().top - $(window).scrollTop();
+        if (distanceFromTop < closestDistance && distanceFromTop > -100) { // Adjust -100 based on your needs
+            closestDistance = distanceFromTop;
+            currentSlideId = $(this).find('.info-container').attr('data-id');
+        }
+    });
+}
+
+// Function to scroll to the current slide based on currentSlideId
+function scrollToCurrentSlide(currentItemId) {
+  if(currentItemId){currentSlideId=currentItemId}
+  var targetElement = $(`.custom-carousel-item[data-id="${currentSlideId}"]`);
+  if (targetElement.length) {
+      $('html, body, .custom-carousel-container').animate({
+          scrollTop: targetElement.offset().top
+      }, 1000); // Smooth scroll with a duration of 1000ms
+  } else {
+      console.log("No element found with ID:", currentSlideId);
+  }
+}
+function prependCurrentCard(currentItemId){
+  // First, we find our VIP element using the passed `currentItemId`
+  var targetElement = $(`.custom-carousel-item[data-id="${currentItemId}"]`);
+  
+  // Here's the swanky VIP lounge, aka the container
+  const container = $('.custom-carousel-container');
+  
+  // Now, let's move our VIP element to the front of the line
+  container.prepend(targetElement);
+}
+
+//$(window).on('scroll', updateCurrentSlideId);
+$('html, body, .custom-carousel-container').on('scroll', updateCurrentSlideId)
+
+function activateCarousel(currentItemId) {
+  const carouselContainer = $('.custom-carousel-container')
+  const cards = $('.custom-carousel-item');
+  isFullScreen = true
+  carouselContainer.removeClass('row')
+  carouselContainer.css({
+      display: 'flex',
+      "align-items":"center",
+      "flex-direction":"column",
+      overflowY: 'auto',
+      position: "absolute",
+      inset: "0",
+      "z-index":2,
+      "background-color": "#000000d4"
+  });
+  removeGridDesign(cards)
+  cards.each(function() {
+    $(this).find('.video-container').css("height","80vh")
+  });
+  // And let's give the cards a bit of breathing room
+  cards.css({
+      flex: '0 0 auto',
+      marginRight: '20px' // Feel free to adjust the spacing to your liking
+  });
+  prependCurrentCard(currentItemId)
+}
+function deactivateCarousel() {
+  const carouselContainer = $('.custom-carousel-container')
+  const cards = $('.custom-carousel-item');
+  isFullScreen = false
+  carouselContainer.addClass('row')
+  // Return the container to its original comfy state
+  carouselContainer.css({
+      display: '',
+      "flex-direction":"",
+      "align-items":'',
+      position: "",
+      overflowY: '',
+      "z-index":'',
+      "background-color": ""
+  });
+  
+  cards.each(function() {
+    $(this).find('.video-container').css("height","100%")
+  });
+  // And let the cards slump back into their natural state
+  cards.css({
+      flex: '',
+      marginRight: '' // Removing the extra space we added earlier
+  });
+  prependCurrentCard(currentSlideId)
+  console.log({currentSlideId})
+  handleMasonry()
+  updategridlayout();
+}
+
+function removeGridDesign(cards){
+  cards.each(function() {
+    // For each card, we'll get its class list
+    var classes = this.className.split(/\s+/);
+    for (var i = 0; i < classes.length; i++) {
+        // If a class begins with 'col-', we show it the door
+        if (classes[i].startsWith('col-')) {
+            $(this).removeClass(classes[i]);
+        }
+    }
+    $(this).find('.video-container').addClass("h-100vh")
+});
+
+}
+function pauseAllVideoExept(currentSlideId) {
   $(document).find(`video`).each(function() {
-    $(this).trigger('pause')
-    $(this).addClass('force-pause')
+    if($(this).closest('.video-container').data('id') != currentSlideId){
+      $(this).trigger('pause')
+      $(this).addClass('force-pause-carousel')
+    }
   });
 }
 function enableAllVideo(){
   $(document).find(`video`).each(function() {
     setTimeout(() => {
-          $(this).removeClass('force-pause')
+          $(this).removeClass('force-pause-carousel')
     }, 1000);
   });
 }

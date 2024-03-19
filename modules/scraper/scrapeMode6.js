@@ -1,7 +1,7 @@
 // Twitter download
 const puppeteer = require('puppeteer');
 
-async function scrapeMode6(url, mode, nsfw, page, user) {
+async function scrapeMode(url, mode, nsfw, page, user) {
     try {
         const videoSource = await fetchVideoSrc(url)
         return [{link:videoSource}];
@@ -56,6 +56,4 @@ async function fetchVideoSrc(targetUrl) {
   }
 }
 
-module.exports = fetchVideoSrc;
-
-module.exports = scrapeMode6;
+module.exports = {scrapeMode,fetchVideoSrc};

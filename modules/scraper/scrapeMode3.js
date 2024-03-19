@@ -179,7 +179,9 @@ async function scrollToBottom(page, viewportN = 1) {
   return true
 }
 
-
+function generateTopPageUrl(){
+  return 'https://www.sex.com/gifs/'
+}
 
 function generateUrl(query,page){
   return `https://www.sex.com/search/gifs?query=${query}&page=${page}`
@@ -247,7 +249,12 @@ async function searchImage(query, isReset = false ){
   return filePaths;
 }
 
-async function searchGifImage(query, isReset = false) {
+async function searchGifImage(query, isReset = false, topPage = false) {
+
+  if(query == undefined){
+    console.log(`Query is not defined`)
+    return
+  }
   const lastPageIndex = await getLastPageIndex(query);
   const startTime = Date.now();
 
@@ -275,7 +282,7 @@ async function searchGifImage(query, isReset = false) {
   const processGifResponseQueue = async () => {
     while (gifResponseQueue.length > 0 && gifResponseCount < maxGifCount) {
       const response = gifResponseQueue.shift();
-      const imageData = await handleGif(response);
+      const imageData = await handleGif(response,topPage);
       if (imageData) {
         filePaths.push(imageData);
         gifResponseCount++;
@@ -286,7 +293,7 @@ async function searchGifImage(query, isReset = false) {
 
   const processGifResponse= async (response) => {
     if (response.url().includes('.gif') && !response.url().includes('abc.gif')) {
-      const imageData = await handleGif(response);
+      const imageData = await handleGif(response,topPage);
       if (imageData) {
         filePaths.push(imageData);
         gifResponseCount++;
@@ -296,8 +303,10 @@ async function searchGifImage(query, isReset = false) {
 
   tab.on('response', processGifResponse);
 
+  const pageUrl = topPage == true ? generateTopPageUrl() : generateUrl(query, page)
+
   while (gifResponseCount < maxGifCount) {
-    await tab.goto(generateUrl(query, page), { waitUntil: 'networkidle2' });
+    await tab.goto(pageUrl, { waitUntil: 'networkidle2' });
     let pageStatus = false
     try {
       pageStatus = await scrollToBottom(tab);
@@ -351,9 +360,12 @@ async function resetLastPageIndex(query) {
   }
 }
 
-async function handleGif(response){
+async function handleGif(response,topPage){
   try {
     const isAlreadyDownloaded = await global.db.collection('medias').findOne({link:response.url()})
+    if(topPage){
+     return isAlreadyDownloaded
+    }
     if(!isAlreadyDownloaded){
       const filePath = await downloadResource(response, path.join(__dirname, '..', '..', 'public', 'downloads', 'downloaded_images'), 'gif');
       //const convertedGifPath = await convertWebpTo(filePath, 'gif');
@@ -361,6 +373,7 @@ async function handleGif(response){
           link: response.url(),
           filePath: filePath.split('public')[1], // convertedGifPath.split('public')[1],
           type: 'gif',
+          mode:3,
           extractor: getExtractor() +'(GIF)'
       };
     }
@@ -389,7 +402,34 @@ async function handleImage(response){
   }
   return false
 }
-async function scrapeMode3(url, mode, nsfw, page, user, isAsync) {
+async function scrapeTopPageS3(){
+  try {
+    const lastTopPageData = await global.db.collection('medias').find({query:'top',extractor:'SEX(GIF)'}).toArray()
+    const startTime = Date.now();
+    const lastTime = lastTopPageData[0] && lastTopPageData[0].time ? lastTopPageData[0].time : 0
+
+    if ((startTime - lastTime) < LAST_PAGE_RESET_INTERVAL) {
+      return lastTopPageData
+    }
+    let SexGifPromise =  await searchGifImage('top',false,true).catch(error => {
+      console.error("Failed to scrape data from Sex Gif", error);
+      return []; // Return empty array on failure
+    });
+    SexGifPromise = SexGifPromise.map((data) => ({
+      ...data,
+      query:'top',
+      extractor:'SEX(GIF)',
+      time :new Date()
+    })); 
+    const {insertInDB} = require('../ManageScraper')
+    await insertInDB(SexGifPromise)
+    return SexGifPromise
+  } catch (error) {
+    console.log(error)
+    console.log(`Error scraping top page for S3`)
+  }
+}
+async function scrapeMode(url, mode, nsfw, page, user, isAsync) {
   const query = url
   try {
     let data = []
@@ -400,10 +440,11 @@ async function scrapeMode3(url, mode, nsfw, page, user, isAsync) {
       return await searchGoogleImage(query, mode, nsfw, url, page);
     }
     //const data1 = await searchPorn(query, mode, nsfw, url, page);
-    const SexGifPromise =  searchGifImage(query).catch(error => {
+    
+    const SexGifPromise =  query && query != 'undefined' ? searchGifImage(query,false,false).catch(error => {
       console.error("Failed to scrape data from Sex Gif", error);
       return []; // Return empty array on failure
-    });
+    }) : scrapeTopPageS3()
     const sexImagePromise = [] || searchImage(query).catch(error => {
       console.error("Failed to scrape data from Sex Image", error);
       return []; // Return empty array on failure
@@ -442,4 +483,5 @@ function generateRandomID(length) {
 
   return randomID;
 }
-module.exports = scrapeMode3;
+
+module.exports = {scrapeMode,scrapeTopPageS3};

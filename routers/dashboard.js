@@ -90,7 +90,6 @@ router.get('/app/openai/ebook', ensureAuthenticated, ensureMembership, async (re
 router.get('/app/openai/:app', ensureAuthenticated, ensureMembership, async (req, res) => {
   //await global.db.collection('openai').deleteMany()
   const userOpenaiDocs = await getOpenaiTypeForUser(req.user._id, req.params.app);
-  console.log(userOpenaiDocs)
   res.render(`chatgpt-${req.params.app}.pug`, { user:req.user,userOpenaiDocs, title:'ChatGPT '+req.params.app });
 });
 async function getBookById(userId, bookId) {
@@ -255,7 +254,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, res) => {
 
-  console.log('Dashboard page requested');
+  console.log('Dashboard fav page requested');
   const userAgent = req.headers['user-agent'];
   const { mode } = req.params; // Get the 'mode' parameter from the route URL
   let { searchterm, nsfw, page } = req.query; // Get the search term from the query parameter
@@ -305,6 +304,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
       user: req.user,
       result:true,
       favmode:true, 
+      fav:true,
       searchterm, 
       section:'fav', 
       isSafari:isSafari(userAgent), 

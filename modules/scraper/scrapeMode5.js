@@ -53,7 +53,7 @@ const scrapeData = async (query, pageNumber) => {
   }
 };
 
-async function scrapeMode5(query, mode, nsfw, pageNumber, user){
+async function scrapeMode(query, mode, nsfw, pageNumber, user){
     const data = await scrapeData(query, pageNumber)
     return data
 }
@@ -64,4 +64,4 @@ function isQueryInCorrectFormat(query) {
     // Cast the spell and check if the query matches the sacred pattern
     return regex.test(query);
   }
-module.exports = scrapeMode5;
+module.exports = {scrapeMode};

@@ -23,7 +23,7 @@ const cors = require('cors');
 // Attach the WebSocket server to the HTTP server
 WebSocket(server);
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3200;
 
 const url = process.env.MONGODB_URL; // Use MONGODB_URL from .env file
 const dbName = process.env.MONGODB_DATABASE; // Use MONGODB_DATABASE from .env file

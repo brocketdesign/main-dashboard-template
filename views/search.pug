@@ -2,7 +2,7 @@ extends dashboard
 
 block dynamicContent
   div.mode-container(id=section data-mode=mode)
-  #imageList.image-container.auto-show
+  #imageList.image-container.auto-show.w-auto
   if (scrapedData && scrapedData.length > 0 ) || (medias2 && medias2.length > 0)
     .masonry-container.row.custom-carousel-container
       each data in scrapedData.reverse()
@@ -63,9 +63,12 @@ block dynamicContent
                       - moreLink = (mode == 5 ? data.moreLink : `/dashboard/app/${mode}?searchterm=${data.link}/discover`)
                       a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=moreLink)
                         i.fas.fa-plus-square    
+                    if mode == 7
+                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=`/dashboard/app/${mode}?searchterm=${data.isGallery ? data.link : data.alt}`)
+                        i.fas.fa-plus-square    
                     else 
                       a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=`/dashboard/app/${mode}?searchterm=${data.title || data.alt}`)
-                        i.fas.fa-plus-square    
+                        i.fas.fa-plus-square  
                     button.expand-card.btn.btn-light.shadow-0.border.border-0.m-1(type="button")
                         i.fas.fa-expand
                 if data.title
@@ -98,21 +101,9 @@ block dynamicContent
         i.fas.fa-angle-right
       a.btn.btn-dark.bordert.d-none(type="button", class=scrapInfo&&scrapInfo.page==page?'d-none':'',href=`/dashboard/app/${mode}${fav?'/fav':''}?page=${scrapInfo?scrapInfo.page:'1'}&searchterm=${searchterm?searchterm:''}&nsfw=${user.nsfw}`)        
         i.fas.fa-angle-double-right
-  .position-fixed(style="bottom:10px;right:10px")
+  .d-none.position-fixed(style="bottom:10px;right:10px")
     button#activeSlider.btn.btn-dark.shadow-0.rouded 
       i.fas.fa-play
-  #slickModal.modal.fade(tabindex='-1')
-    .modal-dialog.modal-dialog-centered.modal-xl
-      .modal-content.rounded-0(style="background:#000;")
-        #slickCarousel.slick-carousel
-        .position-absolute.d-flex.justify-content-end.py-3.w-100(style="z-index: 3;")
-          button.btn.btn-dark.rounded-0#closeSlickModal.mx-3.text-white(type="button")
-            i.fas.fa-times
-        #slickCarousel-tool-bar.d-none.info-container.d-flex.flex-column.justify-content-center.position-absolute(style="z-index: 3;top:0;bottom: 0;")
-          button.btn.btn-dark.rounded-0.slider-delete-button.p-3.text-white(type="button")
-              i.fas.fa-trash-alt
-          if !fav
-            button.btn.btn-dark.rounded-0.download-button.p-3.text-white(type="button")
-              i.fas.fa-heart
-          a.source.btn.btn-dark.rounded-0.p-3.text-white(target="_blank" href="#")
-              i.fas.fa-link
+  .carousel-toolbar.position-absolute.justify-content-end.py-3(style="z-index: 3;top: 0;right: 5px;display:none")
+    button.btn.btn-dark.rounded-0#closeSlickModal.mx-3.text-white(type="button")
+      i.fas.fa-times

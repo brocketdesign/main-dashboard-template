@@ -12,6 +12,9 @@ main#dashboard {
   text-overflow: ellipsis; /* This adds a nice '...' to signify there's more to see. */
 }
 
+.grid-item.col-12 .video-container img,.grid-item.col-12 .video-container video{
+  height:80vh !important;
+}
 #video-holder .card-title, #mobile-toolbar .card-title{
   color:white;
 }
@@ -196,7 +199,11 @@ li.list-group-item{
   flex: 0 0 auto; /* Prevents the cards from growing or shrinking */
 }
 
-
+.floating-chat{
+  width: 25vw;
+  right: 0;
+  bottom: 0;
+}
 @media (max-width: 992px) {
   .top-nav .navbar {
     padding: 0 !important;
@@ -207,6 +214,9 @@ li.list-group-item{
 }
 
 @media (max-width: 768px) {  /* assuming 768px is the breakpoint for mobile view */
+  .floating-chat{
+    width: 100vw;
+  }
   .masonry-item .card-title{
     display:none;
   }

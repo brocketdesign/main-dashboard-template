@@ -2,7 +2,7 @@ const { ObjectId } = require('mongodb');
 const axios = require('axios');
 const puppeteer = require('puppeteer');
 
-async function scrapeMode2(url, mode, nsfw, page, filter = 'images',isAsync) {
+async function scrapeMode(url, mode, nsfw, page, filter = 'images',isAsync) {
   let data = [];
 
   // Prepare promises for each scraping task
@@ -239,4 +239,4 @@ function generateRandomID(length) {
   return randomID;
 }
 
-module.exports = scrapeMode2;
+module.exports = {scrapeMode};

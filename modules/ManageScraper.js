@@ -17,7 +17,7 @@ async function findAndUpdateUser(userId, newScrapedData = null) {
 }
 
 async function ManageScraper(url, nsfw, mode, user, page) {
-  const scrapeMode = require(`./scraper/scrapeMode${mode}`);
+  const {scrapeMode} = require(`./scraper/scrapeMode${mode}`);
   const userId = user._id
 
   let userInfo = await findAndUpdateUser(userId);
@@ -33,7 +33,7 @@ async function ManageScraper(url, nsfw, mode, user, page) {
 
   console.log(`Found ${scrapedData.length} items in the medias collection`)
 
-  if(scrapedData && scrapedData.length > 0){
+  if(scrapedData && scrapedData.length > 0 && !isNaN(url)){
     return scrapedData
   }
   
@@ -55,7 +55,7 @@ async function ManageScraper(url, nsfw, mode, user, page) {
   })); 
 
   updateUserScrapInfo(user,url,page)
-  let result =  await insertInDB(scrapedData)
+  let result = await insertInDB(scrapedData)
   if(result){result=result.reverse()}
   return result
 }
@@ -83,6 +83,7 @@ async function AsyncManageScraper(url, nsfw, mode, user, page) {
 
   updateUserScrapInfo(user,url,page)
   const result =  await insertInDB(scrapedData)
+
   return result.slice(0,30)
 }
 
@@ -108,7 +109,7 @@ async function insertInDB(scrapedData) {
 
     // Wait for all db operations to complete
     insertedDocuments = await Promise.all(promises);
-
+    
     return insertedDocuments.filter(doc => doc != null);
   }
 }
@@ -184,4 +185,4 @@ async function updateUserScrapInfo(user,url,page){
 }
 
 
-module.exports = {ManageScraper,AsyncManageScraper};
+module.exports = {ManageScraper,AsyncManageScraper,insertInDB};

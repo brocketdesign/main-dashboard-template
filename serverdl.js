@@ -32,7 +32,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         downloadFileFromURL,
         downloadYoutubeVideo } = require('./services/tools')
   const ManageScraper = require('./modules/ManageScraper');
-  const {getVideoFromSB,scrapeWebsiteTopPage} = require('./modules/getVideoFromSB')
+  const {getVideoFromSB,scrapeWebsiteTopPage,getVideoFromPD} = require('./modules/getVideoFromSB')
 
     router.post('/dl', async (req, res) => {
         const video_id = req.body.video_id;
@@ -41,7 +41,6 @@ MongoClient.connect(url, { useUnifiedTopology: true })
       
         try {
           const url = await getHighestQualityVideoURL(video_id,req.user,false);
-          console.log(url)
           
           if (!url) {
             console.log('Video URL not found for video_id:', video_id);
@@ -182,7 +181,11 @@ MongoClient.connect(url, { useUnifiedTopology: true })
 
       router.post('/getVideoFromSB', async (req, res) => {
         const {query, mode, nsfw, url, pageNum, userId}=req.body
-        const result = await getVideoFromSB(query, mode, nsfw, url, pageNum, userId)
+        const result1 =  getVideoFromSB(query, mode, nsfw, url, pageNum, userId)
+        const result2 =  getVideoFromPD(query, mode, nsfw, url, pageNum, userId)
+        const combinedresult = await Promise.all([result1,result2])
+
+        const result = combinedresult.flat();
         res.status(200).json({result})
       })
       

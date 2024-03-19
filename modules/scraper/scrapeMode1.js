@@ -41,7 +41,6 @@ async function scrapeWebsiteFromOtherServer(query, mode, nsfw, url, pageNum, use
       query, mode, nsfw, url, pageNum, userId
     });
     // You might want to return something here, depending on your use case
-
     return response.data.result;
   } catch (error) {
     // Log the error if the request fails
@@ -141,7 +140,7 @@ const scrapeWebsite2 = (query, mode, nsfw, url, pageNum) => {
   });
 }
 
-async function scrapeMode1(url, mode, nsfw, page, user) {
+async function scrapeMode(url, mode, nsfw, page, user) {
   query = url 
   try {
     if(nsfw!='undefined' && !nsfw){
@@ -150,14 +149,8 @@ async function scrapeMode1(url, mode, nsfw, page, user) {
     }
     console.log('Operating a NSFW search');
 
-    const [result1, result2] = await Promise.all([
-      scrapeWebsiteFromOtherServer(query, mode, nsfw, url, page, user),
-      //scrapeWebsite1(query, mode, nsfw, url, page),
-      //scrapeWebsite2(query, mode, nsfw, url, page)
-    ]);
-    
-    const data = result1.concat(result2);
-  
+    const data = await scrapeWebsiteFromOtherServer(query, mode, nsfw, url, page, user);
+
     return data;
   } catch (error) {
     console.log('Error occurred while scraping and saving data:', error);
@@ -165,4 +158,4 @@ async function scrapeMode1(url, mode, nsfw, page, user) {
   }
 }
 
-module.exports = scrapeMode1;
+module.exports = {scrapeMode};

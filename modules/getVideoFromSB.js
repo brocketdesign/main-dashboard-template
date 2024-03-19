@@ -3,6 +3,37 @@ const { ObjectId, GoogleApis } = require('mongodb');
 const axios = require('axios');
 const cheerio = require('cheerio');
 
+const getVideoFromPD = (query, mode, nsfw, url, pageNum, userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if(url){
+        url = url.includes('http') ? url : `https://www.porndig.com/videos/s=${query}/page/${pageNum}`;
+      }else{
+        url ='https://www.porndig.com/';
+      }
+      const user = await global.db.collection('users').findOne({_id:new ObjectId(userId)})
+      
+      const { data } = await axios.get(url);
+      const $ = cheerio.load(data);
+
+      const results = [];
+      $('.video_block_wrapper').each((i, element) => {
+        let item = {}
+        item.link = 'https://www.porndig.com/'+$(element).find('a').attr('href')
+        item.video_id = $(element).attr("data-post_id");
+        item.imageUrl = $(element).find('.video_block_wrapper img').attr('data-src');
+        item.alt = $(element).find('.video_item_title .video_item_section_txt').text();
+        item.currentPage = url;
+        item.extractor = 'PornDig'
+        results.push(item);
+      });
+      resolve(results)
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 const getVideoFromSB = (query, mode, nsfw, url, pageNum, userId) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -116,4 +147,4 @@ const scrapeWebsiteTopPage = (mode, nsfw, userId) => {
           }
         });
 }
-module.exports = {getVideoFromSB,scrapeWebsiteTopPage}
+module.exports = {getVideoFromSB,scrapeWebsiteTopPage,getVideoFromPD}

@@ -20,8 +20,8 @@ block mainContent
           #categories-container.col-12(style="max-height:70vh;overflow: auto;")
           .col-12.mt-2
             input#tag-input(type='text' hidden)
-            input#prompt-input.form-control.rounded(type='text', placeholder='プロンプトを入力', aria-label='プロンプト入力', value=user.latesr_generated_prompt ? user.latesr_generated_prompt : '')
-            input#negativePrompt-input.form-control.rounded(type='text', placeholder='Negativeプロンプトを入力', aria-label='プロンプト入力', value=user.latesr_generated_negative_prompt ? user.latesr_generated_negative_prompt : '' hidden)
+            textarea#prompt-input.form-control.rounded(rows=5, placeholder='プロンプトを入力', aria-label='プロンプト入力', value=user.latesr_generated_prompt ? user.latesr_generated_prompt : '')
+            textarea#negativePrompt-input.form-control.rounded(rows=5, placeholder='Negativeプロンプトを入力', aria-label='プロンプト入力', value=user.latesr_generated_negative_prompt ? user.latesr_generated_negative_prompt : '')
             // Aspect ratio button group
             div.aspect-ratio-selector.d-flex.flex-row.my-2
               // 1:1 button

@@ -11,10 +11,12 @@ const {
   updateSameElements,
   fetchOpenAICompletion,
   fetchOllamaCompletion,
+  moduleCompletionOllama,
   initCategories,
   findDataInMedias,
   saveDataSummarize,
-  generateFilePathFromUrl
+  generateFilePathFromUrl,
+  getOpenaiTypeForUser,
 } = require('../services/tools')
 const fetch = require('node-fetch');
 const FormData = require('form-data');
@@ -396,6 +398,23 @@ router.get('/openai/summarize', async (req, res) => {
       res.end();
   }
 });
+
+router.get('/openai/chat', async(req,res) => {
+  try {
+      const userOpenaiDocs = await getOpenaiTypeForUser(req.user._id, 'chat');
+      res.send(userOpenaiDocs.reverse())
+  } catch (error) {
+      res.send([])
+  }
+})
+// Ollama Completion
+router.get('/ollama/completion/', async (req, res) => {
+  const { prompt,max_tokens } = req.body
+  const response = await moduleCompletionOllama({prompt,max_tokens})
+  res.send(response)
+});
+
+
 // ルーターを定義して '/loadpage' への POST リクエストを処理します
 router.post('/loadpage', async (req, res) => {
     try {
@@ -421,12 +440,8 @@ router.post('/loadpage', async (req, res) => {
         const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
         scrapInfo = userInfo.scrapInfo.find(info => info.url === searchterm);
         console.log({scrapInfo})
-      })      
-      if(scrapedData.length == 0 ){
-        res.status(200).send('No results');
-        return
-      }
-      res.status(200).send('Founded '+ scrapedData.length);
+      })     
+      res.status(200).send({status:true})
   } catch (error) {
     console.error('An error occurred:', error);
     res.status(500).send('An error occurred while scraping.');
@@ -845,7 +860,7 @@ router.get('/searchSubreddits', async (req, res)=> {
   let query=req.query.query;
 
   let result = await searchSubreddits(query)
-  result=result.filter(item => item.r18.toString() == req.user.nsfw.toString())
+  result=result.filter(item => item.r18 && item.r18.toString() == req.user.nsfw.toString())
 
   res.send(result)
 })
@@ -1482,6 +1497,31 @@ router.post('/hide', async (req, res) => {
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: 'エラーが発生しました' });
+  }
+});
+
+router.post('/getTopPageS7', async (req, res) => {
+  const {mode,extractor} = req.body
+  const userId = new ObjectId(req.user._id);
+  const nsfw = req.user.nsfw == 'true'
+  try {
+    const {scrapeTopPage} = require('../modules/scraper/scrapeMode7')
+    const data = await scrapeTopPage()
+    res.status(200).json({data})
+  } catch (error) {
+    res.status(500)
+  }
+});
+router.post('/getTopPageS3', async (req, res) => {
+  const {mode,extractor} = req.body
+  const userId = new ObjectId(req.user._id);
+  const nsfw = req.user.nsfw == 'true'
+  try {
+    const {scrapeTopPageS3} = require('../modules/scraper/scrapeMode3')
+    const data = await scrapeTopPageS3()
+    res.status(200).json({data})
+  } catch (error) {
+    res.status(500)
   }
 });
 router.post('/getSBtop', async (req, res) => {

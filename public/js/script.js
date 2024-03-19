@@ -21,6 +21,7 @@ const inputTrigger = (inputElement, triggerElement) => {
     triggerElement.addEventListener('click', () => inputElement.click());
 }
 let msnry = null ;
+let isFullScreen = false
 const handleMasonry = () => {
     if(
         document.querySelector('.masonry-container')
@@ -37,9 +38,16 @@ const handleMasonry = () => {
         });
     }
 }
-const updateMasonryLayout = () => {
-    if (msnry) {
+
+function updateMasonryLayout(){
+    if (msnry && !isFullScreen) {
         msnry.layout();
+    }
+}
+function destroyMasonryLayout(){
+
+    if (msnry) {
+        msnry.destroy();
     }
 }
 document.addEventListener('DOMContentLoaded', (event) => {
@@ -62,7 +70,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
 $(window).on('load', function() {
     handleMasonry()
 });
-
+$(window).on('resize', function() {
+    if(isFullScreen){return}
+    handleMasonry()
+});
 $(document).ready(function() {
     let formChanged = false;
     let form = $('#updateProfile form').not('#reset-form');
@@ -241,7 +252,7 @@ $(document).ready(function() {
         downloadVideo($(this).attr('data-id'), $(this).attr('data-name'))
     })
 
-
+    
       
     handleHistory();
     handleInstantVideo();
@@ -269,6 +280,7 @@ $(document).ready(function() {
     handleDownloadButton();
     handleCardButton();
     handleChat();
+    handleChatHistory();
     handleCOmpare();
     handleCOmparePDF();
     initNsfw();
@@ -280,6 +292,7 @@ $(document).ready(function() {
     
     initializeExtractor();
 });
+
 function scrollBottomWindow(){
     $('html, body').animate({ scrollTop: $(document).height() }, 'fast', function() {
         // After the animation is complete, disable scrolling
@@ -287,7 +300,7 @@ function scrollBottomWindow(){
     });
 }
 const handleScrollDownButton = () => {
-    if ($('#chat-input-section').length) {
+    if ($('#chat-input-section').length && $('.floating-chat').length == 0) {
         scrollBottomWindow()
         $('.chat-window').animate({ scrollTop: $('.chat-window')[0].scrollHeight }, 'slow');
         disableTrackScroll()
@@ -305,22 +318,26 @@ const handleScrollDownButton = () => {
 
           // Calculate the distance from the bottom
             var scrollPosition = $(this).scrollTop() + $(this).innerHeight();
-            var nearBottom = $(this)[0].scrollHeight - 100; // Adjust '100' based on your needs
+            var nearBottom = $(this)[0].scrollHeight; // Adjust '100' based on your needs
 
             allowAutoScroll = scrollPosition >= nearBottom;
 
     });
     $('.scroll-down').on('click', function() {
-        scrollChatDown()
+        scrollChatDown(true)
         return false;
     });
 }
 let allowAutoScroll = true; // Global flag to control auto-scroll behavior
 
-function scrollChatDown() {
-  if (allowAutoScroll) {
-    $('.chat-window').stop().animate({ scrollTop: $('.chat-window')[0].scrollHeight }, 'slow');
-  }
+function scrollChatDown(forceScroll = false) {
+    if(forceScroll){
+        $('.chat-window').stop().animate({ scrollTop: $('.chat-window')[0].scrollHeight }, 'slow');
+        return
+    }
+    if (allowAutoScroll) {
+        $('.chat-window').stop().animate({ scrollTop: $('.chat-window')[0].scrollHeight }, 'slow');
+    }
 }
 
 
@@ -485,7 +502,10 @@ $(document).ready(function() {
     LazyLoad();
 
     // Call LazyLoad on scroll
-    $(window).scroll(function() {
+    $('html, body,.custom-carousel-container').on('scroll',function() {
+        LazyLoad();
+    });
+    $(window).on('scroll',function() {
         LazyLoad();
     });
 
@@ -494,17 +514,32 @@ $(document).ready(function() {
         LazyLoad();
     });
 });
+function controlVideoStatus(){
+    $(document).on('play pause', 'video', function(event) {
+      // We log the event type to see if it's playing or pausing
+      console.log(`Video event: ${event.type}`);
+  
+      // Toggling the 'force-pause' class based on the event type
+      if (event.type === 'play') {
+        $(this).addClass('force-pause');
+      } else if (event.type === 'pause') {
+        $(this).removeClass('force-pause');
+      }
+    });
+  }
+  
 function manageVideo(isVisible, $element) {
     // Find the video element within the provided element
     const $video = $element.find('video');
-    if($video.hasClass('force-pause')){
-        return
-    }
+
     // Check if the video element exists
     if ($video.length) {
         // If the element is visible and the video is not already playing
         if (isVisible && $video.get(0).paused) {
-            //$video.get(0).play();
+            if($video.hasClass('force-pause')){
+                return
+            }
+            $video.get(0).play();
         } 
         // If the element is not visible and the video is playing
         else if (!isVisible && !$video.get(0).paused) {
@@ -531,13 +566,25 @@ function isFavorite(){
 }
 function checkIfElementIsInViewport($element) {
     const elementTop = $element.offset().top;
-    const elementBottom = elementTop + $element.outerHeight();
+    const elementHeight = $element.outerHeight();
+    const elementBottom = elementTop + elementHeight;
 
     const viewportTop = $(window).scrollTop();
     const viewportBottom = viewportTop + $(window).height();
 
-    return elementBottom > viewportTop && elementTop < viewportBottom;
+    // Calculate 25% of the element's height
+    const threshold = elementHeight * 0.25;
+
+    // Check if at least 25% of the element is visible
+    // The element is considered 25% visible if:
+    // - The bottom of the element is below the top of the viewport by at least the threshold, AND
+    // - The top of the element is above the bottom of the viewport by more than the threshold
+    const isAtLeast25PercentVisible =
+        (elementBottom - threshold > viewportTop) && (elementTop + threshold < viewportBottom);
+
+    return isAtLeast25PercentVisible;
 }
+
 function addCardToList(container) {
     const mode = parseInt($('.mode-container').data('mode'))
     if(mode == 6){
@@ -571,7 +618,7 @@ function downloadAndShow($thisCard){
     var id = $thisCard.data('id');
     var isdl = $thisCard.data('isdl');
     const playerButton = $thisCard.find(`.play-button`)
-    console.log('Clicked card ID:', id);
+    //console.log('Clicked card ID:', id);
 
       // Check if the card has already been processed
       if ($thisCard.hasClass('done')) {
@@ -622,7 +669,7 @@ function handleDownloadVideo(id){
 
     // Make a request to the server to get the highest quality video URL for the given ID
     $.get('http://192.168.10.115:3100/api/video?videoId='+id, function(response) {
-        console.log('API Response:', response);
+        //console.log('API Response:', response);
         updateImageList(id)
         // Hide the spinner
 
@@ -673,9 +720,10 @@ function displayMedia(url,id){
         })
         .prop('muted', true)
         .on('loadeddata', function() {
-          updateMasonryLayout()
-          $thisCard.find('.video-container').addClass('loaded')
-        }).on('error',function(){
+          updateMasonryLayout();
+          $thisCard.find('.video-container').addClass('loaded');
+        })
+        .on('error',function(){
             console.log('Error loading the video')
             if(!$thisCard.hasClass('resetDownloadStatus')){
                 $thisCard.addClass('resetDownloadStatus')
@@ -1033,15 +1081,49 @@ const handleCOmpare = () => {
     });
 
 }
+function toggleFloatingChat(){
+    $('.floating-chat').toggle()
+    scrollChatDown(true);
+}
+function handleChatHistory(){
+    $.get('/api/openai/chat',function(data){
+        data.forEach(function(item){
+            const $messages = $('#messages');
+            const $template = $('.template').clone().removeAttr('style class');
+            
+            // Add user message
+            $template.addClass('p-4 bg-white');
+            $template.find('.userName').text('ユーザー');
+            $template.find('.message').addClass('user bg-white').text(item.prompt);
+            $template.find('.time').text(new Date(item.prompt_time).toLocaleTimeString('ja-JP'));
+            $messages.append($template);
 
+            const $agentTemplate = $('.template').clone().removeAttr('style class');
+            
+            $agentTemplate.addClass('p-4 text-end bg-dark text-white');
+            $agentTemplate.find('.userName').text('エージェント');
+            $agentTemplate.find('.time').text(new Date(item.completion_time).toLocaleTimeString('ja-JP'));
+            $agentTemplate.find('.message').addClass('agent text-start').attr('id',item._id).text(item.completion[0])
+            $messages.append($agentTemplate);
+        });
+        $(document).find('.chat-message.agent').each(function(){
+            const text = $(this).text()
+            const HTML = convertMarkdownToHTML(text)
+            $(this).html(HTML)
+        })
+    })
+}
  const handleChat = () => {
 
     //Convert all message to HTML
     $('.chat-message.agent').each(function(){
         const text = $(this).text()
         const HTML = convertMarkdownToHTML(text)
-        console.log(HTML)
         $(this).html(HTML)
+    })
+
+    $('.close-chat').on('click',function(){
+        $('.floating-chat').hide()
     })
 
     $('#chat-input-section button').on('click', function(e) {
@@ -1092,10 +1174,10 @@ const handleCOmpare = () => {
                         $agentTemplate.find('.message').addClass('agent text-start').attr('id',response.insertedId)
                         $agentTemplate.append(`<div id="temp-${response.insertedId}" class="d-none"></div>`)
                         $messages.append($agentTemplate);
-                        watchAndConvertMarkdown(`#temp-${response.insertedId}`, `#${response.insertedId}`); 
                     }
                     
                     $(`#temp-${response.insertedId}`).append(message);
+                    ConvertMarkdown(`#temp-${response.insertedId}`, `#${response.insertedId}`); 
                     scrollChatDown();
                 });
      
@@ -1205,7 +1287,8 @@ const handleHidingHistory = (query) => {
         error: handleFormError
     });
 }
-function updategridlayout(value) {
+function updategridlayout(value = false) {
+    if(!value){value=$('#grid-range').val()}
     // Function implementation goes here
     // This function will be called when the range input is changed
     // You can update the grid layout or perform any other actions based on the 'value'
@@ -1360,10 +1443,6 @@ function enableSubRedit(){
         $('#searchterm').on('keyup', function() {
           // Check the value of the 'data-mode' attribute
           const dataMode = $(this).attr('data-mode');
-      
-          // Log that something is being typed and the value of the 'data-mode' attribute
-          console.log('Something is being typed.');
-          console.log(`data-mode attribute value: ${dataMode}`);
       
           // Check if data-mode attribute is equal to "2"
           if(dataMode === '2') {
@@ -2290,11 +2369,13 @@ function showSpinner($buttonContainer,type) {
 function convertMarkdownToHTML(markdownContent) {
     return converter.makeHtml(markdownContent);
 }
-
+function ConvertMarkdown(sourceSelector, outputSelector){
+    let markdownContent = $(sourceSelector).text();
+    let htmlContent = convertMarkdownToHTML(markdownContent);
+    $(outputSelector).html(htmlContent);
+}
 function watchAndConvertMarkdown(sourceSelector, outputSelector) {
     
-
-
     // Initialize MutationObserver to watch for changes in the source selector
     const observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
@@ -2826,13 +2907,19 @@ function handleHistory(){
     getTopPageSB(function(response){
         displayHistoryTop(response)
     })
+    getTopPageS3(function(response){
+        displayHistoryTop(response)
+    })
+    getTopPageS7(function(response){
+        displayHistoryGallery(response)
+    })
 }
 function displayHistory(data) {
     // Clear the current content
     $('#display-history').empty();
-    
     // Loop through each category in the data
     $.each(data, function(category, items) {
+       
         // Check if there are items in the category
         if (items.length > 0) {
             // Pick a random item from the category
@@ -2900,7 +2987,6 @@ function reorderElementByTime(container) {
     });
 }
 
-
 function getTopPageSB(callback){
     const mode = $('#display-history').data('mode');
 
@@ -2917,48 +3003,129 @@ function getTopPageSB(callback){
         });
     })
 }
+function getTopPageS3(callback){
+    const mode = $('#display-history').data('mode');
 
+ 
+    if($('#display-history').length == 0 || mode != 3){
+        return
+    }
+    getUserNSFW(function(nsfw){
+        if(nsfw != 'true'){
+            return
+        }
+        $.post('/api/getTopPageS3', {mode, nsfw, extractor:'Sex'}, function(result){
+            if (callback) {callback(result.data)} 
+        });
+    })
+}
+
+function getTopPageS7(callback){
+    const mode = $('#display-history').data('mode');
+
+ 
+    if($('#display-history').length == 0 || mode != 7){
+        return
+    }
+    getUserNSFW(function(nsfw){
+        if(nsfw != 'true'){
+            return
+        }
+        $.post('/api/getTopPageS7', {mode, nsfw, extractor:'pornpic'}, function(result){
+            if (callback) {callback(result.data)} 
+        });
+    })
+}
 function displayHistoryTop(data){
 
     $('#osusume-history').empty();
-        // Loop through each category in the data
-        $.each(data, function(index, item) {
-            if(item == null){
-                return
-            }
-            // Grab the imageUrl and link from the random item
-            let imageUrl = item.imageUrl || item.filePath || item.thumb;
-            let itemLink = `/dashboard/app/${item.mode}?page=1&searchterm=${item.alt}&nsfw=true`; // Adjust this based on your data structure
+    // Loop through each category in the data
+    $.each(data, function(index, item) {
+        if(item == null){
+            return
+        }
+        // Grab the imageUrl and link from the random item
+        let imageUrl = item.imageUrl || item.filePath || item.thumb;
+        let itemLink = `/dashboard/app/${item.mode}?page=1&searchterm=${item.alt}&nsfw=true`; // Adjust this based on your data structure
 
-            // Create an anchor tag to wrap the card
-            let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
+        // Create an anchor tag to wrap the card
+        let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
 
-            // Create a card for each category
-            let card = $('<div>').addClass('card mb-3 col');
-            let cardBody = $('<div>').addClass('card-body');
+        // Create a card for each category
+        let card = $('<div>').addClass('card mb-3 col');
+        let cardBody = $('<div>').addClass('card-body py-1');
 
-            // Add category name as card title
-            cardBody.append($('<h5>').addClass('card-title').text(item.alt));
+        // Add category name as card title
+        cardBody.append($('<h5>').addClass('card-title one-line').text(item.alt));
 
-            // Create an image tag for the imageUrl
-            // Add 'lazy' class and set 'data-src' for lazy loading
-            let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', item.alt);
+        // Create an image tag for the imageUrl
+        // Add 'lazy' class and set 'data-src' for lazy loading
+        let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', item.alt);
 
-            // Append the image to the card
-            card.append(imgTag);
+        // Append the image to the card
+        card.append(imgTag);
 
-            // Append card body to the card
-            card.append(cardBody);
+        // Append card body to the card
+        card.append(cardBody);
 
-            // Wrap the card with the link
-            cardLink.append(card);
+        // Wrap the card with the link
+        cardLink.append(card);
 
-            // Append the linked card to the display history
-            $('#osusume-history').append(cardLink);
-            
-        });
+        // Append the linked card to the display history
+        $('#osusume-history').append(cardLink);
+        
+    });
     
-        // Initialize lazy loading
-        $('.lazy').lazy();
+    // Initialize lazy loading
+    $('.lazy').lazy();
+    $('#osusume-history').on('scroll', function() {
+        $('.lazy').lazy('update');
+    });
 
+}
+
+function displayHistoryGallery(data){
+    $('#osusume-history').empty();
+    // Loop through each category in the data
+    $.each(data, function(index, item) {
+        if(item == null){
+            return
+        }
+        // Grab the imageUrl and link from the random item
+        let imageUrl = item.imageUrl;
+        let itemLink = `/dashboard/app/7?page=1&searchterm=${item.link}&nsfw=true`; // Adjust this based on your data structure
+
+        // Create an anchor tag to wrap the card
+        let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
+
+        // Create a card for each category
+        let card = $('<div>').addClass('card mb-3 col');
+        let cardBody = $('<div>').addClass('card-body py-1');
+
+        // Add category name as card title
+        cardBody.append($('<h5>').addClass('card-title one-line').text(item.alt));
+
+        // Create an image tag for the imageUrl
+        // Add 'lazy' class and set 'data-src' for lazy loading
+        let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', item.alt);
+
+        // Append the image to the card
+        card.append(imgTag);
+
+        // Append card body to the card
+        card.append(cardBody);
+
+        // Wrap the card with the link
+        cardLink.append(card);
+
+        // Append the linked card to the display history
+        $('#osusume-history').append(cardLink);
+        
+    });
+    
+    // Initialize lazy loading
+    $('.lazy').lazy();
+    $('#osusume-history').on('scroll', function() {
+        $('.lazy').lazy('update');
+    });
 }

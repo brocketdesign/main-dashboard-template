@@ -47,7 +47,6 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
       }
       return foundElement.link
     }
-    
     const result = await searchVideo(foundElement, user, stream);
 
     if(!foundElement.isdl_process){
@@ -84,6 +83,9 @@ async function searchVideo(videoDocument, user, stream) {
 
   if( videoLink.includes('monsnode')){
     return await searchVideoDirectLink(videoDocument, user)
+  }
+  if( videoLink.includes('porndig')){
+    return await searchVideoPD(videoDocument, user)
   }
   if( videoLink.includes('youtube') ){
     return await searchVideoYoutube(videoDocument, user, stream)
@@ -213,8 +215,43 @@ async function searchVideoDirectLink(videoDocument, user){
   const $ = cheerio.load(data);
 
   const videoDirectLink = $('a').attr('href')
-  console.log({videoDirectLink})
+
   return videoDirectLink
 }
+async function searchVideoPD(videoDocument, user){
+  const url = videoDocument.link;
+  const response = await axios.get(url);
+  const $ = cheerio.load(response.data);
+  
+  const videoPage = $('.video_iframe_container iframe').attr('src');
+  
+  const videoPageResponse = await axios.get(videoPage);
+  const $$ = cheerio.load(videoPageResponse.data);
+  
+  let vcJsonString;
+  $$('script').each((i, elem) => {
+    const scriptContent = $$(elem).html();
+    // Adjust the regex to match multi-line JSON assignment
+    const vcVariableMatch = scriptContent.match(/var vc = ({[\s\S]*?});/);
+    if (vcVariableMatch && vcVariableMatch.length > 1) {
+      vcJsonString = vcVariableMatch[1];
+      // Break the loop once we find the match
+      return false;
+    }
+  });
+  
+  // Assuming vcJsonString is found and is a valid JSON string
+  let vcData;
+  if (vcJsonString) {
+    try {
+      vcData = JSON.parse(vcJsonString);
+     // console.log('VC Data:', vcData);
+    } catch (error) {
+      console.error('Failed to parse vc JSON string:', error);
+    }
+  }
+  
+  return vcData.sources[0].src; // This will contain the parsed JSON, or undefined if not found/parsed
 
+}
 module.exports = getHighestQualityVideoURL;

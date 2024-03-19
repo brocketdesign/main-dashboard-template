@@ -222,7 +222,7 @@ const fetchOllamaCompletion = async (messages, res) => {
         },
         method: "POST",
         body: JSON.stringify({
-          model: 'mistral',
+          model: 'mistral-openorca',
           messages,
           temperature: 0.75,
           top_p: 0.95,
@@ -252,10 +252,6 @@ const fetchOllamaCompletion = async (messages, res) => {
           res.write(`data: ${JSON.stringify({ content })}\n\n`);
           res.flush();
         } else {
-          // Optionally, send fullCompletion as a final piece of data
-          res.write(`data: ${JSON.stringify({ content: fullCompletion, done: true })}\n\n`);
-          res.flush();
-          res.end(); // End the stream
           break; // Exit the loop since we're done
         }
       } catch (error) {
@@ -271,8 +267,6 @@ const fetchOllamaCompletion = async (messages, res) => {
     res.status(500).send("Server encountered an error.");
   }
 };
-
-
 
 const fetchOpenAICompletion = async (messages, res) => {
   try {
@@ -340,7 +334,54 @@ const fetchOpenAICompletion = async (messages, res) => {
       throw error;
   }
 }
+const moduleCompletionOllama = async (promptData) => {
+  const messages = [
+    {"role": "system", "content": "You are a proficient blog writer."},
+    {"role": "user", "content": promptData.prompt}
+  ];
 
+  try {
+    const response = await getChatResponse(messages, promptData.max_tokens);
+    if (!response.ok) {
+      console.error("Ollama returned an error:", await response.text());
+      throw new Error('Failed to fetch chat response from Ollama.');
+    }
+    const responseData = await response.json(); // Convert the response body to JSON
+    return responseData.message.content; // Assuming you want to return the JSON data
+  } catch (error) {
+    console.error("The spell encountered an error:", error);
+    throw error; // Rethrow or handle it as needed
+  }
+};
+
+async function getChatResponse(messages, max_tokens) {
+  try {
+    const response = await fetch(
+      "http://localhost:11434/api/chat",
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        body: JSON.stringify({
+          model: 'mistral-openorca',
+          messages,
+          temperature: 0.75,
+          top_p: 0.95,
+          frequency_penalty: 0,
+          presence_penalty: 0,
+          max_tokens,
+          n: 1,
+          stream: false
+        }),
+      }
+    );
+    return response; // Return the fetch response to be processed outside
+  } catch (error) {
+    console.error("The spell encountered an error fetching the chat response:", error);
+    throw error; // Or handle it in a more sophisticated manner
+  }
+}
 
 async function initCategories(userId) {
   // Find the current user's data

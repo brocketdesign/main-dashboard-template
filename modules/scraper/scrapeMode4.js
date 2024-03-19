@@ -5,7 +5,7 @@ const path = require('path');
 const URL = require('url').URL;
 const { ObjectId } = require('mongodb');
 
-async function scrapeMode4(site, mode, nsfw, page) {
+async function scrapeMode(site, mode, nsfw, page) {
 
         let postResponse = await axios.get(`https://${site}/wp-json/wp/v2/posts?per_page=1&page=${page}`);
         let post = postResponse.data[0];
@@ -73,4 +73,4 @@ async function scrapeMode4(site, mode, nsfw, page) {
         return combinedResults;
 }
 
-module.exports = scrapeMode4;
+module.exports = {scrapeMode};
