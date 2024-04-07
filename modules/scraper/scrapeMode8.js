@@ -5,39 +5,17 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 
-async function downloadResource(response, dirPath, mediaType) {
-    try {
-        const url = response.url();
-        let parsedUrl = urlLib.parse(url);
-        let baseName = path.basename(parsedUrl.pathname);
-
-        // Let's play 'Guess the Extension'!
-        let extension = baseName.endsWith('.jpg') ? 'jpg' : 'webp';
-
-        // Time to build the file path, now with more precision!
-        const filePath = path.join(dirPath, `${path.basename(baseName, `.${extension}`)}.${extension}`);
-        const content = await response.buffer();
-
-        // Write the file like it's the next bestseller
-        await fs.promises.writeFile(filePath, content);
-        console.log(`Downloaded and saved: ${filePath} (with a little twist!)`);
-        return filePath;
-    } catch (error) {
-        console.error(`Oops! Sherlock Holmes couldn't download or save the resource from URL: ${response.url()} - Error: ${error}`);
-        throw error;
-    }
-}
 
 function generateTopPageUrl(){
-  return 'https://www.pornpics.com/popular/'
+  return 'https://jp.xgroovy.com/gifs/'
 }
 
 function generateUrl(query,page){
-  return new URL(`https://www.pornpics.com/search/srch.php?q=${query}&lang=en&limit=20&offset=${page*20}`).href
+  return new URL(`https://jp.xgroovy.com/gifs/search/${query}/${page}/`).href
 }
 
 function getExtractor(){
-  return `pornpics`
+  return `xgroovy`
 }
 
 const LAST_PAGE_RESET_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
@@ -75,7 +53,6 @@ async function resetLastPageIndex(query) {
   }
 }
 
-
 async function scrapeTopPage(){
   try {
     const lastTopPageData = await global.db.collection('medias').find({query:'top',extractor:getExtractor()}).toArray()
@@ -104,58 +81,11 @@ async function scrapeTopPage(){
   }
 }
 
-async function searchGallery(query,isReset,topPage){
-  if(query == undefined){
-    console.log(`Query is not defined`)
-    return
-  }
-  const lastPageIndex = await getLastPageIndex(query);
-  const startTime = Date.now();
-
-  if (isReset || (startTime - lastPageIndex.time) > LAST_PAGE_RESET_INTERVAL) {
-    await resetLastPageIndex(query);
-    page = 1;
-  } else {
-    page = lastPageIndex.page;
-  }
-  const pageUrl = topPage == true ? generateTopPageUrl() : generateUrl(query, page)
-
-  let galleries = await fetchArrayFromUrl(pageUrl)
-  galleries = galleries.map((gallery)=>({
-    ...gallery,
-    link:gallery.g_url,
-    imageUrl:gallery.t_url,
-    isGallery:true
-  }));
-
-  return galleries
-}
-
 async function searchImage(galleryUrl){
   return fetchDataSrcArray(galleryUrl)
 }
-
-
-async function fetchArrayFromUrl(url) {
-  try {
-    const response = await axios.get(url);
-    // Assuming the data we're interested in is directly in the response body
-    const array = response.data;
-    if (Array.isArray(array)) {
-      console.log('Data fetched successfully');
-      return array;
-    } else {
-      console.log('Oops! We were expecting an array, but got something else.');
-      return null;
-    }
-  } catch (error) {
-    console.error('Ahoy! There was an issue fetching the data:', error.message);
-    return null;
-  }
-}
-
-
 async function fetchDataSrcArray(url) {
+  console.log({url})
   try {
     // Fetch the HTML of the page
     const { data } = await axios.get(url);
@@ -165,18 +95,19 @@ async function fetchDataSrcArray(url) {
     const dataSrcArray = [];
 
     // Conjure the data-src attributes from each li.thumbwook img element
-    $('li.thumbwook').each((index, element) => {
+    $('.list-gifs .item').each((index, element) => {
       // The magic essence of the data-src attribute
-      const dataSrc = $(element).find('img').attr('data-src').replace('460','1280');
-      if (dataSrc) {
-        const alt = $(element).find('img').attr('alt');
-        const link = $(element).find('a').attr('href');
+      const highestQualityURL = $(element).find('.gif-wrap').attr('data-full');
+      if (highestQualityURL) {
+        const imageUrl = $(element).find('.gif-wrap').attr('data-poster');
+        const alt = $(element).find('.gif-thumb-image').attr('alt');
+        const link = $(element).find('a.title-link').attr('href');
         // Add the essence to our cauldron
         dataSrcArray.push({
           link,
-          imageUrl:dataSrc,
-          alt,
-          isGallery:false
+          imageUrl,
+          highestQualityURL,
+          alt
         });
       }
     });
@@ -188,14 +119,6 @@ async function fetchDataSrcArray(url) {
     return [];
   }
 }
-function isGalleryUrl(query){
-  try {
-    new URL(query)
-  } catch (error) {
-    return false
-  }
-  return true
-}
 
 async function scrapeMode(query, mode, nsfw, page, user, isAsync) {
   try {
@@ -204,12 +127,7 @@ async function scrapeMode(query, mode, nsfw, page, user, isAsync) {
       return []
     }
 
-    const PornPics = !isGalleryUrl(query) ? 
-    await searchGallery(query,false,false).catch(error => {
-      console.error("Failed to scrape data from Sex Gif", error);
-      return []; // Return empty array on failure
-    }) 
-    : await searchImage(query).catch(error => {
+    const PornPics = await searchImage(generateUrl(trimAndReplace(query),page)).catch(error => {
       console.error("Failed to scrape data from Sex Gif", error);
       return []; // Return empty array on failure
     }) 
@@ -219,6 +137,16 @@ async function scrapeMode(query, mode, nsfw, page, user, isAsync) {
     console.log('Error occurred while scraping and saving data:', error);
     return [];
   }
+}
+
+function trimAndReplace(string) {
+  // Trim the string to remove leading and trailing spaces
+  var trimmedString = string.trim();
+  
+  // Replace all spaces with dashes
+  var replacedString = trimmedString.replace(/\s+/g, '-');
+  
+  return replacedString;
 }
 
 

@@ -2,7 +2,7 @@ extends dashboard
 
 block dynamicContent
   div.mode-container(id=section data-mode=mode)
-  #imageList.image-container.auto-show.w-auto
+  #imageList.image-container.auto-show.w-auto.d-flex
   if (scrapedData && scrapedData.length > 0 ) || (medias2 && medias2.length > 0)
     .masonry-container.row.custom-carousel-container
       each data in scrapedData.reverse()
@@ -19,7 +19,7 @@ block dynamicContent
                   .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
                       button.play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
                         i.fas.fa-play
-                if mode == '6'
+                if mode == '6' || mode == '8'
                   .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
                       button.instant-play-button.now.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
                         i.fas.fa-play
@@ -42,6 +42,8 @@ block dynamicContent
                     img.card-img-top(type="button", data-id=data._id, style="object-fit:contain;height: 100%;", src=data.imageUrl || data.filePath, alt=data.title )
                   if mode == 6
                     video(data-id=data._id, data-src=data.link, style="display:none;" width="100%" controls muted autoplay playsinline)
+                  if mode == 8
+                    video(data-id=data._id, data-src=data.highestQualityURL, style="display:none;" width="100%" controls muted autoplay playsinline)
               .setting-absolute.card-title.px-3.my-0(data-id=data._id, style="display:none;")
                 .row.justify-content-start.flex-row(style="height:100%")
                   .col-12.text-start(style="overflow:hidden")
@@ -91,19 +93,27 @@ block dynamicContent
   else
     p ここには何もありません！
   if scrapedData && scrapedData.length > 0 
-    .position-fixed.d-flex.justify-content-center.w-100(style="bottom:10px;right:10px;left:10px")
-      .btn.btn-dark.border.load-more(type="button",class=page<=1?'d-none':'', data-fav=favmode ? true : false, data-userId=user._id data-mode=mode, data-page=page<=1?1:page-1, data-searchterm=searchterm, data-nsfw= user.nsfw)             
-        i.fas.fa-angle-left
-        //| 前へ
-      span.px-3.btn.btn-white #{page}
-      .btn.btn-dark.bordert.load-more.load-more-next(type="button", data-fav=favmode ? "true" : "false", data-userId=user._id data-mode=mode, data-page=page+1, data-searchterm=searchterm, data-nsfw= user.nsfw)        
-        //| 次へ
-        i.fas.fa-angle-right
+    - var startPage = Math.max(1, page - 2);
+    - var endPage = Math.min(totalPage, page + 2);
+    .pagination.position-fixed.d-flex.justify-content-center.w-100(style="bottom:10px;right:10px;left:10px")
+      if page > 1
+        .btn.btn-dark.border.load-more(type="button",class=page<=1?'d-none':'', data-fav=favmode ? "true" : "false", data-userId=user._id data-mode=mode, data-page=page<=1?1:page-1, data-searchterm=searchterm, data-nsfw= user.nsfw)             
+          i.fas.fa-angle-left
+      each num in Array.from({ length: endPage - startPage + 1 }, (_, i) => i + startPage)
+        a.btn(class=num===page ? 'btn-dark' : 'btn-light', href=`?page=${num}&searchterm=${searchterm}&NSFW=${user.nsfw}`) #{num}
+      if page < totalPage || mode
+        .btn.btn-dark.bordert.load-more.load-more-next(type="button", data-fav=favmode ? "true" : "false", data-userId=user._id data-mode=mode, data-page=page+1, data-searchterm=searchterm, data-nsfw= user.nsfw)        
+          i.fas.fa-angle-right
+
       a.btn.btn-dark.bordert.d-none(type="button", class=scrapInfo&&scrapInfo.page==page?'d-none':'',href=`/dashboard/app/${mode}${fav?'/fav':''}?page=${scrapInfo?scrapInfo.page:'1'}&searchterm=${searchterm?searchterm:''}&nsfw=${user.nsfw}`)        
         i.fas.fa-angle-double-right
+        
   .d-none.position-fixed(style="bottom:10px;right:10px")
     button#activeSlider.btn.btn-dark.shadow-0.rouded 
       i.fas.fa-play
   .carousel-toolbar.position-absolute.justify-content-end.py-3(style="z-index: 3;top: 0;right: 5px;display:none")
-    button.btn.btn-dark.rounded-0#closeSlickModal.mx-3.text-white(type="button")
+    button.btn.btn-dark.rounded-0#toggleAudio.mx-3.text-white.border.border-white(type="button")
+      i.fas.fa-volume-off
+      i.fas.fa-volume-up.d-none
+    button.btn.btn-dark.rounded-0#closeSlickModal.mx-3.text-white.border.border-white(type="button")
       i.fas.fa-times

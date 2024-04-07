@@ -16,35 +16,38 @@ async function findAndUpdateUser(userId, newScrapedData = null) {
   return user;
 }
 
-async function ManageScraper(url, nsfw, mode, user, page) {
+async function ManageScraper(searchterm, nsfw, mode, user, page) {
   const {scrapeMode} = require(`./scraper/scrapeMode${mode}`);
   const userId = user._id
 
   let userInfo = await findAndUpdateUser(userId);
 
   scrapedData = await findDataInMedias(userId, parseInt(page), {
-    query:url,
+    searchterm,
     mode: mode,
     nsfw: nsfw,
     hide_query: { $exists: false },
     hide: { $exists: false },
-   //favoriteCountry: { $in: [userInfo.favoriteCountry] }
+    favoriteCountry: { $in: [userInfo.favoriteCountry] }
   });
 
-  console.log(`Found ${scrapedData.length} items in the medias collection`)
+  console.log(`Found ${scrapedData.length} items in the medias collection for page ${parseInt(page)}`)
 
-  if(scrapedData && scrapedData.length > 0 && url != 'undefined'){
+  if(scrapedData && scrapedData.length > 0 && searchterm != 'undefined'){
     return scrapedData
   }
   
-  scrapedData = await scrapeMode(url, mode, nsfw, page, user);
+  scrapedData = await scrapeMode(searchterm, mode, nsfw, page, user);
+  if(!scrapedData){
+    return []
+  }
   console.log(`Scrape data and found ${scrapedData.length} elements.`)
 
   const categories = await initCategories(userId)
 
   scrapedData = scrapedData.map((data) => ({
     ...data,
-    query: url,
+    searchterm,
     mode: mode,
     nsfw: nsfw,
     page:parseInt(page),
@@ -54,26 +57,29 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     time :new Date()
   })); 
 
-  updateUserScrapInfo(user,url,page)
+  updateUserScrapInfo(user,searchterm,page)
   let result = await insertInDB(scrapedData)
   if(result){result=result.reverse()}
   return result
 }
-async function AsyncManageScraper(url, nsfw, mode, user, page) {
+async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
   console.log('// AsyncManageScraper')
-  const scrapeMode = require(`./scraper/scrapeMode${mode}`);
+  const {scrapeMode} = require(`./scraper/scrapeMode${mode}`);
   const userId = user._id
 
   let userInfo = await findAndUpdateUser(userId);
   
-  scrapedData = await scrapeMode(url, mode, nsfw, page, user, true);
+  scrapedData = await scrapeMode(searchterm, mode, nsfw, page, user, true);
+  if(!scrapedData){
+    return []
+  }
   console.log(`Scrape data and found ${scrapedData.length} elements.`)
 
   const categories = await initCategories(userId)
 
   scrapedData = scrapedData.map((data) => ({
     ...data,
-    query: url,
+    searchterm,
     mode: mode,
     nsfw: nsfw,
     userId: userId,
@@ -81,7 +87,7 @@ async function AsyncManageScraper(url, nsfw, mode, user, page) {
     favoriteCountry: userInfo.favoriteCountry
   })); 
 
-  updateUserScrapInfo(user,url,page)
+  updateUserScrapInfo(user,searchterm,page)
   const result =  await insertInDB(scrapedData)
 
   return result.slice(0,30)
@@ -153,16 +159,16 @@ async function checkUserScrapeInfo(user){
     }
   }
 }
-async function updateUserScrapInfo(user,url,page){
+async function updateUserScrapInfo(user,searchterm,page){
 
   await checkUserScrapeInfo(user)
   userInfo = await findAndUpdateUser(user._id);
-  const scrapInfo = userInfo.scrapInfo.find(info => info.url === url);
+  const scrapInfo = userInfo.scrapInfo.find(info => info.searchterm === searchterm);
   const currentTime = new Date().getTime();
   if (scrapInfo) {
     // If the URL already exists, update the time and page
     await global.db.collection('users').updateOne(
-      { _id: new ObjectId(user._id), 'scrapInfo.url': url },
+      { _id: new ObjectId(user._id), 'scrapInfo.searchterm': searchterm },
       {
         $set: {
           'scrapInfo.$.time': currentTime,
@@ -171,12 +177,12 @@ async function updateUserScrapInfo(user,url,page){
       }
     );
   } else {
-    // If the URL doesn't exist, push the new scrapInfo
+    // If the searchterm doesn't exist, push the new scrapInfo
     await global.db.collection('users').updateOne(
       { _id: new ObjectId(user._id) },
       {
         $push: {
-          scrapInfo: { url: url, time: currentTime, page: parseInt(page) }
+          scrapInfo: { searchterm: searchterm, time: currentTime, page: parseInt(page) }
         }
       },
       { upsert: true }

@@ -253,7 +253,7 @@ $(document).ready(function() {
     })
 
     
-      
+    handleAudio();
     handleHistory();
     handleInstantVideo();
     HandleCardSetting();
@@ -554,6 +554,7 @@ function LazyLoad(){
         if(
             isVisible && !$(this).hasClass('lazyLoad') && isFavorite() && $('#search').data('mode') != 1 
             || isVisible && !$(this).hasClass('lazyLoad') && isLargeScreen() &&  $('#search').data('mode') != 1 
+            || isVisible && !$(this).hasClass('lazyLoad') && isFullScreen
         ){
             $(this).addClass('lazyLoad')
             downloadAndShow($(this))
@@ -1372,7 +1373,7 @@ function updategridlayout(value = false) {
         const $spinner = showSpinner($buttonContainer,'loadmore')
 
         if($(this).data('fav')){
-            const url =`/dashboard/app/${data.mode}/fav?page=${parseInt(data.page)}&searchterm=${data.searchterm}&nsfw=${data.nsfw}`
+            const url =`/dashboard/app/${data.mode}/fav?page=${parseInt(data.page)}&searchterm=${data.searchterm?data.searchterm:''}&nsfw=${data.nsfw?data.nsfw:'false'}`
             window.location = url 
             return
             
@@ -2860,7 +2861,23 @@ async function streamVideo(itemID, actressName) {
 
     console.log(`Started streaming video for itemID: ${itemID}, actressName: ${actressName}`);
 }
-
+function handleAudio(){
+    $('#toggleAudio').click(function() {
+        // Toggle audio on all video elements
+        $('video').each(function() {
+        if (this.muted) {
+            this.muted = false;
+        } else {
+            this.muted = true;
+        }
+        });
+    
+        // Toggle the icon visibility
+        $('.fa-volume-up, .fa-volume-off').toggleClass('d-none');
+    });
+      
+}
+ 
 function handleIframeActress(itemID){
     const element = $(`.iframe-container[data-id="${itemID}"]`);
     const iframURL = element.attr('data-link')

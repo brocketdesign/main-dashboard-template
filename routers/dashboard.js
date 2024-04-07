@@ -19,6 +19,7 @@ const ensureAuthenticated = require('../middleware/authMiddleware');
 const ensureMembership = require('../middleware/ensureMembership');
 const { 
   findDataInMedias, 
+  findTotalPage,
   filterHiddenElement,
   getOpenaiTypeForUser,
   initCategories
@@ -239,12 +240,27 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
       let { searchterm, nsfw, page } = req.query; 
       nsfw = req.user.nsfw === 'true'?true:false
       page = parseInt(page) || 1
+
+      let currentQuery = {searchterm, nsfw, page, mode}
+
       if(!searchterm){
         res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
         return
       }
       let scrapedData = await ManageScraper(searchterm,nsfw,mode,req.user, page);
-      res.render(`search`, { user: req.user,scrapedData, result:true, isSafari:isSafari(userAgent), searchterm, mode, page, title: `Mode ${mode} : ${searchterm}` });
+
+      const totalPage = await findTotalPage(req.user._id,currentQuery,30);
+
+      res.render(`search`, { 
+        user: req.user,
+        scrapedData, 
+        result:true, 
+        isSafari:isSafari(userAgent), 
+        searchterm, 
+        mode, 
+        page, 
+        totalPage,
+        title: `Mode ${mode} : ${searchterm}` });
   } catch (error) {
     console.error('An error occurred:', error);
     res.status(500).send('An error occurred while scraping.');
@@ -290,9 +306,10 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
         hide: { $exists: false },
       }
     }
+    const totalPage = await findTotalPage(req.user._id,query_obj,30);
     let medias = await findDataInMedias(req.user._id, page, query_obj);
     medias = medias.reverse()
-    console.log(`Found ${medias.length} element(s).`)
+
     let medias2 = []
     if(mode == 'actresses'){
       medias2 = await global.db.collection('actresses_profile').find({isdl:true}).toArray();
@@ -312,6 +329,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
       medias2, 
       mode, 
       page, 
+      totalPage,
       title: `Mode ${mode}` 
     }); // Pass the user data and scrapedData to the template
 

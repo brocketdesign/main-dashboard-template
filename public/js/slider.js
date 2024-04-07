@@ -12,6 +12,7 @@ $(document).ready(function() {
     $('#activeSlider,.expand-card').on('click', function() {
       const currentItemId = $(this).closest('.card-title ').data('id')
       pauseAllVideoExept(currentSlideId)
+      muteAllVideo();
       $('.carousel-toolbar').show().addClass('d-flex')
 
       destroyMasonryLayout();
@@ -22,8 +23,9 @@ $(document).ready(function() {
 
   $('#closeSlickModal').on('click', function() {
     $('.carousel-toolbar').hide().removeClass('d-flex')
-    deactivateCarousel()
-    scrollToCurrentSlide()
+    muteAllVideo();
+    deactivateCarousel();
+    scrollToCurrentSlide();
   });
 });
 // Let's assume 'currentSlideId' is already declared as you mentioned
@@ -151,4 +153,13 @@ function enableAllVideo(){
           $(this).removeClass('force-pause-carousel')
     }, 1000);
   });
+}
+function muteAllVideo(){
+  $('video').each(function() {
+    this.muted = true;
+  });
+
+  // Toggle the icon visibility
+  $('.fa-volume-up').addClass('d-none');
+  $('.fa-volume-off').removeClass('d-none');
 }

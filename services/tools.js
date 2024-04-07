@@ -121,7 +121,18 @@ async function fetchMediaUrls(url) {
   //console.log('Finished fetching media URLs.'); // Log finish
   return images;
 }
-
+async function findTotalPage(userId,query,elementsPerPage){
+  let { searchterm, nsfw, page, mode } = query; 
+  const medias = await findDataInMedias(userId, null , {
+    searchterm,
+    mode,
+    nsfw,
+    hide_query: { $exists: false },
+    hide: { $exists: false },
+  });
+  const totalItems = medias.length
+  return parseInt(totalItems/elementsPerPage)
+}
 async function findDataInMedias(userId, page, query, categoryId = null) {
 
   // Modify the query to include checking for userId in the userIDs array
@@ -135,7 +146,6 @@ async function findDataInMedias(userId, page, query, categoryId = null) {
   const mediasColelction = global.db.collection('medias');
 
   if(!page){
-    
     const medias = await mediasColelction.find(query).toArray();
     return medias;
   }else{
@@ -145,6 +155,7 @@ async function findDataInMedias(userId, page, query, categoryId = null) {
 
     // Find the medias that match the query
     const medias = await mediasColelction.find(query)
+    .sort({_id:-1})
     .skip(skip) // Skip N documents
     .limit(limit) // Limit to N documents
     .toArray();
@@ -624,5 +635,6 @@ module.exports = {
   downloadFileFromURL,
   isMedia,
   downloadYoutubeVideo,
-  getFileExtension
+  getFileExtension,
+  findTotalPage
 }
