@@ -482,9 +482,9 @@ async function updateUserScrapInfo(userId, page, searchterm, mode) {
 }
 
   router.post('/addtofav', async (req, res) => {
-    const {video_id}=req.body
+    const {video_id,mode}=req.body
     const user = req.user
-    const result = await addUserToFavList(user, video_id)
+    const result = await addUserToFavList(user, video_id,mode)
     if(result.modifiedCount>0){
       res.status(200).json({message:'Add media to favorites.',status:true})
     }else{
@@ -533,15 +533,16 @@ async function updateUserScrapInfo(userId, page, searchterm, mode) {
   }
   
   // Async function to add a user to the favorite list of a media element
-async function addUserToFavList(user, video_id) {
-  const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
+async function addUserToFavList(user, video_id,mode) {
+  const myCollection = `medias_${mode}`
+  const foundElement = await global.db.collection(myCollection).findOne({_id:new ObjectId(video_id)})
 
   // Log the intent to add user to the favorite list for debugging
   console.log(`Attempting to add user ${user._id} to fav_user_list for video ${foundElement._id}`);
 
   try {
     // Perform the update operation
-    const updateResult = await global.db.collection('medias').updateOne(
+    const updateResult = await global.db.collection(myCollection).updateOne(
       { _id: foundElement._id }, // Use the _id of the foundElement
       { $addToSet: { fav_user_list: user._id } } // Use $addToSet to avoid duplicates
     );
@@ -1443,8 +1444,8 @@ async function getImageArray(images){
   return base64Images
 }
 router.post('/hide', async (req, res) => {
-  let { element_id, category} = req.body;
-
+  let { element_id, category, mode} = req.body;
+  const myCollection = `medias_${mode}`
   if (!element_id ) {
     return res.status(400).json({ message: 'IDまたはカテゴリが提供されていません' });
   }
@@ -1460,12 +1461,12 @@ router.post('/hide', async (req, res) => {
   }
   try {
     // このエレメントIDに関連するソースを見つける (Find the source related to this element_id)
-    const element = await global.db.collection('medias').findOne({ _id: new ObjectId(element_id) });
+    const element = await global.db.collection(myCollection).findOne({ _id: new ObjectId(element_id) });
     const source = element.source; // ソースの取得 (Assuming 'source' is the field you want to match)
 
     if(source && source != undefined){
       // 同じソースを持つすべてのエレメントを更新する (Update all elements with the same source)
-      const result = await global.db.collection('medias').updateMany(
+      const result = await global.db.collection(myCollection).updateMany(
         { source: source }, // 条件 (Criteria: Match all documents with the same source)
         {
           $pull: { categories: category.toString() }, // カテゴリの削除 (Removing the category)
@@ -1479,14 +1480,14 @@ router.post('/hide', async (req, res) => {
       }
 
     }else{
-      const result = await global.db.collection('medias').updateOne(
+      const result = await global.db.collection(myCollection).updateOne(
         { _id: new ObjectId(element_id) }, // 条件 (Criteria: Match all documents with the same source)
         {
           $pull: { categories: category.toString() }, // カテゴリの削除 (Removing the category)
-          $set: { hide: true } // 非表示フィールドを追加 (Add hide field)
+          $set: { hide: "true" } // 非表示フィールドを追加 (Add hide field)
         }
       );   
-      console.log(`Updated ${result.modifiedCount} elements with the same source.`);
+      console.log(`Updated ${result.modifiedCount} : ${element_id}`);
 
       if (result.modifiedCount === 0) {
         return res.status(404).json({ message: '要素が見つかりませんでした' });
@@ -1500,30 +1501,19 @@ router.post('/hide', async (req, res) => {
   }
 });
 
-router.post('/getTopPageS7', async (req, res) => {
-  const {mode,extractor} = req.body
+router.post('/getTopPage', async (req, res) => {
+  const {mode} = req.body
   const userId = new ObjectId(req.user._id);
   const nsfw = req.user.nsfw == 'true'
   try {
-    const {scrapeTopPage} = require('../modules/scraper/scrapeMode7')
-    const data = await scrapeTopPage()
+    const {scrapeTopPage} = require(`../modules/scraper/scrapeMode${mode}`)
+    const data = await scrapeTopPage(mode)
     res.status(200).json({data})
   } catch (error) {
     res.status(500)
   }
 });
-router.post('/getTopPageS3', async (req, res) => {
-  const {mode,extractor} = req.body
-  const userId = new ObjectId(req.user._id);
-  const nsfw = req.user.nsfw == 'true'
-  try {
-    const {scrapeTopPageS3} = require('../modules/scraper/scrapeMode3')
-    const data = await scrapeTopPageS3()
-    res.status(200).json({data})
-  } catch (error) {
-    res.status(500)
-  }
-});
+
 router.post('/getSBtop', async (req, res) => {
   const {mode,extractor} = req.body
   const userId = new ObjectId(req.user._id);
@@ -1560,6 +1550,7 @@ router.post('/history', async (req, res) => {
       nsfw: nsfw,
       hide_query: { $exists: false },
     });
+
     const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
     const scrapInfo = userInfo.scrapInfo.filter(item => item.mode !== undefined && item.searchterm !== undefined);
 
@@ -1579,12 +1570,12 @@ function mapArrayHistory(medias,scrapInfo, mode) {
 
   // Iterate through filteredData again, adding items to queryMap only if they are on the highest page for that query
   medias.forEach(item => {
-    if (!item.query) return;
+    if (!item.searchterm) return;
 
     const page = parseInt(item.page);
 
-    if (page === highestPagePerQuery[item.query]) {
-      const key = item.query;
+    if (page === highestPagePerQuery[item.searchterm]) {
+      const key = item.searchterm.trim();
       if (!queryMap[key]) {
         queryMap[key] = [];
       }

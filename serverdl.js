@@ -35,12 +35,13 @@ MongoClient.connect(url, { useUnifiedTopology: true })
   const {getVideoFromSB,scrapeWebsiteTopPage,getVideoFromPD} = require('./modules/getVideoFromSB')
 
     router.post('/dl', async (req, res) => {
-        const video_id = req.body.video_id;
-        const title = req.body.title || 'media';
+        const {video_id,title,mode} = req.body.video_id;
+        title = title || 'media';
+        const myCollection = `medias_${mode}`
         console.log('File download requested for video_id:', video_id);
       
         try {
-          const url = await getHighestQualityVideoURL(video_id,req.user,false);
+          const url = await getHighestQualityVideoURL(myCollection,video_id,req.user,false);
           
           if (!url) {
             console.log('Video URL not found for video_id:', video_id);
@@ -68,7 +69,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           // Create download folder if it doesn't exist
           await fs.promises.mkdir(download_directory, { recursive: true });
       
-          const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
+          const foundElement = await global.db.collection(myCollection).findOne({_id:new ObjectId(video_id)})
           updateSameElements(foundElement,{isdl:false,isdl_start:new Date()})
           let done = false
           if (url.includes('youtube.com')) {

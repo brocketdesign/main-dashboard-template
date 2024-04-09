@@ -6,9 +6,9 @@ const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-async function getHighestQualityVideoURL(video_id, user, stream = true) {
+async function getHighestQualityVideoURL(myCollection,video_id, user, stream = true) {
   try {
-    const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(video_id)})
+    const foundElement = await global.db.collection(myCollection).findOne({_id:new ObjectId(video_id)})
 
     if(foundElement.filePath){
       await updateSameElements(foundElement,{isdl:true,isdl_data:new Date(),filePath:foundElement.filePath})
@@ -17,9 +17,9 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     
     if(!foundElement.link.includes('youtube') && lessThan24Hours(foundElement.last_scraped)){
       if(!foundElement.isdl_process){
-        global.db.collection('medias').updateOne({_id:new ObjectId(video_id)},{$set:{isdl_process:true}})
+        global.db.collection(myCollection).updateOne({_id:new ObjectId(video_id)},{$set:{isdl_process:true}})
         .then(()=>{
-          downloadMedia(foundElement)
+          downloadMedia(myCollection, foundElement)
         })
         .catch((err)=>{
           console.log(err)
@@ -50,9 +50,9 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     const result = await searchVideo(foundElement, user, stream);
 
     if(!foundElement.isdl_process){
-      global.db.collection('medias').updateOne({_id:new ObjectId(video_id)},{$set:{isdl_process:true}})
+      global.db.collection(myCollection).updateOne({_id:new ObjectId(video_id)},{$set:{isdl_process:true}})
       .then(()=>{
-        downloadMedia(foundElement)
+        downloadMedia(myCollection, foundElement)
       })
       .catch((err)=>{
         console.log(err)
@@ -64,14 +64,14 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
     return null;
   }
 }
-async function downloadMedia(foundElement){
+async function downloadMedia(myCollection,foundElement){
         axios.post('http://192.168.10.115:3100/api/dl', {
           video_id: foundElement._id,
           title: foundElement.title || foundElement._id
         })
         .then(response => {
           console.log(response.data);
-          global.db.collection('medias').updateOne({_id:new ObjectId(foundElement._id)},{$set:{isdl_process:false}})
+          global.db.collection(myCollection).updateOne({_id:new ObjectId(foundElement._id)},{$set:{isdl_process:false}})
         })
         .catch(error => {
           console.error('There was an error!', error);

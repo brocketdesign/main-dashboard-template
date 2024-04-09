@@ -257,7 +257,7 @@ async function searchGifImage(query, isReset = false, topPage = false) {
   }
   const lastPageIndex = await getLastPageIndex(query);
   const startTime = Date.now();
-console.log({lastPageIndex})
+  console.log({lastPageIndex})
   if (isReset || (startTime - lastPageIndex.time) > LAST_PAGE_RESET_INTERVAL) {
     await resetLastPageIndex(query);
     page = 1;
@@ -363,10 +363,10 @@ async function resetLastPageIndex(query) {
 
 async function handleGif(response,topPage){
   try {
-    const isAlreadyDownloaded = await global.db.collection('medias').findOne({link:response.url()})
+    const isAlreadyDownloaded = await global.db.collection('medias_3').findOne({link:response.url()})
 
     if(topPage){
-     return isAlreadyDownloaded
+     //return isAlreadyDownloaded
     }
     
     if(!isAlreadyDownloaded){
@@ -405,13 +405,15 @@ async function handleImage(response){
   }
   return false
 }
-async function scrapeTopPageS3(){
+async function scrapeTopPage(){
+  console.log(`scrapeTopPage`)
   try {
-    const lastTopPageData = await global.db.collection('medias').find({query:'top',extractor:'SEX(GIF)'}).toArray()
+    const lastTopPageData = await global.db.collection('medias_3').find({query:'top',extractor:'SEX(GIF)'}).toArray()
     const startTime = Date.now();
     const lastTime = lastTopPageData[0] && lastTopPageData[0].time ? lastTopPageData[0].time : 0
 
-    if ((startTime - lastTime) < LAST_PAGE_RESET_INTERVAL) {
+    if ((startTime - lastTime) < LAST_PAGE_RESET_INTERVAL && lastTopPageData.length > 5) {
+      console.log(`Up to date scrapeTopPage`)
       return lastTopPageData
     }
     let SexGifPromise =  await searchGifImage('top',false,true).catch(error => {
@@ -425,7 +427,7 @@ async function scrapeTopPageS3(){
       time :new Date()
     })); 
     const {insertInDB} = require('../ManageScraper')
-    await insertInDB(SexGifPromise)
+    await insertInDB('medias_3',SexGifPromise)
     return SexGifPromise
   } catch (error) {
     console.log(error)
@@ -444,10 +446,10 @@ async function scrapeMode(url, mode, nsfw, page, user, isAsync) {
     }
     //const data1 = await searchPorn(query, mode, nsfw, url, page);
     
-    const SexGifPromise =  query && query != 'undefined' ? searchGifImage(query,false,false).catch(error => {
+    const SexGifPromise = query && query != 'undefined' ? searchGifImage(query,false,false).catch(error => {
       console.error("Failed to scrape data from Sex Gif", error);
       return []; // Return empty array on failure
-    }) : scrapeTopPageS3()
+    }) : scrapeTopPage()
     const sexImagePromise = [] || searchImage(query).catch(error => {
       console.error("Failed to scrape data from Sex Image", error);
       return []; // Return empty array on failure
@@ -487,4 +489,4 @@ function generateRandomID(length) {
   return randomID;
 }
 
-module.exports = {scrapeMode,scrapeTopPageS3};
+module.exports = {scrapeMode,scrapeTopPage};

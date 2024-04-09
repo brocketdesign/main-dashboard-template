@@ -137,13 +137,14 @@ async function findDataInMedias(userId, page, query, categoryId = null) {
 
   // Modify the query to include checking for userId in the userIDs array
   query.userId = userId;
+  const myCollection = `medias_${query.mode}`
 
   // If a categoryId is provided, include it in the query
   if (categoryId !== null) {
     query.categoryId = categoryId;
   }
 
-  const mediasColelction = global.db.collection('medias');
+  const mediasColelction = global.db.collection(myCollection);
 
   if(!page){
     const medias = await mediasColelction.find(query).toArray();
@@ -152,7 +153,6 @@ async function findDataInMedias(userId, page, query, categoryId = null) {
     page_number = parseInt(page) || 1;
     const limit = 30; // Number of documents per page
     const skip = (page_number - 1) * limit; // Calculate skip value
-
     // Find the medias that match the query
     const medias = await mediasColelction.find(query)
     .sort({_id:-1})

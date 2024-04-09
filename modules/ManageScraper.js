@@ -17,23 +17,27 @@ async function findAndUpdateUser(userId, newScrapedData = null) {
 }
 
 async function ManageScraper(searchterm, nsfw, mode, user, page) {
+  const myCollection = `medias_${mode}`
   const {scrapeMode} = require(`./scraper/scrapeMode${mode}`);
   const userId = user._id
 
   let userInfo = await findAndUpdateUser(userId);
-
-  scrapedData = await findDataInMedias(userId, parseInt(page), {
+  const query = {
     searchterm,
     mode: mode,
     nsfw: nsfw,
-    hide_query: { $exists: false },
-    hide: { $exists: false },
+    $and: [ 
+      { $or: [ { hide_query: { $exists: false } }, { hide_query: "false" } ] },
+      { $or: [ { hide: { $exists: false } }, { hide: "false" } ] }
+    ],
     favoriteCountry: { $in: [userInfo.favoriteCountry] }
-  });
+  };
+
+  scrapedData = await findDataInMedias(userId, parseInt(page), query);
 
   console.log(`Found ${scrapedData.length} items in the medias collection for page ${parseInt(page)}`)
 
-  if(scrapedData && scrapedData.length > 0 && searchterm != 'undefined'){
+  if(scrapedData && scrapedData.length > 0 ){ //&& searchterm != 'undefined'
     return scrapedData
   }
   
@@ -58,12 +62,13 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
   })); 
 
   updateUserScrapInfo(user,searchterm,page)
-  let result = await insertInDB(scrapedData)
+  let result = await insertInDB(myCollection, scrapedData)
   if(result){result=result.reverse()}
   return result
 }
 async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
   console.log('// AsyncManageScraper')
+  const myCollection = `medias_${mode}`
   const {scrapeMode} = require(`./scraper/scrapeMode${mode}`);
   const userId = user._id
 
@@ -88,18 +93,18 @@ async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
   })); 
 
   updateUserScrapInfo(user,searchterm,page)
-  const result =  await insertInDB(scrapedData)
+  const result =  await insertInDB(myCollection, scrapedData)
 
   return result.slice(0,30)
 }
 
-async function updateOrInsert(criteria, updateQuery) {
-  const updateResult = await global.db.collection('medias').findOneAndUpdate(criteria, updateQuery, { upsert: true, returnDocument: 'after' });
+async function updateOrInsert(myCollection,criteria, updateQuery) {
+  const updateResult = await global.db.collection(myCollection).findOneAndUpdate(criteria, updateQuery, { upsert: true, returnDocument: 'after' });
   //return updateResult.matchedCount > 0 || updateResult.upsertedCount > 0;
   return updateResult.value; // This returns the updated/inserted document
 }
 
-async function insertInDB(scrapedData) {
+async function insertInDB(myCollection,scrapedData) {
   let insertedDocuments = [];
   if (scrapedData && scrapedData.length > 0) {
     // Array to hold promises
@@ -110,7 +115,7 @@ async function insertInDB(scrapedData) {
       const query2 = {$addToSet: { favoriteCountry: item.favoriteCountry }}
       delete item.favoriteCountry
       const query1 = {$set:item}
-      promises.push(getUpdatedDocument(itemWithId,query1,query2));
+      promises.push(getUpdatedDocument(myCollection,itemWithId,query1,query2));
     }
 
     // Wait for all db operations to complete
@@ -120,22 +125,22 @@ async function insertInDB(scrapedData) {
   }
 }
 
-async function getUpdatedDocument(itemWithId,query1,query2) {
+async function getUpdatedDocument(myCollection,itemWithId,query1,query2) {
   const item = _.omit(itemWithId, ['_id']);
   let doc1 = doc2 = null
   if (item.source) {
-    doc1 = updateOrInsert({ 'source': item.source }, query1)
-    doc2 = updateOrInsert({ 'source': item.source }, query2)
+    doc1 = updateOrInsert(myCollection, { 'source': item.source }, query1)
+    doc2 = updateOrInsert(myCollection, { 'source': item.source }, query2)
   }
 
   if (item.url) {
-    doc1 = updateOrInsert({ 'url': item.url }, query1)
-    doc2 = updateOrInsert({ 'url': item.url }, query2)
+    doc1 = updateOrInsert(myCollection, { 'url': item.url }, query1)
+    doc2 = updateOrInsert(myCollection, { 'url': item.url }, query2)
   }
 
   if (item.link) {
-    doc1 = updateOrInsert({ 'link': item.link }, query1)
-    doc2 = updateOrInsert({ 'link': item.link }, query2)
+    doc1 = updateOrInsert(myCollection, { 'link': item.link }, query1)
+    doc2 = updateOrInsert(myCollection, { 'link': item.link }, query2)
   }
   // Return the first non-null document
   return doc1 || doc2;
@@ -160,7 +165,6 @@ async function checkUserScrapeInfo(user){
   }
 }
 async function updateUserScrapInfo(user,searchterm,page){
-
   await checkUserScrapeInfo(user)
   userInfo = await findAndUpdateUser(user._id);
   const scrapInfo = userInfo.scrapInfo.find(info => info.searchterm === searchterm);

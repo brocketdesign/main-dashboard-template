@@ -7,11 +7,11 @@ const cheerio = require('cheerio');
 
 
 function generateTopPageUrl(){
-  return 'https://jp.xgroovy.com/gifs/'
+  return 'https://xgroovy.com/gifs/'
 }
 
 function generateUrl(query,page){
-  return new URL(`https://jp.xgroovy.com/gifs/search/${query}/${page}/`).href
+  return new URL(`https://xgroovy.com/gifs/search/${query}/${page}/`).href
 }
 
 function getExtractor(){
@@ -53,9 +53,10 @@ async function resetLastPageIndex(query) {
   }
 }
 
-async function scrapeTopPage(){
+async function scrapeTopPage(mode){
   try {
-    const lastTopPageData = await global.db.collection('medias').find({query:'top',extractor:getExtractor()}).toArray()
+    const myCollection = `medias_${mode}`
+    const lastTopPageData = await global.db.collection(myCollection).find({query:'top',extractor:getExtractor()}).toArray()
     const startTime = Date.now();
     const lastTime = lastTopPageData[0] && lastTopPageData[0].time ? lastTopPageData[0].time : 0
 
@@ -69,6 +70,7 @@ async function scrapeTopPage(){
     pornpics = pornpics.map((data) => ({
       ...data,
       query:'top',
+      mode,
       extractor:getExtractor(),
       time :new Date()
     })); 
@@ -77,7 +79,7 @@ async function scrapeTopPage(){
     return pornpics
   } catch (error) {
     console.log(error)
-    console.log(`Error scraping top page for S7`)
+    console.log(`Error scraping top page for S8`)
   }
 }
 
@@ -85,7 +87,6 @@ async function searchImage(galleryUrl){
   return fetchDataSrcArray(galleryUrl)
 }
 async function fetchDataSrcArray(url) {
-  console.log({url})
   try {
     // Fetch the HTML of the page
     const { data } = await axios.get(url);
@@ -127,10 +128,10 @@ async function scrapeMode(query, mode, nsfw, page, user, isAsync) {
       return []
     }
 
-    const PornPics = await searchImage(generateUrl(trimAndReplace(query),page)).catch(error => {
+    const PornPics = query && query != 'undefined' ? await searchImage(generateUrl(trimAndReplace(query),page)).catch(error => {
       console.error("Failed to scrape data from Sex Gif", error);
       return []; // Return empty array on failure
-    }) 
+    }) : await scrapeTopPage(mode)
 
     return PornPics;
   } catch (error) {

@@ -832,7 +832,8 @@ const handleDownloadButton = () => {
       $spinner.show();
       
       // Make a request to download the video
-      $.post('http://192.168.10.115:3100/api/dl', { video_id: id ,title}, function(response) {
+      const mode = $('#range').data('mode')
+      $.post('http://192.168.10.115:3100/api/dl', { video_id: id ,title,mode}, function(response) {
         console.log('Download API Response:', response);
         displayMedia(response.url,id)
         $spinner.remove();
@@ -884,7 +885,8 @@ function removeFromFav(video_id,callback){
     })
 }
 function addtofav(video_id,callback){
-    $.post('/api/addtofav',{ video_id },function(response){
+    const mode = $('#range').data('mode')
+    $.post('/api/addtofav',{ video_id,mode },function(response){
         if(callback){callback()}
         //handleFormResult(response.status, response.message) 
     })
@@ -1250,6 +1252,7 @@ const enterFullScreen = (videoElement) => {
   
 
  const handleHiding = (videoId) => {
+    const mode = $('#range').data('mode')
      let $container = $(`.card[data-id=${videoId}]`)
  
      const confirmation = confirm("Are you sure you want to delete this item? This action cannot be undone.");
@@ -1258,7 +1261,7 @@ const enterFullScreen = (videoElement) => {
          $.ajax({
              url: '/api/hide',
              method: 'POST',
-             data: { element_id: videoId },
+             data: { element_id: videoId,category:null, mode },
              success: function(response) {
                  $container.remove()
                  updateMasonryLayout()
@@ -2909,7 +2912,8 @@ function instantPlay(dataId){
     directDownloadFileFromURL(dataId)
 }
 function directDownloadFileFromURL(dataId){
-    $.post('http://192.168.10.115:3100/api/dl', { video_id: dataId }, function(response) {
+    const mode = $('#range').data('mode')
+    $.post('http://192.168.10.115:3100/api/dl', { video_id: dataId,mode }, function(response) {
         console.log('Download API Response:', response);
       })
 }
@@ -2921,15 +2925,21 @@ function handleHistory(){
     $.post('/api/history', { mode }, function(response) {
         displayHistory(response.data)
     })
-    getTopPageSB(function(response){
-        displayHistoryTop(response)
-    })
-    getTopPageS3(function(response){
-        displayHistoryTop(response)
-    })
-    getTopPageS7(function(response){
-        displayHistoryGallery(response)
-    })
+    if(mode == 1){
+        getTopPageSB(function(response){
+            displayHistoryTop(response)
+        })
+    }
+    if(mode == 7){
+        getTopPageMode(function(response){
+            displayHistoryGallery(response)
+        })
+    }
+    if(mode != 1 && mode != 7 ){
+        getTopPageMode(function(response){
+            displayHistoryTop(response)
+        })
+    }
 }
 function displayHistory(data) {
     // Clear the current content
@@ -3020,43 +3030,27 @@ function getTopPageSB(callback){
         });
     })
 }
-function getTopPageS3(callback){
+function getTopPageMode(callback){
     const mode = $('#display-history').data('mode');
 
- 
-    if($('#display-history').length == 0 || mode != 3){
+    if($('#display-history').length == 0){
         return
     }
     getUserNSFW(function(nsfw){
         if(nsfw != 'true'){
             return
         }
-        $.post('/api/getTopPageS3', {mode, nsfw, extractor:'Sex'}, function(result){
+        $.post('/api/getTopPage', {mode, nsfw}, function(result){
             if (callback) {callback(result.data)} 
         });
     })
 }
 
-function getTopPageS7(callback){
-    const mode = $('#display-history').data('mode');
-
- 
-    if($('#display-history').length == 0 || mode != 7){
-        return
-    }
-    getUserNSFW(function(nsfw){
-        if(nsfw != 'true'){
-            return
-        }
-        $.post('/api/getTopPageS7', {mode, nsfw, extractor:'pornpic'}, function(result){
-            if (callback) {callback(result.data)} 
-        });
-    })
-}
 function displayHistoryTop(data){
 
     $('#osusume-history').empty();
     // Loop through each category in the data
+    console.log(data[0])
     $.each(data, function(index, item) {
         if(item == null){
             return

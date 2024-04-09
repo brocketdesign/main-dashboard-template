@@ -282,7 +282,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
 
   try{
     let query_obj = {
-      query: {
+      searchterm: {
         $regex: searchterm,
       },
       mode:mode,
