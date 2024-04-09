@@ -241,9 +241,10 @@ MongoClient.connect(url, { useUnifiedTopology: true })
       // Define a route to handle video requests
       router.get('/video', async (req, res) => {
         try {
-          const { videoId } = req.query;
+          const { videoId, mode } = req.query;
+          const myCollection = `medias_${mode}`
           console.log(`Loading video : ${videoId}`)
-          const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
+          const foundElement = await global.db.collection(myCollection).findOne({_id:new ObjectId(videoId)})
           // Call the function to get the highest quality video URL for the provided id
           const url = await getHighestQualityVideoURL(videoId,req.user);
           //const related = await scrapeMode1GetRelatedVideo(id,req.user,req.user.mode, req.user.nsfw)

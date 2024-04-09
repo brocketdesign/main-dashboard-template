@@ -10,6 +10,10 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
   try {
     const foundElement = await global.db.collection(myCollection).findOne({_id:new ObjectId(video_id)})
 
+    if(!foundElement){
+      console.log(`Error could not found element ( ${video_id} ) in  ${myCollection}`)
+      return
+    }
     if(foundElement.filePath){
       await updateSameElements(foundElement,{isdl:true,isdl_data:new Date(),filePath:foundElement.filePath})
       return foundElement.filePath.replace('public','')

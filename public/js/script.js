@@ -667,9 +667,9 @@ function handleDownloadVideo(id){
     const $thisCard = $(`.card.info-container[data-id="${id}"]`)
     const $spinner = $thisCard.find('.spinner-border');
     const isdl = $thisCard.data('isdl');
-
+    const mode = $('#display-history').data('mode');
     // Make a request to the server to get the highest quality video URL for the given ID
-    $.get('http://192.168.10.115:3100/api/video?videoId='+id, function(response) {
+    $.get(`http://192.168.10.115:3100/api/video?videoId=${id}&mode=${mode}`, function(response) {
         //console.log('API Response:', response);
         updateImageList(id)
         // Hide the spinner
