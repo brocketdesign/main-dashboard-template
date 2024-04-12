@@ -253,10 +253,14 @@ $(document).ready(function() {
     })
 
     
+    //HandleCardSetting();
+    //handleCardButton();
+
+    backtothetop();
+
     handleAudio();
     handleHistory();
     handleInstantVideo();
-    HandleCardSetting();
     activateClickOnVisibleButtons();
     handleFavorite();
     handleSelectCountry();
@@ -278,7 +282,6 @@ $(document).ready(function() {
     handleScrollDownButton();
     handleCardClickable();
     handleDownloadButton();
-    handleCardButton();
     handleChat();
     handleChatHistory();
     handleCOmpare();
@@ -540,6 +543,7 @@ function manageVideo(isVisible, $element) {
                 return
             }
             $video.get(0).play();
+            addCardToList($element)
         } 
         // If the element is not visible and the video is playing
         else if (!isVisible && !$video.get(0).paused) {
@@ -667,7 +671,8 @@ function handleDownloadVideo(id){
     const $thisCard = $(`.card.info-container[data-id="${id}"]`)
     const $spinner = $thisCard.find('.spinner-border');
     const isdl = $thisCard.data('isdl');
-    const mode = $('#display-history').data('mode');
+    const mode = $('#range').data('mode');
+
     // Make a request to the server to get the highest quality video URL for the given ID
     $.get(`http://192.168.10.115:3100/api/video?videoId=${id}&mode=${mode}`, function(response) {
         //console.log('API Response:', response);
@@ -879,14 +884,15 @@ function handleFavorite(){
     })
 }
 function removeFromFav(video_id,callback){
-    $.post('/api/removeFromFav',{video_id},function(response){
+    const mode = $('#range').data('mode')
+    $.post('/api/removeFromFav',{video_id, mode},function(response){
         if(callback){callback()}
         //handleFormResult(response.status, response.message) 
     })
 }
 function addtofav(video_id,callback){
     const mode = $('#range').data('mode')
-    $.post('/api/addtofav',{ video_id,mode },function(response){
+    $.post('/api/addtofav',{ video_id, mode },function(response){
         if(callback){callback()}
         //handleFormResult(response.status, response.message) 
     })
@@ -1106,7 +1112,7 @@ function handleChatHistory(){
             $agentTemplate.addClass('p-4 text-end bg-dark text-white');
             $agentTemplate.find('.userName').text('エージェント');
             $agentTemplate.find('.time').text(new Date(item.completion_time).toLocaleTimeString('ja-JP'));
-            $agentTemplate.find('.message').addClass('agent text-start').attr('id',item._id).text(item.completion[0])
+            $agentTemplate.find('.message').addClass('agent text-start').attr('id',item._id).text(item.completion ? item.completion[0] : '')
             $messages.append($agentTemplate);
         });
         $(document).find('.chat-message.agent').each(function(){
@@ -2944,51 +2950,62 @@ function handleHistory(){
 function displayHistory(data) {
     // Clear the current content
     $('#display-history').empty();
+    const mode = $(`#display-history`).data('mode')
     // Loop through each category in the data
     $.each(data, function(category, items) {
        
         // Check if there are items in the category
         if (items.length > 0) {
-            // Pick a random item from the category
-            let randomIndex = Math.floor(Math.random() * items.length);
-            let randomItem = items[randomIndex];
 
-            // Grab the imageUrl and link from the random item
-            let imageUrl = randomItem.imageUrl || randomItem.filePath || randomItem.thumb;
-            let itemLink = `/dashboard/app/${randomItem.mode}?page=${randomItem.page}&searchterm=${category}&nsfw=true`; // Adjust this based on your data structure
-
-            // Create an anchor tag to wrap the card
-            let cardLink = $('<a>').attr('href', itemLink).data('time',randomItem.time).addClass('text-decoration-none item');
-
-            // Create a card for each category
+            let myID = "itemSlider_"+stringToID(category);
+            let itemLink = `/dashboard/app/${mode}?searchterm=${category}&nsfw=true`;
+            let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
             let card = $('<div>').addClass('card mb-3 col');
             let cardBody = $('<div>').addClass('card-body');
+            let imageContainer = $('<div>').attr('id',myID).addClass('slider-container')
 
-            // Add category name as card title
+            card.append(imageContainer);
             cardBody.append($('<h5>').addClass('card-title').text(category));
-
-            // Create an image tag for the imageUrl
-            // Add 'lazy' class and set 'data-src' for lazy loading
-            let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', category);
-
-            // Append the image to the card
-            card.append(imgTag);
-
-            // Append card body to the card
             card.append(cardBody);
-
-            // Wrap the card with the link
             cardLink.append(card);
 
-            // Append the linked card to the display history
-            $('#display-history').append(cardLink);
+            items.forEach((item) => {
+                let imageUrl = item.imageUrl || item.filePath || item.thumb;
+                let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', category);
+
+                imageContainer.append(imgTag);
+
+            });
+
+            $(`#display-history`).append(cardLink);
+
         }
     });
 
     // Initialize lazy loading
-    reorderElementByTime($('#display-history'))
-    $('.lazy').lazy();
+    //reorderElementByTime($('#display-history'))
+    
+    $('#display-history').on('scroll', function() {
+        $('.lazy').lazy('update');
+    });
 }
+function stringToID(str) {
+    // First, trim the string to remove any leading or trailing spaces
+    let trimmedStr = str.trim();
+  
+    // Replace spaces with underscores (or hyphens, if you prefer)
+    let spaceReplacedStr = trimmedStr.replace(/\s+/g, '_');
+  
+    // Remove any characters that are not letters, digits, hyphens, or underscores
+    let sanitizedStr = spaceReplacedStr.replace(/[^a-zA-Z0-9-_]/g, '');
+  
+    // Ensure the string starts with a letter. If not, prepend with a letter (e.g., 'id_')
+    let id = sanitizedStr.match(/^[a-zA-Z]/) ? sanitizedStr : `id_${sanitizedStr}`;
+  
+    return id;
+}
+  
+
 function reorderElementByTime(container) {
     // Retrieve and store the .item elements and their time data in an array
     var items = container.find('.item').map(function() {
@@ -3050,14 +3067,16 @@ function displayHistoryTop(data){
 
     $('#osusume-history').empty();
     // Loop through each category in the data
-    console.log(data[0])
     $.each(data, function(index, item) {
         if(item == null){
             return
         }
         // Grab the imageUrl and link from the random item
         let imageUrl = item.imageUrl || item.filePath || item.thumb;
-        let itemLink = `/dashboard/app/${item.mode}?page=1&searchterm=${item.alt}&nsfw=true`; // Adjust this based on your data structure
+        const mode = parseInt($('#display-history').data('mode'))
+        const searchTerm = mode == 1 ? item.link : item.alt
+        console.log(item)
+        let itemLink = `/dashboard/app/${item.mode}?page=1&searchterm=${searchTerm}&nsfw=true`; // Adjust this based on your data structure
 
         // Create an anchor tag to wrap the card
         let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
@@ -3092,7 +3111,7 @@ function displayHistoryTop(data){
     $('#osusume-history').on('scroll', function() {
         $('.lazy').lazy('update');
     });
-
+    
 }
 
 function displayHistoryGallery(data){
@@ -3138,5 +3157,24 @@ function displayHistoryGallery(data){
     $('.lazy').lazy();
     $('#osusume-history').on('scroll', function() {
         $('.lazy').lazy('update');
+    });
+}
+function backtothetop(){
+    // Back to top button markup
+    $("body").append('<a href="#" class="btn btn-dark btn-back-to-top" style="display: none; position: fixed; bottom: 20px; right: 20px;"><i class="fas fa-arrow-up"></i></a>');
+
+    // Scroll event
+    $(window).scroll(function() {
+        if ($(this).scrollTop() > 50) {
+            $('.btn-back-to-top').fadeIn();
+        } else {
+            $('.btn-back-to-top').fadeOut();
+        }
+    });
+
+    // Click event
+    $('.btn-back-to-top').click(function() {
+        $('html, body').animate({scrollTop: 0}, 500);
+        return false;
     });
 }

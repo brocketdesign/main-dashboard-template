@@ -35,11 +35,9 @@ MongoClient.connect(url, { useUnifiedTopology: true })
   const {getVideoFromSB,scrapeWebsiteTopPage,getVideoFromPD} = require('./modules/getVideoFromSB')
 
     router.post('/dl', async (req, res) => {
-        const {video_id,title,mode} = req.body.video_id;
+        let {video_id,title,mode,myCollection} = req.body;
         title = title || 'media';
-        const myCollection = `medias_${mode}`
-        console.log('File download requested for video_id:', video_id);
-      
+        myCollection = myCollection || `medias_${mode}`      
         try {
           const url = await getHighestQualityVideoURL(myCollection,video_id,req.user,false);
           
@@ -52,7 +50,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           res.status(200).json({ url, message: 'Start Download' }); 
       
           if(!url.includes('http')){
-            saveData(req.user, video_id, {isdl:true})
+            saveData(req.user, video_id, myCollection, {isdl:true})
             res.status(200).json({ message: 'ダウンロードされました' });
             return;
           }
@@ -70,15 +68,15 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           await fs.promises.mkdir(download_directory, { recursive: true });
       
           const foundElement = await global.db.collection(myCollection).findOne({_id:new ObjectId(video_id)})
-          updateSameElements(foundElement,{isdl:false,isdl_start:new Date()})
+          updateSameElements(foundElement,myCollection,{isdl:false,isdl_start:new Date()})
           let done = false
           if (url.includes('youtube.com')) {
             done = true
-            await downloadYoutubeVideo(download_directory,filePath,foundElement.video_id)
+            await downloadYoutubeVideo(download_directory,filePath,foundElement.video_id,myCollection)
           } 
           if(url.includes('redgifs.com')){
             done = true
-            await downloadVideo(url, filePath, video_id);
+            await downloadVideo(url, filePath, video_id, myCollection);
           }
           if(!done){
             await downloadFileFromURL(filePath,url)
@@ -89,7 +87,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
       
           console.log('File downloaded:', fileName);
       
-          updateSameElements(foundElement,{filePath:filePath.replace('public',''), isdl:true,isdl_end:new Date()})
+          updateSameElements(foundElement,myCollection,{filePath:filePath.replace('public',''), isdl:true,isdl_end:new Date()})
           // Send a success status response after the file is downloaded
           //res.status(200).json({ message: 'アイテムが成功的に保存されました。' });
       
@@ -243,11 +241,8 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         try {
           const { videoId, mode } = req.query;
           const myCollection = `medias_${mode}`
-          console.log(`Loading video : ${videoId}`)
           const foundElement = await global.db.collection(myCollection).findOne({_id:new ObjectId(videoId)})
-          // Call the function to get the highest quality video URL for the provided id
-          const url = await getHighestQualityVideoURL(videoId,req.user);
-          //const related = await scrapeMode1GetRelatedVideo(id,req.user,req.user.mode, req.user.nsfw)
+          const url = await getHighestQualityVideoURL(myCollection,videoId,req.user);
 
           if (!url) {
             return res.status(404).json({ error: 'Video not found or no valid URL available.' });

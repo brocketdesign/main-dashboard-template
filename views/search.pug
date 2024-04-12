@@ -2,29 +2,30 @@ extends dashboard
 
 block dynamicContent
   div.mode-container(id=section data-mode=mode)
-  #imageList.image-container.auto-show.w-auto.d-flex
+  #imageList.image-container.auto-show.d-flex
   if (scrapedData && scrapedData.length > 0 ) || (medias2 && medias2.length > 0)
     .masonry-container.row.custom-carousel-container
       each data in scrapedData.reverse()
         if data._id
           - displayscr = (mode == 3 )? 'displaysrc':''
-          .mb-2.px-1.masonry-item.custom-carousel-item.grid-item(data-mode=mode,data-type=data.video?'VIDEO':'IMAGE',data-extractor=data.extractor, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
-            .card.info-container.bg-dark(class=`card-clickable-${mode} ${displayscr}`, style="cursor:pointer", data-id=data._id, data-title=data.title, data-link=data.link)
-              .card-top
-                if data.link && data.link.includes('redgif')
-                  .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                      button.iframe-button.btn.shadow.border.border-white(style="background: #ffffff61;", type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'', data-url=`${data.link.replace('watch','ifr')}`)
-                        i.fas.fa-play
-                if mode == '1' || mode == '5' || (data.link && data.link.includes('scrolller') && data.video)
-                  .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                      button.play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
-                        i.fas.fa-play
-                if mode == '6' || mode == '8'
-                  .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                      button.instant-play-button.now.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
-                        i.fas.fa-play
+          .mb-2.px-1.mx-0.masonry-item.custom-carousel-item.grid-item(data-mode=mode,data-type=data.video?'VIDEO':'IMAGE',data-extractor=data.extractor, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
+            .card.info-container.mx-0(class=`card-clickable-${mode} ${displayscr}`, style="cursor:pointer", data-id=data._id, data-title=data.title, data-link=data.link)
+
               
-              .video-container.d-flex(data-id=data._id)
+              .video-container.d-flex.position-relative(data-id=data._id)
+                .card-top
+                  if data.link && data.link.includes('redgif')
+                    .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
+                        button.iframe-button.btn.shadow.border.border-white(style="background: #ffffff61;", type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'', data-url=`${data.link.replace('watch','ifr')}`)
+                          i.fas.fa-play
+                  if mode == '1' || mode == '5' || (data.link && data.link.includes('scrolller') && data.video)
+                    .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
+                        button.play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
+                          i.fas.fa-play
+                  if mode == '6' || mode == '8'
+                    .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
+                        button.instant-play-button.now.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
+                          i.fas.fa-play
                 if mode == 2
                   - favsrc = data.filePath && data.filePath.includes('.mp4') ? false : data.filePath
                   if data.link.includes('redgif') || data.link.includes('scrolller')
@@ -44,8 +45,10 @@ block dynamicContent
                     video(data-id=data._id, data-src=data.link, style="display:none;" width="100%" controls muted autoplay playsinline)
                   if mode == 8
                     video(data-id=data._id, data-src=data.highestQualityURL, style="display:none;" width="100%" controls muted autoplay playsinline)
-              .setting-absolute.card-title.px-3.my-0(data-id=data._id, style="display:none;")
-                .row.justify-content-start.flex-row(style="height:100%")
+              .setting-not-absolute.card-title.px-3.my-0.bg-white(data-id=data._id)
+                if data.title
+                  p.my-0.one-line=data.title 
+                .row.justify-content-start.flex-row.my-2(style="height:100%")
                   .col-12.text-start(style="overflow:hidden")
                     a.expand(href=`/dashboard/app/${mode}?searchterm=${data.subreddit}`)=data.subreddit
                   .col-12.text-start.justify-content-between.d-flex
@@ -73,8 +76,6 @@ block dynamicContent
                         i.fas.fa-plus-square  
                     button.expand-card.btn.btn-light.shadow-0.border.border-0.m-1(type="button")
                         i.fas.fa-expand
-                if data.title
-                  p.one-line=data.title 
 
       if medias2 && medias2.length > 0 && mode == 'actresses'
         .card.bg-transparent.shadow-0

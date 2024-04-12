@@ -108,7 +108,6 @@ async function scrapeResultPage(query, mode, nsfw, url, pageNum, userId){
               } catch (error) {
                 console.log(error)
               }
-            return data;
           }, url, query, mode, nsfw);
           
           

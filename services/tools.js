@@ -29,22 +29,22 @@ function formatDateToDDMMYYHHMMSS() {
 }
 
 
-async function saveData(user, documentId, update){
+async function saveData(user, documentId, myCollection, update){
   try {
     
     // Step 1: Fetch the document based on the _id
-    const resultElement = await global.db.collection('medias').findOne({ _id: new ObjectId(documentId) });
+    const resultElement = await global.db.collection(myCollection).findOne({ _id: new ObjectId(documentId) });
     
     if (resultElement) {
        // Step 2: Update that document
-       const result = await global.db.collection('medias').updateOne(
+       const result = await global.db.collection(myCollection).updateOne(
         { _id: new ObjectId(documentId) },
         { $set: update }
       );
       
       // Check if the document was updated
       if (result.matchedCount > 0) {
-        updateSameElements(resultElement,update)
+        updateSameElements(resultElement, myCollection, update)
         return true;
       } else {
           console.log("Failed to update the document.");
@@ -52,7 +52,7 @@ async function saveData(user, documentId, update){
       }
     }
   } catch (error) {
-    console.log('Element not founded in medias collections');
+    console.log('Element not founded in '+myCollection+' collections');
   }
    return false
 }
@@ -181,28 +181,31 @@ function sanitizeData(scrapedData,query) {
   return uniqueData
 }
 
-async function updateItemsByField(fieldName, fieldValue, query) {
-  const itemsWithSameLink = await global.db.collection('medias').find({ [fieldName]: fieldValue }).toArray();
-  console.log(`Found ${itemsWithSameLink.length} item(s) with the same ${fieldName} `, fieldValue);
+async function updateItemsByField(fieldName,myCollection, fieldValue, query) {
+  const itemsWithSameLink = await global.db.collection(myCollection).find({ [fieldName]: fieldValue }).toArray();
+  //console.log(`Found ${itemsWithSameLink.length} item(s) with the same ${fieldName} `, fieldValue);
 
   for (let item of itemsWithSameLink) {
-      await global.db.collection('medias').updateOne({ _id: new ObjectId(item._id) }, { $set: query });
+      await global.db.collection(myCollection).updateOne({ _id: new ObjectId(item._id) }, { $set: query });
   }
 }
 
-async function updateSameElements(foundElement, query) {
-
+async function updateSameElements(foundElement, myCollection, query) {
+  if(!foundElement){
+    return
+  }
   if (foundElement.source) {
-      await updateItemsByField('source', foundElement.source, query);
+      await updateItemsByField('source', myCollection, foundElement.source, query);
   }
   if (foundElement.url) {
-      await updateItemsByField('url', foundElement.url, query);
+      await updateItemsByField('url', myCollection, foundElement.url, query);
   }
   if (foundElement.link) {
-      await updateItemsByField('link', foundElement.link, query);
+      await updateItemsByField('link', myCollection, foundElement.link, query);
   }
   
 }
+
 async function getOpenaiTypeForUser(userId, type) {
   // 1. Fetch the user's document.
   const userDoc = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
@@ -432,7 +435,7 @@ async function saveDataSummarize(videoId, format){
     console.log('Error while updating element:', error);
   }
 }
-async function downloadVideo(url, filePath, itemID) {
+async function downloadVideo(url, filePath, itemID, myCollection) {
     let browser;
     let videoSrc;
 
@@ -476,7 +479,7 @@ async function downloadVideo(url, filePath, itemID) {
         fs.writeFileSync(filePath, Buffer.from(videoBase64, 'base64'));
 
         try {
-          const result = await global.db.collection('medias').updateOne(
+          const result = await global.db.collection(myCollection).updateOne(
               { _id: new ObjectId(itemID) },
               { $set: { filePath: filePath } }
           );
@@ -537,7 +540,7 @@ async function downloadFileFromURL(filePath,url) {
   });
 
 }
-async function downloadYoutubeVideo(download_directory,filePath,video_id) {
+async function downloadYoutubeVideo(download_directory,filePath,video_id,myCollection) {
   const info = await ytdl.getInfo(video_id);
   //console.log(info.formats);
 

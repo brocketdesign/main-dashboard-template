@@ -15,12 +15,13 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
       return
     }
     if(foundElement.filePath){
-      await updateSameElements(foundElement,{isdl:true,isdl_data:new Date(),filePath:foundElement.filePath})
+      await updateSameElements(foundElement, myCollection, {isdl:true,isdl_data:new Date(),filePath:foundElement.filePath})
       return foundElement.filePath.replace('public','')
     }
     
     if(!foundElement.link.includes('youtube') && lessThan24Hours(foundElement.last_scraped)){
       if(!foundElement.isdl_process){
+        console.log(`Start download for ${video_id}`)
         global.db.collection(myCollection).updateOne({_id:new ObjectId(video_id)},{$set:{isdl_process:true}})
         .then(()=>{
           downloadMedia(myCollection, foundElement)
@@ -51,7 +52,7 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
       }
       return foundElement.link
     }
-    const result = await searchVideo(foundElement, user, stream);
+    const result = await searchVideo(foundElement, myCollection, user, stream);
 
     if(!foundElement.isdl_process){
       global.db.collection(myCollection).updateOne({_id:new ObjectId(video_id)},{$set:{isdl_process:true}})
@@ -71,10 +72,10 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
 async function downloadMedia(myCollection,foundElement){
         axios.post('http://192.168.10.115:3100/api/dl', {
           video_id: foundElement._id,
-          title: foundElement.title || foundElement._id
+          title: foundElement.title || foundElement._id,
+          myCollection
         })
         .then(response => {
-          console.log(response.data);
           global.db.collection(myCollection).updateOne({_id:new ObjectId(foundElement._id)},{$set:{isdl_process:false}})
         })
         .catch(error => {
@@ -82,33 +83,33 @@ async function downloadMedia(myCollection,foundElement){
         });        
 }
 
-async function searchVideo(videoDocument, user, stream) {
+async function searchVideo(videoDocument, myCollection, user, stream) {
   const videoLink = videoDocument.link; // Assuming 'link' field contains the video link
 
   if( videoLink.includes('monsnode')){
-    return await searchVideoDirectLink(videoDocument, user)
+    return await searchVideoDirectLink(videoDocument, myCollection, user)
   }
   if( videoLink.includes('porndig')){
-    return await searchVideoPD(videoDocument, user)
+    return await searchVideoPD(videoDocument, myCollection, user)
   }
   if( videoLink.includes('youtube') ){
-    return await searchVideoYoutube(videoDocument, user, stream)
+    return await searchVideoYoutube(videoDocument, myCollection, user, stream)
   }
   if( videoLink.includes('spankbang') ){
-    return await searchVideoUrl(videoDocument, user);
+    return await searchVideoUrl(videoDocument, myCollection, user);
   }
   if( videoLink.includes('missav') ){
-    return await searchVideoUrl(videoDocument, user);
+    return await searchVideoUrl(videoDocument, myCollection, user);
   }
   if( videoLink.includes('xvideos') ){
-    return await searchVideoUrlAPI(videoDocument, user);
+    return await searchVideoUrlAPI(videoDocument, myCollection, user);
   }
   if( videoLink.includes('scrolller') ){
-    return await searchVideoScroller(videoDocument, user);
+    return await searchVideoScroller(videoDocument, myCollection, user);
   }
 }
 
-async function searchVideoScroller(videoDocument, user) {
+async function searchVideoScroller(videoDocument, myCollection, user) {
   const videoURL = videoDocument.link;
   const browser = await puppeteer.launch({ headless: 'new' });
   const defaultPage = await browser.newPage();
@@ -128,7 +129,7 @@ async function searchVideoScroller(videoDocument, user) {
     });
 
     await browser.close();
-    await updateSameElements(videoDocument, { highestQualityURL,isdl:true, last_scraped: new Date() });
+    await updateSameElements(videoDocument, myCollection, { highestQualityURL,isdl:true, last_scraped: new Date() });
 
     return highestQualityURL;
 
@@ -139,7 +140,7 @@ async function searchVideoScroller(videoDocument, user) {
   }
 }
 
-async function searchVideoUrlAPI(videoDocument,user){
+async function searchVideoUrlAPI(videoDocument, myCollection,user){
   //noot working anymore
   return false
   return await getJSON(`https://appsdev.cyou/xv-ph-rt/api/?site_id=xvideos&video_id=${videoDocument.video_id}`,user)
@@ -160,15 +161,13 @@ const getJSON = async (url,user) => {
     throw error;
   }
 };
-async function searchVideoUrl( videoDocument, user) {
+async function searchVideoUrl( videoDocument, myCollection, user) {
 
   videoURL = videoDocument.link
 
   if(!videoDocument.link.includes('http')){
     videoURL = `${process.env.DEFAULT_URL}${videoDocument.link}`;
   }
-  console.log('Video URL to scrape:', videoURL);
-
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
   await page.setRequestInterception(true);
@@ -188,13 +187,12 @@ async function searchVideoUrl( videoDocument, user) {
 
   const highestQualityURL = mp4Urls[0] || null;
 
-  await updateSameElements(videoDocument, {highestQualityURL:highestQualityURL,last_scraped:new Date()})
+  await updateSameElements(videoDocument, myCollection, {highestQualityURL:highestQualityURL,last_scraped:new Date()})
   //console.log('Highest Quality URL:', highestQualityURL);
   return highestQualityURL;
 }
 
-async function searchVideoYoutube( videoDocument, user, stream){
-console.log(videoDocument)
+async function searchVideoYoutube( videoDocument, myCollection, user, stream){
   if(!stream){
     return videoDocument.link
   }
@@ -205,13 +203,13 @@ console.log(videoDocument)
     filter: 'audioandvideo', 
     quality: 'highestaudio'
   });
-  await updateSameElements(videoDocument, {streamingUrl:format.url,last_scraped:new Date()})
+  await updateSameElements(videoDocument, myCollection, {streamingUrl:format.url,last_scraped:new Date()})
 
   //console.log('Format found!', format.url);
   return format.url;
 }
 
-async function searchVideoDirectLink(videoDocument, user){
+async function searchVideoDirectLink(videoDocument, myCollection, user){
   const url = videoDocument.link
 
   const { data } = await axios.get(url);
@@ -222,7 +220,7 @@ async function searchVideoDirectLink(videoDocument, user){
 
   return videoDirectLink
 }
-async function searchVideoPD(videoDocument, user){
+async function searchVideoPD(videoDocument, myCollection, user){
   const url = videoDocument.link;
   const response = await axios.get(url);
   const $ = cheerio.load(response.data);

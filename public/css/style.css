@@ -11,9 +11,24 @@ main#dashboard {
   overflow: hidden; /* This keeps anything beyond the container's bounds under wraps. */
   text-overflow: ellipsis; /* This adds a nice '...' to signify there's more to see. */
 }
-
+.slider-container {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* For the smooth scrolling on iOS devices */
+}
+.slider-container::-webkit-scrollbar {
+  display: none; /* Because scrollbars are so last season */
+}
+.card {
+  flex: 0 0 auto; /* This magic trick keeps our cards in line */
+  margin-right: 15px; /* Adds a little space between our runway models */
+}
+.video-container video{
+  background-color: black;
+}
 .grid-item.col-12 .video-container img,.grid-item.col-12 .video-container video{
-  height:80vh !important;
+  max-height:80vh !important;
 }
 #video-holder .card-title, #mobile-toolbar .card-title{
   color:white;
@@ -182,7 +197,6 @@ li.list-group-item{
 }
 
 #display-history .img-fluid, #osusume-history .img-fluid {
-  width: 100%; /* Ensures the image takes the full width of its container */
   height: 250px; /* Adjust this value to fit your design */
   object-fit: cover; /* This makes sure the image covers the area without stretching */
   object-position: center; /* Keeps the image centered */
@@ -217,9 +231,7 @@ li.list-group-item{
   .floating-chat{
     width: 100vw;
   }
-  .masonry-item .card-title{
-    display:none;
-  }
+
   .slick-slide .card-title{
     display:block !important;
   }

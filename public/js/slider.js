@@ -13,6 +13,7 @@ $(document).ready(function() {
       const currentItemId = $(this).closest('.card-title ').data('id')
       pauseAllVideoExept(currentSlideId)
       muteAllVideo();
+      activeFirstVideo();
       $('.carousel-toolbar').show().addClass('d-flex')
 
       destroyMasonryLayout();
@@ -86,7 +87,7 @@ function activateCarousel(currentItemId) {
   });
   removeGridDesign(cards)
   cards.each(function() {
-    $(this).find('.video-container').css("height","80vh")
+    $(this).find('.video-container').css("max-height","80vh").css("width","100vw")
   });
   // And let's give the cards a bit of breathing room
   cards.css({
@@ -112,7 +113,7 @@ function deactivateCarousel() {
   });
   
   cards.each(function() {
-    $(this).find('.video-container').css("height","100%")
+    $(this).find('.video-container').css("height","100%").css("width","100%")
   });
   // And let the cards slump back into their natural state
   cards.css({
@@ -162,4 +163,7 @@ function muteAllVideo(){
   // Toggle the icon visibility
   $('.fa-volume-up').addClass('d-none');
   $('.fa-volume-off').removeClass('d-none');
+}
+function activeFirstVideo(){
+  $('.custom-carousel-container video').eq(0).trigger('play')
 }

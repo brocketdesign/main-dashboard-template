@@ -484,7 +484,7 @@ async function updateUserScrapInfo(userId, page, searchterm, mode) {
   router.post('/addtofav', async (req, res) => {
     const {video_id,mode}=req.body
     const user = req.user
-    const result = await addUserToFavList(user, video_id,mode)
+    const result = await addUserToFavList(user, video_id, mode)
     if(result.modifiedCount>0){
       res.status(200).json({message:'Add media to favorites.',status:true})
     }else{
@@ -492,24 +492,25 @@ async function updateUserScrapInfo(userId, page, searchterm, mode) {
     }
   })
   router.post('/removeFromFav', async (req, res) => {
-    const {video_id}=req.body
+    const {video_id,mode}=req.body
     const user = req.user
-    const result = await removeUserFromFavList(user, video_id)
+    const result = await removeUserFromFavList(user, video_id, mode)
     if(result.modifiedCount>0){
       res.status(200).json({message:'Remove media from favorites.',status:false})
     }else{
       res.status(200).json({message:'Error when removing media.',status:true})
     }
   })
-  async function removeUserFromFavList(user, video_id) {
+  async function removeUserFromFavList(user, video_id, mode) {
+    const myCollection = `medias_${mode}`
     const videoObjectId = new ObjectId(video_id);
   
     // Log the intent to remove user from the favorite list for debugging
-    console.log(`Attempting to remove user ${user._id} from fav_user_list for video ${videoObjectId}`);
+    //console.log(`Attempting to remove user ${user._id} from fav_user_list for video ${videoObjectId}`);
   
     try {
       // Perform the update operation
-      const updateResult = await global.db.collection('medias').updateOne(
+      const updateResult = await global.db.collection(myCollection).updateOne(
         { _id: new ObjectId(videoObjectId) }, // Use the ObjectId of the video
         { $pull: { fav_user_list: user._id } } // Use $pull to remove the user ID
       );
@@ -538,7 +539,7 @@ async function addUserToFavList(user, video_id,mode) {
   const foundElement = await global.db.collection(myCollection).findOne({_id:new ObjectId(video_id)})
 
   // Log the intent to add user to the favorite list for debugging
-  console.log(`Attempting to add user ${user._id} to fav_user_list for video ${foundElement._id}`);
+  //console.log(`Attempting to add user ${user._id} to fav_user_list for video ${foundElement._id}`);
 
   try {
     // Perform the update operation
@@ -1552,8 +1553,7 @@ router.post('/history', async (req, res) => {
     });
 
     const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
-    const scrapInfo = userInfo.scrapInfo.filter(item => item.mode !== undefined && item.searchterm !== undefined);
-
+    const scrapInfo = userInfo.scrapInfo.filter(item => item.mode !== undefined && item.searchterm !== undefined && parseInt(item.mode) == parseInt(mode));
     const data = mapArrayHistory(medias,scrapInfo,mode)
     const categories = await global.db.collection('category').find({nsfw}).toArray()
     res.json({status:true,data,categories}); 
@@ -1564,18 +1564,15 @@ router.post('/history', async (req, res) => {
 function mapArrayHistory(medias,scrapInfo, mode) {
   let queryMap = {};
   const highestPagePerQuery = scrapInfo.reduce((accumulator, current) => {
-    accumulator[current.searchterm] = current.page;
+    accumulator[current.searchterm.trim()] = current.page;
     return accumulator;
   }, {});
-
   // Iterate through filteredData again, adding items to queryMap only if they are on the highest page for that query
   medias.forEach(item => {
     if (!item.searchterm) return;
 
-    const page = parseInt(item.page);
-
-    if (page === highestPagePerQuery[item.searchterm]) {
       const key = item.searchterm.trim();
+
       if (!queryMap[key]) {
         queryMap[key] = [];
       }
@@ -1583,7 +1580,7 @@ function mapArrayHistory(medias,scrapInfo, mode) {
       if (queryMap[key].length < 4 && item.hide !== true) {
         queryMap[key].push(item);
       }
-    }
+    
   });
   for (let key in queryMap) {
     if (queryMap[key].length === 0) {
