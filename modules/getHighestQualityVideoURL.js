@@ -38,7 +38,7 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
       const medialink = foundElement.webm || foundElement.url
       return medialink; 
     }
-    if (foundElement.mode == "4" ) {
+    if (foundElement.mode == "4" || foundElement.mode == "7" ) {
       return isMedia(foundElement.link) ? foundElement.link : foundElement.thumb; 
     }
     

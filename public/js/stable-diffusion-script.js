@@ -10,8 +10,10 @@ window.onload = function() {
     })
     .then(data => {
       // If data.model is not defined or null, set the default value to "No Model Selected"
-      const modelName = data.model ? data.model : 'No Model Selected';
-      document.getElementById('modelDropdown').innerText = modelName;
+      const modelName = data.model ? data.model : 'picxReal_10';
+      if(!!document.querySelector('#modelDropdown')){
+        document.getElementById('modelDropdown').innerText = modelName;
+      }
     })
     .catch(error => {
       console.error('There has been a problem with your fetch operation:', error);
@@ -278,6 +280,7 @@ function handleGenerateForever() {
 }
 
 
+
 function generateDiffusedImage(option = {}) {
   if($('#generate-button').hasClass('isLoading')){
     return;
@@ -287,15 +290,22 @@ function generateDiffusedImage(option = {}) {
     negativePrompt = $('#negativePrompt-input').val(),
     prompt = $('#prompt-input').val(),
     imagePath = null,
-    aspectRatio = getCurrentActiveAspect()
+    aspectRatio = getCurrentActiveAspect(),
+    isRoop = false,
+    baseFace = null,
+    itemId = null
   } = option;
 
   const API = $('#gen-container').data('api');
-  const API_ENDPOINT = {
+  let API_ENDPOINT = {
     img2img : !API ? '/api/img2img' : `/api/${API}/img2img`,
     txt2img : !API ? '/api/txt2img' : `/api/${API}/txt2img`
   };
-
+  if(isRoop){
+    API_ENDPOINT.img2img = API_ENDPOINT.img2img+'?isRoop=true'
+    API_ENDPOINT.txt2img = API_ENDPOINT.txt2img+'?isRoop=true'
+  }
+  $(`.handle-roop[data-id=${itemId}]`).addClass('loading')
   $('.loader').show();
   $('.isgenerating').addClass('rotate');
   $('#generate-button').hide().addClass('isLoading');
@@ -304,7 +314,7 @@ function generateDiffusedImage(option = {}) {
 
   console.log({tags,negativePrompt,prompt,imagePath,aspectRatio});
 
-  const query = imagePath ? API_ENDPOINT.img2img : API_ENDPOINT.txt2img;
+  let query = imagePath ? API_ENDPOINT.img2img : API_ENDPOINT.txt2img;
   fetch(query, {
     method: 'POST',
     headers: {
@@ -315,7 +325,8 @@ function generateDiffusedImage(option = {}) {
       negative_prompt: '', 
       aspectRatio,
       imagePath: imagePath ? imagePath : null,
-      modelName
+      modelName,
+      baseFace
     })
   })
     .then(response => {
@@ -326,18 +337,44 @@ function generateDiffusedImage(option = {}) {
       return response.json(); // Use response.json() to parse the JSON response
     })
     .then(data => {
+      const mode = parseInt($('.mode-container').data('mode'))
+      if(mode == 7){
+        generateAndUpdate(data,itemId)
+        return
+      }
       generateImage(data)
     })
     .catch(error => {
       console.error('Error generating diffused image:', error);
     })
     .finally(() => {
+      $(`.handle-roop[data-id=${itemId}]`).removeClass('loading')
       $('.loader').hide();
       $('.isgenerating').removeClass('rotate isgenerating');
       $('#generate-button').show()
       $('#generate-button').removeClass('isLoading')
     });
 }
+function generateAndUpdate(data, imageId) {
+  const base64Image = data.image;
+  
+  // Find the .video-container with the specific data-id and append the new image
+  const imgContainer =  $('.video-container[data-id="' + imageId + '"]')
+  const baseImageSrc = imgContainer.attr('src')
+  imgContainer
+      .find('img[data-id="' + imageId + '"]')
+      .attr('data-src',baseImageSrc)
+      .attr('data-roop',`data:image/png;base64, ${base64Image}`)
+      .attr('src',`data:image/png;base64, ${base64Image}`)
+  $('.handle-roop[data-id="' + imageId + '"]')
+    .addClass('done')
+  
+  updateMasonryLayout();
+
+  const $thisCard = imgContainer.closest('.card.info-container')
+  addCardToList($thisCard)
+}
+
 function generateImage(data){
 
   const base64Image = data.image;

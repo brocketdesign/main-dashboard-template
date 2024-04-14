@@ -7,8 +7,9 @@
     position: fixed;
     z-index: 3;
     top: 0;
-    right:0;
-    width: 100vw; 
+    width: auto; 
+    left: 0;
+    right: auto;
   }
   .image-container img {
     height: 70px;

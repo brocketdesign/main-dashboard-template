@@ -88,6 +88,7 @@ function activateCarousel(currentItemId) {
   removeGridDesign(cards)
   cards.each(function() {
     $(this).find('.video-container').css("max-height","80vh").css("width","100vw")
+    $(this).find('.video-container img').css("max-height","80vh")
   });
   // And let's give the cards a bit of breathing room
   cards.css({

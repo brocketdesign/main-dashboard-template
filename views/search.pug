@@ -45,10 +45,10 @@ block dynamicContent
                     video(data-id=data._id, data-src=data.link, style="display:none;" width="100%" controls muted autoplay playsinline)
                   if mode == 8
                     video(data-id=data._id, data-src=data.highestQualityURL, style="display:none;" width="100%" controls muted autoplay playsinline)
-              .setting-not-absolute.card-title.px-3.my-0.bg-white(data-id=data._id)
+              .setting-not-absolute.card-title.px-3.my-0.bg-white.d-flex(data-id=data._id)
                 if data.title
                   p.my-0.one-line=data.title 
-                .row.justify-content-start.flex-row.my-2(style="height:100%")
+                .row.justify-content-start.flex-row.my-2.w-100(style="height:100%;overflow: auto;")
                   .col-12.text-start(style="overflow:hidden")
                     a.expand(href=`/dashboard/app/${mode}?searchterm=${data.subreddit}`)=data.subreddit
                   .col-12.text-start.justify-content-between.d-flex
@@ -66,13 +66,16 @@ block dynamicContent
                       i.fas.fa-link
                     if mode == 2 && data.extractor == 'scrolller' || mode == 5
                       - moreLink = (mode == 5 ? data.moreLink : `/dashboard/app/${mode}?searchterm=${data.link}/discover`)
-                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=moreLink)
+                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target='_blank' href=moreLink)
                         i.fas.fa-plus-square    
                     if mode == 7
-                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=`/dashboard/app/${mode}?searchterm=${data.isGallery ? data.link : data.alt}`)
-                        i.fas.fa-plus-square    
+                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target='_blank' href=`/dashboard/app/${mode}?searchterm=${data.isGallery ? data.link : data.alt}`)
+                        i.fas.fa-plus-square   
+                      button.handle-roop.btn.btn-light.shadow-0.border.border-0.m-1(type="button", data-id=data._id)
+                        i.fas.fa-meh-blank
+                        .spinner-border.spinner-border-sm
                     else 
-                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(href=`/dashboard/app/${mode}?searchterm=${data.title || data.alt}`)
+                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target='_blank' href=`/dashboard/app/${mode}?searchterm=${data.title || data.alt}`)
                         i.fas.fa-plus-square  
                     button.expand-card.btn.btn-light.shadow-0.border.border-0.m-1(type="button")
                         i.fas.fa-expand

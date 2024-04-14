@@ -1,9 +1,10 @@
 const { ObjectId } = require('mongodb');
 const { Configuration, OpenAIApi } = require('openai');
 const puppeteer = require('puppeteer');
-const fs = require('fs');
+const sharp = require('sharp');
+const fs = require('fs')//.promises;
+const axios = require('axios');
 const path = require('path');
-const axios = require('axios'); // You'll need to install axios: npm install axios
 const { createParser } = require('eventsource-parser');
 const fetch = require('node-fetch');
 const https = require('https');
@@ -526,20 +527,35 @@ function generateFilePathFromUrl(download_directory,url,title='dl'){
   let filePath = path.join(download_directory, fileName);
   return {fileName,filePath}
 }
-async function downloadFileFromURL(filePath,url) {
-  // If it's not a YouTube video, download it directly
-  const response = await axios.get(url, { responseType: 'stream', maxContentLength: 10 * 1024 * 1024 });
-  //console.log('Received response for URL:', url);
+
+async function downloadFileFromURL(filePath, url) {
+  let response;
+  try {
+    response = await axios.get(url, {
+      responseType: 'stream',
+      maxContentLength: 10 * 1024 * 1024
+    });
+  } catch (error) {
+    console.error("Error fetching the URL:", error);
+    throw error;
+  }
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to download: status code ${response.status}`);
+  }
 
   const writer = fs.createWriteStream(filePath);
   response.data.pipe(writer);
 
-  await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     writer.on('finish', resolve);
-    writer.on('error', reject);
+    writer.on('error', error => {
+      console.error("Error writing the file:", error);
+      reject(error);
+    });
   });
-
 }
+
 async function downloadYoutubeVideo(download_directory,filePath,video_id,myCollection) {
   const info = await ytdl.getInfo(video_id);
   //console.log(info.formats);
@@ -618,7 +634,14 @@ function isMedia(url) {
 
   return isMediaUrl;
 }
+async function calculatePayloadWidth(image, targetHeight) {
+  const metadata = await image.metadata();
+  // Calculate the new width based on the target height and maintaining the aspect ratio
+  const aspectRatio = metadata.width / metadata.height;
+  const newWidth = Math.round(targetHeight * aspectRatio);
 
+  return newWidth
+}
 module.exports = { 
   formatDateToDDMMYYHHMMSS, 
   saveData ,
@@ -639,5 +662,6 @@ module.exports = {
   isMedia,
   downloadYoutubeVideo,
   getFileExtension,
-  findTotalPage
+  findTotalPage,
+  calculatePayloadWidth
 }

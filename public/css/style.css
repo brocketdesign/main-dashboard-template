@@ -20,6 +20,15 @@ main#dashboard {
 .slider-container::-webkit-scrollbar {
   display: none; /* Because scrollbars are so last season */
 }
+.handle-roop .spinner-border{
+  display: none;
+}
+.handle-roop.loading .spinner-border{
+  display: inline-block;
+}
+.handle-roop.loading i{
+  display: none;
+}
 .card {
   flex: 0 0 auto; /* This magic trick keeps our cards in line */
   margin-right: 15px; /* Adds a little space between our runway models */

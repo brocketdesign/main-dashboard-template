@@ -294,6 +294,8 @@ $(document).ready(function() {
     handleIframe()
     
     initializeExtractor();
+
+    handleRoop();
 });
 
 function scrollBottomWindow(){
@@ -640,7 +642,8 @@ function downloadAndShow($thisCard){
       // Mark the card as done to avoid processing it again
       $thisCard.addClass('done');
 
-      if($thisCard.find('.instant-play-button').length>0){
+      const mode = parseInt($('.mode-container').data('mode'))
+      if($thisCard.find('.instant-play-button').length>0 || mode == 7){
         instantPlay(id)
         return
       }
@@ -811,7 +814,6 @@ const handleDownloadButton = () => {
     var id = $(this).data('id') || $(this).closest('.info-container').data('id');
     var title = $(this).data('title') || $(this).closest('.info-container').data('title');
 
-    console.log('Download button clicked for:', {id,title});
     var $buttonContainer = $(this);
       if ($buttonContainer.hasClass('done') ) {
         console.log('Card has already been processed.');
@@ -839,7 +841,6 @@ const handleDownloadButton = () => {
       // Make a request to download the video
       const mode = $('#range').data('mode')
       $.post('http://192.168.10.115:3100/api/dl', { video_id: id ,title,mode}, function(response) {
-        console.log('Download API Response:', response);
         displayMedia(response.url,id)
         $spinner.remove();
 
@@ -2890,7 +2891,6 @@ function handleAudio(){
 function handleIframeActress(itemID){
     const element = $(`.iframe-container[data-id="${itemID}"]`);
     const iframURL = element.attr('data-link')
-    console.log({iframURL})
     const iframeHTML = `<iframe src="${iframURL}" width="600" height="400"></iframe>`
     element.append(iframeHTML)
 }
@@ -2904,6 +2904,11 @@ function handleInstantVideo() {
     $('.instant-play-button.now').click()
 }
 function instantPlay(dataId){
+    const mode = parseInt($('.mode-container').data('mode'))
+    if(mode == 7){
+        directDownloadFileFromURL(dataId)
+        return
+    }
     const $thisCard = $('.info-container[data-id="' + dataId + '"]')
     $thisCard.find('.card-body-over').addClass('hover-hide').removeClass('d-flex');
     $('img.card-img-top[data-id="' + dataId + '"]').hide();
@@ -2920,7 +2925,7 @@ function instantPlay(dataId){
 function directDownloadFileFromURL(dataId){
     const mode = $('#range').data('mode')
     $.post('http://192.168.10.115:3100/api/dl', { video_id: dataId,mode }, function(response) {
-        console.log('Download API Response:', response);
+        //console.log('Download API Response:', response);
       })
 }
 function handleHistory(){
@@ -3177,4 +3182,31 @@ function backtothetop(){
         $('html, body').animate({scrollTop: 0}, 500);
         return false;
     });
+}
+
+function handleRoop(){
+    $(document).on('click','.handle-roop',function(){
+        const itemId = $(this).data('id');
+        const imgContainer = $('.video-container[data-id="' + itemId + '"]')
+        if($(this).hasClass('done')){
+            $(`.video-container img[data-id=${itemId}]`).attr('src',imgContainer.attr('data-src'))
+            return
+        }
+        if(imgContainer.data('roop')){
+            $(`.video-container img[data-id=${itemId}]`).attr('src',imgContainer.data('roop'))
+            return
+        }
+        const mode = $('.mode-container').data('mode')
+        $.post('/api/intemInfo',{
+            mode,
+            itemId
+        },function(response){
+            if(response.status){
+                const imagePath =  './public'+response.medias[0].filePath
+                const baseFace = `./public/downloads/downloaded_images/face_5.jpg`
+                generateDiffusedImage({imagePath,aspectRatio:"2:3",isRoop:true,baseFace,itemId})
+            }
+        })
+
+    })
 }

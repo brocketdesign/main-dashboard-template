@@ -17,6 +17,7 @@ const {
   saveDataSummarize,
   generateFilePathFromUrl,
   getOpenaiTypeForUser,
+  calculatePayloadWidth
 } = require('../services/tools')
 const fetch = require('node-fetch');
 const FormData = require('form-data');
@@ -1006,39 +1007,68 @@ router.post('/img2img', async (req, res) => {
   const aspectRatio = req.body.aspectRatio;
   const imagePath = req.body.imagePath;
 
+  const isRoop = req.query.isRoop == 'true'
+  const baseFacePath = req.body.baseFace
+  const roopScriptPath = `/home/maho/stable-diffusion-webui/models/roop/inswapper_128.onnx`
   // Validate the imagePath
   if (!imagePath) {
     return res.status(400).send('An image path must be provided for img2img.');
   }
 
-  // Calculate the width based on the aspect ratio and the fixed height of 768
-  const width = getWidthForAspectRatio(768, aspectRatio);
-
   try {
-    let image
+    let image; // This will hold the sharp object
+    
     try {
       // Let's see if this flies as a URL
       new URL(imagePath);
       const response = await axios.get(imagePath, { responseType: 'arraybuffer' });
       image = sharp(response.data);
     } catch (error) {
-        // Oops! Not a URL, must be a local path!
-        image = sharp(imagePath);
+      // Oops! Not a URL, must be a local path!
+      image = sharp(imagePath);
     }
-
-
-    const payload = {
-      init_images: [image],
+    // Calculate the width based on the aspect ratio and the fixed height of 768
+    const metadata = await image.metadata();
+    // Prepare the payload
+    let payload = {
+      init_images: [image],  // Using the sharp object here
       prompt,
       negative_prompt,
-      width,
-      height: 768,
-      strength: 0.8,              // Transformation strength of the reference image
-      num_inference_steps: 50,    // Number of denoising steps
-      guidance_scale: 7.5,        // Guidance scale value
-      num_images_per_prompt: 1,   // Number of images to generate per prompt
-      eta: 0.0,                        
+      width:metadata.width,
+      height: metadata.height,
+      strength: 0.8,
+      num_inference_steps: 50,
+      guidance_scale: 7.5,
+      num_images_per_prompt: 1,
+      eta: 0.0,
     };
+    // Conditionally add scripts for isRoop
+    if (isRoop) {
+          
+      let baseFace64; // This will hold the base64 string
+      try {
+        // Let's see if this flies as a URL
+        new URL(baseFacePath);
+        const response = await axios.get(baseFacePath, { responseType: 'arraybuffer' });
+        baseFace = sharp(response.data);
+        baseFace64 = await baseFace.clone() // Clone the sharp object to use for base64 conversion
+          .jpeg() // Convert to JPEG
+          .toBuffer()
+          .then(buffer => buffer.toString('base64'));
+      } catch (error) {
+        // Oops! Not a URL, must be a local path!
+        baseFace = sharp(baseFacePath);
+        baseFace64 = await baseFace.clone() // Clone the sharp object to use for base64 conversion
+          .jpeg() // Convert to JPEG
+          .toBuffer()
+          .then(buffer => buffer.toString('base64'));
+      }
+      const args = [baseFace64, true, '0', roopScriptPath, 'CodeFormer', 1, null, 1, 'None', false, true];
+      payload["alwayson_scripts"] = { "roop": { "args": args } };
+      payload["denoising_strength"] =  0.05
+      payload["num_inference_steps"] =  2
+    }
+    
 
     // Call the img2img method of your API
     const result = await global.sdapi.img2img(payload);
@@ -1541,6 +1571,21 @@ async function scrapeWebsiteTopPageFromOtherServer(mode, nsfw, userId,extractor)
     //throw error; // Optionally throw the error to be handled by the caller
   }
 }
+router.post('/intemInfo', async (req, res) => {
+
+  const {mode,itemId} = req.body
+  const userId = new ObjectId(req.user._id);
+  try {
+      const medias = await findDataInMedias(userId, false, {
+        mode: mode,
+        _id : new ObjectId(itemId)
+      });
+      res.json({status:true,medias}); 
+  } catch (error) {
+    console.log(error)
+    res.json({status:false});
+  }
+});
 router.post('/history', async (req, res) => {
   const {mode} = req.body
   const userId = new ObjectId(req.user._id);

@@ -51,7 +51,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
       
           if(!url.includes('http')){
             saveData(req.user, video_id, myCollection, {isdl:true})
-            res.status(200).json({ message: 'ダウンロードされました' });
+            //res.status(200).json({ message: 'ダウンロードされました' });
             return;
           }
       
