@@ -360,7 +360,8 @@ function generateAndUpdate(data, imageId) {
   
   // Find the .video-container with the specific data-id and append the new image
   const imgContainer =  $('.video-container[data-id="' + imageId + '"]')
-  const baseImageSrc = imgContainer.attr('src')
+  const baseImageSrc = imgContainer.find('img[data-id="' + imageId + '"]').attr('src')
+
   imgContainer
       .find('img[data-id="' + imageId + '"]')
       .attr('data-src',baseImageSrc)

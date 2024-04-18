@@ -558,7 +558,7 @@ function LazyLoad(){
     $('.card.info-container').each(function(){
         const isVisible = checkIfElementIsInViewport($(this))
         if(
-            isVisible && !$(this).hasClass('lazyLoad') && isFavorite() && $('#search').data('mode') != 1 
+            isVisible && !$(this).hasClass('lazyLoad') && $('#search').data('mode') != 1 
             || isVisible && !$(this).hasClass('lazyLoad') && isLargeScreen() &&  $('#search').data('mode') != 1 
             || isVisible && !$(this).hasClass('lazyLoad') && isFullScreen
         ){
@@ -2903,7 +2903,7 @@ function handleInstantVideo() {
     });
     $('.instant-play-button.now').click()
 }
-function instantPlay(dataId){
+async function instantPlay(dataId){
     const mode = parseInt($('.mode-container').data('mode'))
     if(mode == 7){
         directDownloadFileFromURL(dataId)
@@ -3184,12 +3184,31 @@ function backtothetop(){
     });
 }
 
-function handleRoop(){
-    $(document).on('click','.handle-roop',function(){
+function handleRoop() {
+    $(document).on('click', '.handle-roop', function() {
         const itemId = $(this).data('id');
+        
+        // Check if the element has the 'global' class
+        if ($(this).hasClass('global')) {
+            // Trigger the function for each button without the 'global' class
+            $('.handle-roop').not('.global').each(function() {
+                downloadAndGenerate($(this).data('id'));
+            });
+        } else {
+            downloadAndGenerate(itemId);
+        }
+    });
+}
+
+function downloadAndGenerate(itemId){
+    instantPlay(itemId).then(()=>{
         const imgContainer = $('.video-container[data-id="' + itemId + '"]')
+        const imgElement = imgContainer.find(`img[data-id=${itemId}]`)
+        const originalSrc = imgElement.attr('data-src')
+
         if($(this).hasClass('done')){
-            $(`.video-container img[data-id=${itemId}]`).attr('src',imgContainer.attr('data-src'))
+            imgElement.attr('src',originalSrc)
+            $(this).removeClass('done')
             return
         }
         if(imgContainer.data('roop')){
@@ -3207,6 +3226,5 @@ function handleRoop(){
                 generateDiffusedImage({imagePath,aspectRatio:"2:3",isRoop:true,baseFace,itemId})
             }
         })
-
     })
 }

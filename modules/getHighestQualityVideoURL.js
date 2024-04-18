@@ -203,6 +203,8 @@ async function searchVideoYoutube( videoDocument, myCollection, user, stream){
     filter: 'audioandvideo', 
     quality: 'highestaudio'
   });
+  
+
   await updateSameElements(videoDocument, myCollection, {streamingUrl:format.url,last_scraped:new Date()})
 
   //console.log('Format found!', format.url);

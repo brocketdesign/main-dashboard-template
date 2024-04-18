@@ -84,7 +84,7 @@ function activateCarousel(currentItemId) {
       inset: "0",
       "z-index":2,
       "background-color": "#000000d4"
-  });
+  }).addClass('fullScreen');
   removeGridDesign(cards)
   cards.each(function() {
     $(this).find('.video-container').css("max-height","80vh").css("width","100vw")
@@ -111,7 +111,7 @@ function deactivateCarousel() {
       overflowY: '',
       "z-index":'',
       "background-color": ""
-  });
+  }).removeClass('fullScreen');
   
   cards.each(function() {
     $(this).find('.video-container').css("height","100%").css("width","100%")

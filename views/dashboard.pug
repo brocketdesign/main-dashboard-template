@@ -78,6 +78,10 @@ block mainContent
         
       button.btn.btn-primary.me-2(onclick='toggleFloatingChat()')
         i.fas.fa-robot
+      if mode == 7
+        button.handle-roop.global.btn.btn-primary.shadow-0.border.border-0.me-2(type="button")
+          i.fas.fa-meh-blank
+          .spinner-border.spinner-border-sm
       button.btn.btn-primary.me-2(onclick='selectCountry()')
         i.fas.fa-globe
       .d-flex

@@ -201,6 +201,12 @@ button.fav i {
 li.list-group-item{
   cursor:pointer;
 }
+.fullScreen .custom-carousel-item.grid-item {
+  width: 100%;
+}
+.fullScreen .masonry-item.custom-carousel-item.grid-item {
+  padding: 0 !important;
+}
 .hashtag-inputs input, .chapters-inputs input, .keyword-inputs input{
   min-width: 150px;
 }

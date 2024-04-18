@@ -52,8 +52,8 @@ block dynamicContent
                   .col-12.text-start(style="overflow:hidden")
                     a.expand(href=`/dashboard/app/${mode}?searchterm=${data.subreddit}`)=data.subreddit
                   .col-12.text-start.justify-content-between.d-flex
-                    button.expand.delete-button.btn.btn-light.border.border-0.m-1.shadow-0(type="button", data-id=data._id)
-                        i.fas.fa-trash-alt
+                    button.expand-card.btn.btn-light.shadow-0.border.border-0.m-1(type="button")
+                        i.fas.fa-expand
                     button.d-none.expand-button.btn.btn-light.border.border-0.m-1.shadow-0(type="button", data-id=data._id)
                         i.fas.fa-expand
                     if data.link && data.link.includes('redgif')
@@ -77,8 +77,8 @@ block dynamicContent
                     else 
                       a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target='_blank' href=`/dashboard/app/${mode}?searchterm=${data.title || data.alt}`)
                         i.fas.fa-plus-square  
-                    button.expand-card.btn.btn-light.shadow-0.border.border-0.m-1(type="button")
-                        i.fas.fa-expand
+                    button.expand.delete-button.btn.btn-light.border.border-0.m-1.shadow-0(type="button", data-id=data._id)
+                        i.fas.fa-trash-alt
 
       if medias2 && medias2.length > 0 && mode == 'actresses'
         .card.bg-transparent.shadow-0
@@ -99,7 +99,7 @@ block dynamicContent
   if scrapedData && scrapedData.length > 0 
     - var startPage = Math.max(1, page - 2);
     - var endPage = Math.min(totalPage, page + 2);
-    .pagination.position-fixed.d-flex.justify-content-center.w-100(style="bottom:10px;right:10px;left:10px")
+    .pagination.my-4.d-flex.justify-content-center.w-auto
       if page > 1
         .btn.btn-dark.border.load-more(type="button",class=page<=1?'d-none':'', data-fav=favmode ? "true" : "false", data-userId=user._id data-mode=mode, data-page=page<=1?1:page-1, data-searchterm=searchterm, data-nsfw= user.nsfw)             
           i.fas.fa-angle-left

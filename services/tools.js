@@ -148,7 +148,7 @@ async function findDataInMedias(userId, page, query, categoryId = null) {
   const mediasColelction = global.db.collection(myCollection);
 
   if(!page){
-    const medias = await mediasColelction.find(query).toArray();
+    const medias = await mediasColelction.find(query).sort({_id:-1}).toArray();
     return medias;
   }else{
     page_number = parseInt(page) || 1;
