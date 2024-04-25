@@ -113,8 +113,15 @@ async function allImagesLazyLoaded(page) {
   });
 }
 async function isElementPresent(page, selector) {
-  const element = await page.$(selector);
-  return element !== null;
+  try {
+    const isPresent = await page.evaluate(selector => {
+      return document.querySelector(selector) !== null;
+    }, selector);
+    return isPresent;
+  } catch (error) {
+    console.error(`Something funky happened while checking the element: ${error}`);
+    return false;
+  }
 }
 
 

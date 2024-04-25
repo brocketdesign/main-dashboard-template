@@ -44,7 +44,7 @@ block dynamicContent
                   if mode == 6
                     video(data-id=data._id, data-src=data.link, style="display:none;" width="100%" controls muted autoplay playsinline)
                   if mode == 8
-                    video(data-id=data._id, data-src=data.highestQualityURL, style="display:none;" width="100%" controls muted autoplay playsinline)
+                    video(data-id=data._id, data-src=data.highestQualityURL, style="display:none;" width="100%" controls muted autoplay loop playsinline)
               .setting-not-absolute.card-title.px-3.my-0.bg-white.d-flex(data-id=data._id)
                 if data.title
                   p.my-0.one-line=data.title 

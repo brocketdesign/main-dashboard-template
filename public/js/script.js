@@ -260,7 +260,9 @@ $(document).ready(function() {
 
     handleAudio();
     handleHistory();
-    handleInstantVideo();
+
+   //handleInstantVideo();
+
     activateClickOnVisibleButtons();
     handleFavorite();
     handleSelectCountry();
@@ -503,22 +505,30 @@ function isLargeScreen() {
     return window.innerWidth > 1024; // Define large screen size threshold here
 }
 $(document).ready(function() {
-    // Call LazyLoad on page load
+    // Function to handle debouncing
+    function debounce(func, wait, immediate) {
+        let timeout;
+        return function() {
+            const context = this, args = arguments;
+            const later = function() {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+            const callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
+    }
+
+    // Call LazyLoad once on page load
     LazyLoad();
 
-    // Call LazyLoad on scroll
-    $('html, body,.custom-carousel-container').on('scroll',function() {
-        LazyLoad();
-    });
-    $(window).on('scroll',function() {
-        LazyLoad();
-    });
-
-    // Call LazyLoad on window resize
-    $(window).resize(function() {
-        LazyLoad();
-    });
+    // Debounced LazyLoad call on scroll and resize
+    const debouncedLazyLoad = debounce(LazyLoad, 100); // Adjust debounce time as needed
+    $(window).on('scroll resize', debouncedLazyLoad);
 });
+
 function controlVideoStatus(){
     $(document).on('play pause', 'video', function(event) {
       // We log the event type to see if it's playing or pausing
@@ -2911,12 +2921,14 @@ async function instantPlay(dataId){
     }
     const $thisCard = $('.info-container[data-id="' + dataId + '"]')
     $thisCard.find('.card-body-over').addClass('hover-hide').removeClass('d-flex');
-    $('img.card-img-top[data-id="' + dataId + '"]').hide();
+    
     var videoElement = $('video[data-id="' + dataId + '"]');
     videoElement.attr('src', videoElement.attr('data-src'));
-    videoElement.show();
+    
     
     videoElement.on('loadeddata', function() {
+        $('img.card-img-top[data-id="' + dataId + '"]').hide();
+        videoElement.show();
         updateMasonryLayout()
         $thisCard.find('.video-container').addClass('loaded')
     })
@@ -2993,6 +3005,12 @@ function displayHistory(data) {
     $('#display-history').on('scroll', function() {
         $('.lazy').lazy('update');
     });
+    var lazyItems = $('#display-history .slider-container').slice(0, 4);
+    for (var i = 0; i < lazyItems.length; i++) {
+        $(lazyItems[i]).find('.lazy').lazy('update');
+    }
+
+    
 }
 function stringToID(str) {
     // First, trim the string to remove any leading or trailing spaces

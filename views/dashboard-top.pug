@@ -133,13 +133,13 @@ block mainContent
         .row
             .col
                 h5.fw-bold メモ
-                .row.row-cols-1.row-cols-md-3.my-3
+                .row.row-cols-1.row-cols-md-3.row-cols-lg-4.my-3
                     .col
                         textarea.form-control(name="memo", placeholder="メモを入力してください")
                         button#memo.btn.btn-primary.w-100(type="submit") 新しいメモを保存する
                     if memos && memos.length > 0
                         each memo in memos
-                            .col
+                            .col.my-2
                                 .card(data-id=memo._id)
                                     .remove-memo.position-absolute(type="button" style="right: 10px;")
                                         i.fas.fa-times

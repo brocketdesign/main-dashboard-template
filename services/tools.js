@@ -237,7 +237,7 @@ const fetchOllamaCompletion = async (messages, res) => {
         },
         method: "POST",
         body: JSON.stringify({
-          model: 'mistral-openorca',
+          model: 'llama3',
           messages,
           temperature: 0.75,
           top_p: 0.95,
@@ -379,7 +379,7 @@ async function getChatResponse(messages, max_tokens) {
         },
         method: "POST",
         body: JSON.stringify({
-          model: 'mistral-openorca',
+          model: 'llama3',
           messages,
           temperature: 0.75,
           top_p: 0.95,
