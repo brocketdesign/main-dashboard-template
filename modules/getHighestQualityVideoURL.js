@@ -1,7 +1,7 @@
 const { ObjectId } = require('mongodb');
 const puppeteer = require('puppeteer');
 const ytdl = require('ytdl-core');
-const { saveData, updateSameElements, lessThan24Hours, isMedia } = require('../services/tools')
+const { saveData, updateSameElements, lessThan24Hours, isMedia, takePageScreenshot } = require('../services/tools')
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 const axios = require('axios');
 const cheerio = require('cheerio');
@@ -53,7 +53,6 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
       return foundElement.link
     }
     const result = await searchVideo(foundElement, myCollection, user, stream);
-
     if(!foundElement.isdl_process){
       global.db.collection(myCollection).updateOne({_id:new ObjectId(video_id)},{$set:{isdl_process:true}})
       .then(()=>{
@@ -79,7 +78,7 @@ async function downloadMedia(myCollection,foundElement){
           global.db.collection(myCollection).updateOne({_id:new ObjectId(foundElement._id)},{$set:{isdl_process:false}})
         })
         .catch(error => {
-          console.error('There was an error!', error);
+          console.error('There was an error!');
         });        
 }
 
@@ -91,6 +90,9 @@ async function searchVideo(videoDocument, myCollection, user, stream) {
   }
   if( videoLink.includes('porndig')){
     return await searchVideoPD(videoDocument, myCollection, user)
+  }
+  if( videoLink.includes('hqporner')){
+    return await searchVideoHQPorner(videoDocument, myCollection, user)
   }
   if( videoLink.includes('youtube') ){
     return await searchVideoYoutube(videoDocument, myCollection, user, stream)
@@ -111,7 +113,7 @@ async function searchVideo(videoDocument, myCollection, user, stream) {
 
 async function searchVideoScroller(videoDocument, myCollection, user) {
   const videoURL = videoDocument.link;
-  const browser = await puppeteer.launch({ headless: 'new' });
+  const browser = await puppeteer.launch({ headless: 'new' , args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']});
   const defaultPage = await browser.newPage();
   console.log('searchVideoScroller',{videoURL})
   try {
@@ -168,7 +170,7 @@ async function searchVideoUrl( videoDocument, myCollection, user) {
   if(!videoDocument.link.includes('http')){
     videoURL = `${process.env.DEFAULT_URL}${videoDocument.link}`;
   }
-  const browser = await puppeteer.launch({ headless: false });
+  const browser = await puppeteer.launch({ headless: false , args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']});
   const page = await browser.newPage();
   await page.setRequestInterception(true);
 
@@ -212,16 +214,19 @@ async function searchVideoYoutube( videoDocument, myCollection, user, stream){
 }
 
 async function searchVideoDirectLink(videoDocument, myCollection, user){
-  const url = videoDocument.link
+  const url = videoDocument.link;
 
   const { data } = await axios.get(url);
 
   const $ = cheerio.load(data);
 
-  const videoDirectLink = $('a').attr('href')
+  const videoLink = $('a').filter(function() {
+    return $(this).attr('href') && $(this).attr('href').includes('video');
+  }).attr('href'); 
 
-  return videoDirectLink
+  return videoLink; 
 }
+
 async function searchVideoPD(videoDocument, myCollection, user){
   const url = videoDocument.link;
   const response = await axios.get(url);
@@ -254,8 +259,66 @@ async function searchVideoPD(videoDocument, myCollection, user){
       console.error('Failed to parse vc JSON string:', error);
     }
   }
-  
-  return vcData.sources[0].src; // This will contain the parsed JSON, or undefined if not found/parsed
+  const highestQualityURL = vcData.sources[0].src
+  await updateSameElements(videoDocument, myCollection, {highestQualityURL:highestQualityURL,last_scraped:new Date()})
+  return highestQualityURL; // This will contain the parsed JSON, or undefined if not found/parsed
 
 }
+async function searchVideoHQPorner(videoDocument, myCollection, user) {
+  try {
+    const url = videoDocument.link;
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+    
+    // Correct the protocol and format the URL properly
+    const videoPage = 'https:' + $('#playerWrapper iframe').attr('src');
+    // Fetch the highest quality video source and handle it
+    const highestQualityVideoSource = await fetchHighestQualityVideoSource(videoPage);
+    console.log('Highest quality video source:', highestQualityVideoSource);
+    await updateSameElements(videoDocument, myCollection, {highestQualityURL:highestQualityVideoSource,last_scraped:new Date()})
+    return highestQualityVideoSource;
+  } catch (error) {
+    console.log(error)
+
+    console.error('Error during video search or fetching the video source');
+    return null;  // Return null or handle error appropriately
+  }
+}
+async function fetchHighestQualityVideoSource(url) {
+    const browser = await puppeteer.launch({ headless: false , args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']});
+    const page = await browser.newPage();
+    await page.goto(url);
+    const highestQualitySource = await page.evaluate(() => {
+        const videoElement = document.querySelector('video#flvv');
+        if (!videoElement) return null;
+
+        const sources = Array.from(videoElement.querySelectorAll('source'));
+        const qualityMap = {
+            '1080p Full HD': 3,
+            '720p HD': 2,
+            '360p': 1
+        };
+
+        let maxQuality = 0;
+        let bestSource = null;
+
+        sources.forEach(source => {
+            const qualityKey = source.getAttribute('title');
+            const qualityScore = qualityMap[qualityKey];
+
+            if (qualityScore > maxQuality) {
+                maxQuality = qualityScore;
+                bestSource = source.getAttribute('src');
+            }
+        });
+
+        return 'https:'+bestSource;
+    });
+
+    await browser.close();
+    return highestQualitySource;
+}
+
+
+
 module.exports = getHighestQualityVideoURL;

@@ -32,7 +32,12 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         downloadFileFromURL,
         downloadYoutubeVideo } = require('./services/tools')
   const ManageScraper = require('./modules/ManageScraper');
-  const {getVideoFromSB,scrapeWebsiteTopPage,getVideoFromPD} = require('./modules/getVideoFromSB')
+  const {
+    getVideoFromSB,
+    scrapeWebsiteTopPage,
+    getVideoFromPD,
+    getVideoFromHQP
+  } = require('./modules/getVideoFromSB')
 
     router.post('/dl', async (req, res) => {
         let {video_id,title,mode,myCollection} = req.body;
@@ -46,7 +51,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
             res.status(404).json({ error: 'Video URL not found.' });
             return;
           }
-      
+
           res.status(200).json({ url, message: 'Start Download' }); 
       
           if(!url.includes('http')){
@@ -63,7 +68,8 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           }
       
           const {fileName,filePath} = generateFilePathFromUrl(download_directory,url,title)
-      
+          console.log('Start Download:', fileName);
+
           // Create download folder if it doesn't exist
           await fs.promises.mkdir(download_directory, { recursive: true });
       
@@ -92,7 +98,6 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           //res.status(200).json({ message: 'アイテムが成功的に保存されました。' });
       
         } catch (err) {
-          console.log(err)
           console.log('Error occurred while downloading file:', err.message);
           //res.status(500).json({ error: err.message });
         }
@@ -182,8 +187,9 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         const {query, mode, nsfw, url, pageNum, userId}=req.body
         const result1 =  getVideoFromSB(query, mode, nsfw, url, pageNum, userId)
         const result2 =  getVideoFromPD(query, mode, nsfw, url, pageNum, userId)
-
-        const combinedresult = await Promise.all([result1,result2])
+        const result3 =  getVideoFromHQP(query, mode, nsfw, url, pageNum, userId)
+        
+        const combinedresult = await Promise.all([result1,result2,result3])
 
         const result = combinedresult.flat();
         res.status(200).json({result})

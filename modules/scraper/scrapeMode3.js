@@ -310,13 +310,12 @@ async function searchGifImage(query, isReset = false, topPage = false) {
 
   tab.on('response', processGifResponse);
 
-
+  let pageStatus = 0
   while (gifResponseCount < maxGifCount) {
     const pageUrl = topPage == true ? generateTopPageUrl() : generateUrl(query, page)
     await tab.goto(pageUrl, { waitUntil: 'networkidle2' });
-    let pageStatus = false
     try {
-      pageStatus = await scrollToBottom(tab);
+      await scrollToBottom(tab);
     } catch (error) {
       console.log('End scrolling:', error);
     }
@@ -324,7 +323,8 @@ async function searchGifImage(query, isReset = false, topPage = false) {
     //await processGifResponseQueue();
     console.log(`${gifResponseCount} new images on page ${page}`);
 
-    if (gifResponseCount === 0 && pageStatus) {
+    if (gifResponseCount === 0 && pageStatus <= 2) {
+      pageStatus ++
       page++;
     } else {
       await saveLastPageIndex(page, startTime, query);

@@ -642,7 +642,28 @@ async function calculatePayloadWidth(image, targetHeight) {
 
   return newWidth
 }
+/**
+ * Takes a screenshot of a given Puppeteer page and saves it to a specific path.
+ * @param {Object} page - The Puppeteer page object to capture.
+ */
+async function takePageScreenshot(page) {
+  // Generate a random ID for uniqueness
+  const randomId = Math.random().toString(36).substring(2, 15);
+
+  // Construct the file path
+  const filePath = path.join(__dirname, '..', 'public', 'downloads', 'debug', `${randomId}.jpg`);
+
+  // Take the screenshot and save it
+  await page.screenshot({
+    path: filePath,
+    type: 'jpeg'
+  });
+
+  console.log(`Screenshot saved to ${filePath}`);
+}
+
 module.exports = { 
+  takePageScreenshot,
   formatDateToDDMMYYHHMMSS, 
   saveData ,
   translateText ,

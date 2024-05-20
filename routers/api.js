@@ -874,7 +874,6 @@ router.get('/current-model', async (req, res) => {
     const currentModel = await global.sdapi.getCurrentModel();
     res.json({ model: currentModel });
   } catch (err) {
-    console.error(err);
     res.status(500).send('Error fetching current model');
   }
 });
@@ -1827,5 +1826,6 @@ function getFileExtension(urlString) {
     const fileExtension = path.extname(filename);
     return fileExtension;
 }
+
 
 module.exports = router;

@@ -95,7 +95,10 @@ async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
   updateUserScrapInfo(user,searchterm,page)
   const result =  await insertInDB(myCollection, scrapedData)
 
-  return result.slice(0,30)
+  if(result && result.length > 30){
+    return result.slice(0,30)
+  }
+  return result
 }
 
 async function updateOrInsert(myCollection,criteria, updateQuery) {

@@ -2,6 +2,9 @@ const puppeteer = require('puppeteer');
 const { ObjectId, GoogleApis } = require('mongodb');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const fs = require('fs');
+const path = require('path');
+const urlLib = require('url');
 
 const getVideoFromPD = (query, mode, nsfw, url, pageNum, userId) => {
   console.log(`Get video from PD`)
@@ -37,6 +40,109 @@ const getVideoFromPD = (query, mode, nsfw, url, pageNum, userId) => {
       console.log(`Error with PD`)
       reject(error);
     }
+  });
+}
+const ext3 = 'hqporner'
+const ext3_title = 'HQPorner'
+const ext3_url = 'https://hqporner.com/'
+const ext3_url2 = 'https://hqporner.com'
+
+const getVideoFromHQP = (query, mode, nsfw, url, pageNum, userId) => {
+  console.log(`Get video from ${ext3_title}`);
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (url) {
+        if (url.includes('http') && !url.includes(ext3)) {
+          resolve([]);
+          return;
+        }
+        url = url.includes('http') ? new URL(url).href : `${ext3_url}?q=${query}&p=${pageNum}`;
+      } else {
+        url = ext3_url;
+      }
+      const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+
+      const { data } = await axios.get(url);
+      const $ = cheerio.load(data);
+
+      const promises = []; // Array to hold all the promises
+      $('.image.featured.non-overlay.atfib.n8hu6s').each((i, element) => {
+        const item = {};
+        item.link = ext3_url2 + $(element).attr('href');
+        item.video_id = item.link.split('/')[2].split('-')[0];
+        const imageUrl = matchImageUrl($, element);
+
+        // Instead of waiting here, push the promise to the array
+        const imagePromise = downloadImage(imageUrl).then(filePath => {
+          item.imageUrl = filePath;
+        });
+
+        promises.push(imagePromise.then(() => { // Wait for image download, then finalize the item
+          item.alt = $(element).find('.meta-data-title').text();
+          item.currentPage = url;
+          item.extractor = ext3_title;
+          return item; // Ensure the item is returned after the imageUrl is set
+        }));
+      });
+
+      // Resolve all promises and then resolve the outer promise with the results
+      Promise.all(promises).then(results => {
+        resolve(results);
+      }).catch(error => {
+        reject(error);
+      });
+
+    } catch (error) {
+      console.log(`Error with ${ext3_title}`);
+      reject(error);
+    }
+  });
+};
+
+function matchImageUrl($, item) {
+  // Select the div with the specific class
+  var div = $(item).find('.w403px');
+
+  // Get the 'onmouseleave' attribute value
+  var onmouseleaveAttr = div.attr('onmouseleave');
+  
+  // Update the regex to extract only the URL, stopping before the comma
+  var urlMatch = onmouseleaveAttr.match(/defaultImage\("([^"]+)",/);
+  
+  if (urlMatch && urlMatch[1]) {
+      // URL extracted from the attribute
+      var imageUrl = 'https:'+decodeURIComponent(urlMatch[1]);
+      return imageUrl;
+  } else {
+      console.log("No URL found.");
+      return null; // It's a good practice to return null if nothing is found
+  }
+}
+
+async function downloadImage(imageUrl) {
+  let parsedUrl = urlLib.parse(imageUrl);
+  let baseName = path.basename(parsedUrl.pathname);
+  const imagePath = path.join(__dirname, '..', 'public', 'downloads', 'video_thumbnail', `${baseName}.jpg`); // Modify 'image.jpg' if you need a dynamic name
+  // Fetching the image data
+  const response = await axios({
+      method: 'GET',
+      url: imageUrl,
+      responseType: 'stream'
+  });
+
+  // Saving the image to the filesystem
+  response.data.pipe(fs.createWriteStream(imagePath));
+
+  return new Promise((resolve, reject) => {
+      response.data.on('end', () => {
+          // Returning the path part after 'public'
+          let filePath = imagePath.split('public')[1];
+          resolve(filePath);
+      });
+
+      response.data.on('error', (err) => {
+          reject(err);
+      });
   });
 }
 
@@ -311,4 +417,4 @@ const scrapeWebsiteTopPage = (mode, nsfw, userId) => {
     }
   });
 }
-module.exports = { getVideoFromSB, scrapeWebsiteTopPage, getVideoFromPD }
+module.exports = { getVideoFromSB, scrapeWebsiteTopPage, getVideoFromPD, getVideoFromHQP }

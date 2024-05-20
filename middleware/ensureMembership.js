@@ -23,8 +23,8 @@ const ensureMembership = async (req, res, next) => {
       // If the user has an active subscription, proceed to the next middleware
       next();
     } catch (error) {
-      console.log('Failed to fetch subscriptions:', error);
-      res.redirect('/error');
+      //console.log('Failed to fetch subscriptions:', error);
+      next();
     }
 }
   

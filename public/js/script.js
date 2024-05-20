@@ -300,6 +300,36 @@ $(document).ready(function() {
     handleRoop();
 });
 
+$(document).off('keydown').on('keydown', function(e) {
+    if (e.which == 32 && isFullScreen) {
+        e.preventDefault();
+
+        let currentActive = $('.custom-carousel-item.active');
+        currentActive.removeClass('active');
+        
+        let nextCard = currentActive.next('.custom-carousel-item');
+
+        if (nextCard.length === 0) {
+            nextCard = $('.custom-carousel-item').first();
+        }
+
+        $('.custom-carousel-container').animate({
+            scrollTop: $('.custom-carousel-container').scrollTop() + nextCard.position().top
+        }, 800, function() {
+            nextCard.addClass('active');
+            LazyLoad()
+        });
+    }
+});
+
+
+
+
+
+
+
+
+
 function scrollBottomWindow(){
     $('html, body').animate({ scrollTop: $(document).height() }, 'fast', function() {
         // After the animation is complete, disable scrolling
@@ -569,7 +599,7 @@ function LazyLoad(){
         const isVisible = checkIfElementIsInViewport($(this))
         if(
             isVisible && !$(this).hasClass('lazyLoad') && $('#search').data('mode') != 1 
-            || isVisible && !$(this).hasClass('lazyLoad') && isLargeScreen() &&  $('#search').data('mode') != 1 
+            || isVisible && !$(this).hasClass('lazyLoad') && isLargeScreen() && $('#search').data('mode') != 1 
             || isVisible && !$(this).hasClass('lazyLoad') && isFullScreen
         ){
             $(this).addClass('lazyLoad')
