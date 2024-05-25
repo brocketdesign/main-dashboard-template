@@ -29,7 +29,7 @@ const summarizeVideo = require('../modules/youtube-summary')
 const postArticleToWordpress = require('../modules/postArticleToWordpress')
 const createBookChapters = require('../modules/createBookChapters')
 const {ManageScraper,AsyncManageScraper} = require('../modules/ManageScraper');
-
+const { exec } = require('child_process');
 const axios = require('axios');
 const path = require('path');
 
@@ -1759,6 +1759,41 @@ router.post('/scrapeWebsiteTopPage', async (req,res)=>{
 router.get('/userID',(req,res)=>{
   return req.user._id;
 })
+
+router.post('/reboot-port', (req, res) => {
+  console.log('Reboot request received');
+  
+  // Commands to stop and restart the service running on port 3000
+  const stopCommand = 'sudo systemctl stop rakubun-dl';
+  const startCommand = 'sudo systemctl start rakubun-dl';  
+
+  // First, stop the service
+  exec(stopCommand, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error stopping the service: ${error.message}`);
+      return res.status(500).send('Failed to stop the service: ' + error.message);
+    }
+    if (stderr) {
+      console.error(`stderr while stopping: ${stderr}`);
+      return res.status(500).send('Error output while stopping: ' + stderr);
+    }
+    console.log(`Service stopped. stdout: ${stdout}`);
+
+    // Then, start the service
+    exec(startCommand, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error starting the service: ${error.message}`);
+        return res.status(500).send('Failed to start the service: ' + error.message);
+      }
+      if (stderr) {
+        console.error(`stderr while starting: ${stderr}`);
+        return res.status(500).send('Error output while starting: ' + stderr);
+      }
+      console.log(`Service restarted. stdout: ${stdout}`);
+      res.send('Port 3000 has been closed and reopened.');
+    });
+  });
+});
 
 async function saveImageToDB(db, userID, prompt, image, aspectRatio) {
   const imageID = new ObjectId();

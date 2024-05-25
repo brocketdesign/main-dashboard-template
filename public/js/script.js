@@ -1477,6 +1477,39 @@ function updategridlayout(value = false) {
         }
     }); 
 }
+function handleResetServer() {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, reset it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: '/api/reboot-port',
+                method: 'POST',
+                success: function(response) {
+                    Swal.fire(
+                        'Reset!',
+                        'Your server is being reset.',
+                        'success'
+                    );
+                },
+                error: function(xhr, status, error) {
+                    Swal.fire(
+                        'Error!',
+                        'Failed to reset the server: ' + error,
+                        'error'
+                    );
+                }
+            });
+        }
+    });
+}
+
 function enableSubRedit(){
         // Listen for focus event on the input element with id "searchterm"
         $('#searchterm').on('focus', function() {
@@ -1750,7 +1783,7 @@ function adjustSidebarAppearance2(){
         $('#sidebarMenu').fadeIn()
         $('#sidebarMenu').find('.list-group-item').removeClass('text-center').end()
         $('#sidebarMenu').find('.hide-text').show();
-        $('#sidebarMenu').animate({ 'max-height': '100vh' }, 500, function() {
+        $('#sidebarMenu').animate({ 'max-height': '90vh' }, 500, function() {
         });
     }
 }

@@ -157,8 +157,13 @@ const getVideoFromSB = (query, mode, nsfw, url, pageNum, userId) => {
         }
         if(url.includes('http')){
           url = new URL(url).href
-          const result = await scrapeResultPage(query, mode, nsfw, url, pageNum, userId)
-          resolve(result)
+          if(url.includes('playlist')){
+            const result = await scrapeSearchPage(query, mode, nsfw, url, pageNum, userId)
+            resolve(result)
+          }else{
+            const result = await scrapeResultPage(query, mode, nsfw, url, pageNum, userId)
+            resolve(result)
+          }
         }else{
           url = `https://spankbang.com/s/${url}/${pageNum}/?o=all`
           const result = await scrapeSearchPage(query, mode, nsfw, url, pageNum, userId)

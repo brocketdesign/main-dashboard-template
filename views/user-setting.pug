@@ -187,9 +187,14 @@ block mainContent
                     input#userPasswordVerification.form-control(name="userPasswordVerification", type='password', placeholder='新しいパスワードを確認するために入力してください', required)
                 button.btn.btn-primary.my-4(type='submit') 送信
         #reset.tab-pane.fade
-            form#reset-form.row.mt-3
-                .form-group.col-12.col-sm-6
-                    label(for='mode') App
-                    select#mode.form-control(name="mode")
-                    option(value='') App
-                button.btn.btn-danger.my-4(type='submit') Reset data
+            .row.col-row-2
+                .col
+                    form#reset-form.row.mt-3
+                        .form-group.col-12.col-sm-6
+                            label(for='mode') App
+                            select#mode.form-control(name="mode")
+                            option(value='') App
+                        button.btn.btn-danger.my-4(type='submit') Reset data
+                .col
+                    h5 Reboot Port 3000
+                    button.btn.btn-danger#rebootButton(onclick="handleResetServer()") Reboot Port 3000
