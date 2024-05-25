@@ -117,7 +117,7 @@ router.get('/app/stable-diffusion', ensureAuthenticated, ensureMembership, async
   let models = []
   try{
      models = await global.sdapi.getSdModels()
-  }catch{
+  }catch(err){
     API = `stablediffusion`
   }
   try {

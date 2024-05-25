@@ -981,7 +981,8 @@ router.post('/txt2img', async (req, res) => {
     prompt,
     negative_prompt,
     width, // Use the calculated width
-    height: 768 // Fixed height as provided
+    height: 768, // Fixed height as provided
+    sampler_name: 'DPM++ 2M'
   };
 
   try {
@@ -1040,6 +1041,7 @@ router.post('/img2img', async (req, res) => {
       guidance_scale: 7.5,
       num_images_per_prompt: 1,
       eta: 0.0,
+      sampler_name: 'DPM++ 2M'
     };
     // Conditionally add scripts for isRoop
     if (isRoop) {
