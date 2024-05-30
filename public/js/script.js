@@ -597,14 +597,16 @@ function manageVideo(isVisible, $element) {
 function LazyLoad(){
     $('.card.info-container').each(function(){
         const isVisible = checkIfElementIsInViewport($(this))
-        if(
-            isVisible && !$(this).hasClass('lazyLoad') && $('#search').data('mode') != 1 
-            || isVisible && !$(this).hasClass('lazyLoad') && isLargeScreen() && $('#search').data('mode') != 1 
-            || isVisible && !$(this).hasClass('lazyLoad') && isFullScreen
-        ){
-            $(this).addClass('lazyLoad')
-            downloadAndShow($(this))
-        }
+            if(
+                isVisible && !$(this).hasClass('lazyLoad') && $('#search').data('mode') != 1 && $('#search').data('mode') != 2
+                || isVisible && !$(this).hasClass('lazyLoad') && isLargeScreen() && $('#search').data('mode') != 1 && $('#search').data('mode') != 2
+                || isVisible && !$(this).hasClass('lazyLoad') && isFullScreen
+            ){
+                $(this).addClass('lazyLoad')
+                downloadAndShow($(this))
+            }
+        
+
         manageVideo(isVisible,$(this))
     })
 }
@@ -1517,7 +1519,7 @@ function enableSubRedit(){
           const dataMode = $(this).attr('data-mode');
           
           // Check if data-mode attribute is equal to "2"
-          if(dataMode === '2') {
+          if(dataMode === '2' || dataMode === '9') {
             console.log('Input is focused and data-mode is 2.');
             searchSubreddits()
           }
@@ -1529,7 +1531,7 @@ function enableSubRedit(){
           const dataMode = $(this).attr('data-mode');
       
           // Check if data-mode attribute is equal to "2"
-          if(dataMode === '2') {
+          if(dataMode === '2' || dataMode === '9') {
             console.log('Something is being typed and data-mode is 2.');
             searchSubreddits()
           }

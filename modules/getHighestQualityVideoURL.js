@@ -5,6 +5,7 @@ const { saveData, updateSameElements, lessThan24Hours, isMedia, takePageScreensh
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 const axios = require('axios');
 const cheerio = require('cheerio');
+const fetch = require('node-fetch')
 
 async function getHighestQualityVideoURL(myCollection,video_id, user, stream = true) {
   try {
@@ -21,7 +22,6 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
     
     if(!foundElement.link.includes('youtube') && lessThan24Hours(foundElement.last_scraped)){
       if(!foundElement.isdl_process){
-        console.log(`Start download for ${video_id}`)
         global.db.collection(myCollection).updateOne({_id:new ObjectId(video_id)},{$set:{isdl_process:true}})
         .then(()=>{
           downloadMedia(myCollection, foundElement)
@@ -109,6 +109,25 @@ async function searchVideo(videoDocument, myCollection, user, stream) {
   if( videoLink.includes('scrolller') ){
     return await searchVideoScroller(videoDocument, myCollection, user);
   }
+  if( videoLink.includes('redgifs') ){
+    return await searchVideoRedgifs(videoDocument, myCollection, user);
+  }
+}
+
+async function searchVideoRedgifs(videoDocument, myCollection, user) {
+  try {
+    const request_url = `https://api.redgifs.com/v2/gifs/${videoDocument.name}`
+    const response = await fetch(request_url)
+    const data = await response.json();
+    let highestQualityURL = data.gif.urls.vthumbnail;
+    //await updateSameElements(videoDocument, myCollection, { highestQualityURL,isdl:true, last_scraped: new Date() });
+
+    return highestQualityURL;
+
+  } catch (error) {
+    console.log(videoDocument)
+    return false;
+  }
 }
 
 async function searchVideoScroller(videoDocument, myCollection, user) {
@@ -120,7 +139,7 @@ async function searchVideoScroller(videoDocument, myCollection, user) {
     await defaultPage.goto(videoURL, { waitUntil: 'networkidle2' });
     await defaultPage.evaluate(() => localStorage.setItem('SCROLLLER_BETA_1:CONFIRMED_NSFW', true));
     const page = await browser.newPage();
-    await page.goto(videoURL, { waitUntil: 'networkidle2' });
+    await page.goto(videoURL);
     
     await page.waitForSelector('video', { timeout: 1000 });
 

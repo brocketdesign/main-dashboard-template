@@ -2,14 +2,8 @@ const { ObjectId } = require('mongodb');
 const axios = require('axios');
 const puppeteer = require('puppeteer');
 
-async function scrapeMode(url, mode, nsfw, page, filter = 'images',isAsync) {
+async function scrapeMode(url, mode, nsfw, page, filter = 'videos',isAsync) {
   let data = [];
-
-  // Prepare promises for each scraping task
-  const redditPromise = scrapeReddit(url, mode, nsfw, page, filter = 'images').catch(error => {
-    console.error("Failed to scrape data from Reddit", error);
-    return []; // Return empty array on failure
-  });
 
   const scrolllerVideoPromise = scrapeScrolller(url, mode, nsfw, page, 'videos', isAsync).catch(error => {
     console.error("Failed to scrape data from Scrolller (VIDEO)", error);
@@ -25,7 +19,7 @@ async function scrapeMode(url, mode, nsfw, page, filter = 'images',isAsync) {
     console.log("Starting scraping from Reddit and Scrolller...");
 
     // Use Promise.all to wait for all promises to resolve
-    const results = await Promise.all([redditPromise, scrolllerVideoPromise, scrolllerPicturePromise]);
+    const results = await Promise.all([scrolllerVideoPromise, scrolllerPicturePromise]);
 
     // Combine the results
     data = results.flat(); // Flattens the array of arrays into a single array
@@ -83,7 +77,7 @@ const scrapeScrolller = (subreddit, mode, nsfw, page, mediaType, isAsync) => {
     }
   });
 }
-async function scrapeReddit(url, mode, nsfw, page, filter = 'images') {
+async function scrapeReddit(url, mode, nsfw, page) {
   if (!url) return [];
   if(url.includes('discover')){return []}
   const subreddit = url;
@@ -155,7 +149,7 @@ async function scrollAndScrape(page, itemSelector, itemCount, mediaType) {
             const thumb = element.querySelector('img').getAttribute('src');
             const video = !!(mediaType.toUpperCase() === 'VIDEOS') || !!element.querySelector('.media-icon__play');
             const subreddit = element.querySelector('.item-panel__text-title:nth-child(2)').getAttribute('href');
-            return { link, thumb, video, subreddit, extractor: 'scrolller' };
+            return { link, thumb, video, subreddit, extractor: `scrolller (${mediaType})` };
           } catch (error) {
             return null;
           }
