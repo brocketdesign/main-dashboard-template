@@ -147,7 +147,7 @@ async function scrapeMode(url, mode, nsfw, page, user) {
       console.log('Operating a safe search');
       return await searchYoutube(query, url, mode, nsfw, page);
     }
-    console.log('Operating a NSFW search');
+    //console.log('Operating a NSFW search');
 
     const data = await scrapeWebsiteFromOtherServer(query, mode, nsfw, url, page, user);
 

@@ -28,6 +28,7 @@ const port = process.env.PORT || 3200;
 const url = process.env.MONGODB_URL; // Use MONGODB_URL from .env file
 const dbName = process.env.MONGODB_DATABASE; // Use MONGODB_DATABASE from .env file
 
+const {cleanupDatabase} = require('./services/tools')
 function startServer() {
   MongoClient.connect(url, { useUnifiedTopology: true })
     .then(client => {
@@ -35,7 +36,9 @@ function startServer() {
 
       const db = client.db(dbName); // Use the database name from .env file
       global.db = db; // Save the db connection in a global variable
-
+      
+      //cleanupDatabase('medias_9')
+      
       // Create an instance of the StableDiffusionApi
       const sd_api = new StableDiffusionApi({
         host: process.env.SD_HOST,

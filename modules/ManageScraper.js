@@ -58,15 +58,14 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
     time :new Date()
   })); 
 
-  updateUserScrapInfo(user,searchterm,page)
-  await insertInDB(myCollection, scrapedData)
-  let result = await findDataInMedias(userId, parseInt(page), query);
+  updateUserScrapInfo(user,searchterm,page,mode)
+  let result = await insertInDB(myCollection, scrapedData)
   console.log(`Return result for page ${page} : ${result.length}`)
   if(result){result=result.reverse()}
-  return scrapedData
+  return result
 }
 async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
-  console.log('// AsyncManageScraper')
+
   const myCollection = `medias_${mode}`
   const {scrapeMode} = require(`./scraper/scrapeMode${mode}`);
   const userId = user._id
@@ -77,8 +76,8 @@ async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
   if(!scrapedData){
     return []
   }
-  console.log(`Scrape data and found ${scrapedData.length} elements.`)
 
+  
   const categories = await initCategories(userId)
 
   scrapedData = scrapedData.map((data) => ({
@@ -91,24 +90,65 @@ async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
     favoriteCountry: userInfo.favoriteCountry
   })); 
 
-  updateUserScrapInfo(user,searchterm,page)
+  updateUserScrapInfo(user,searchterm,page,mode)
 
-  const result = await insertInDB(myCollection, scrapedData)
+  let result = await insertInDB(myCollection, scrapedData)
 
   if(result && result.length > 30){
-    return result.slice(0,30)
+    //return result.slice(0,30)
   }
+  if(result){result=result.reverse()}
   return result
 }
 
 async function insertInDB(myCollection, scrapedData) {
   try {
-    const insertResult = await global.db.collection(myCollection).insertMany(scrapedData);
-    console.log('Inserted documents:', insertResult.insertedCount);
+    if (scrapedData.length === 0) {
+      return [];
+    }
+
+    const dbCollection = global.db.collection(myCollection);
+    const newEntries = [];
+    const addedIds = new Set(); // Helper set to track IDs of added documents
+
+    for (const item of scrapedData) {
+      // Build a dynamic query based on existing, non-undefined fields
+      const query = [];
+      if (item.source !== undefined && !item.source.includes('undefined')) query.push({ source: item.source });
+      if (item.url !== undefined && !item.url.includes('undefined')) query.push({ url: item.url });
+      if (item.link !== undefined && !item.link.includes('undefined')) query.push({ link: item.link });
+
+      // Only proceed if there's at least one valid field to check against
+      if (query.length > 0) {
+        const exists = await dbCollection.findOne({ $or: query });
+
+        if (!exists) {
+          // If it doesn't exist, insert it and add to the newEntries array
+          const result = await dbCollection.insertOne(item);
+          if (result.insertedId) {
+            // Include the new MongoDB _id in the returned item
+            item._id = result.insertedId;
+            newEntries.push(item);
+            addedIds.add(item._id.toString()); // Track this ID as added
+          }
+        } else {
+          // Check if this document is already added to newEntries
+          if (!addedIds.has(exists._id.toString())) {
+            newEntries.push(exists);
+            addedIds.add(exists._id.toString()); // Track this ID as added
+          }
+        }
+      }
+    }
+
+    console.log('Inserted documents:', newEntries.length);
+    return newEntries; // Return the array of newly inserted documents with their MongoDB _id
   } catch (error) {
-    console.error('Error inserting documents:', error);
+    console.error('Error processing documents:', error);
+    throw error; // It's often a good practice to rethrow the error after logging
   }
 }
+
 
 
 async function checkUserScrapeInfo(user){
@@ -130,7 +170,7 @@ async function checkUserScrapeInfo(user){
     }
   }
 }
-async function updateUserScrapInfo(user,searchterm,page){
+async function updateUserScrapInfo(user,searchterm,page,mode){
   await checkUserScrapeInfo(user)
   userInfo = await findAndUpdateUser(user._id);
   const scrapInfo = userInfo.scrapInfo.find(info => info.searchterm === searchterm);
@@ -141,6 +181,7 @@ async function updateUserScrapInfo(user,searchterm,page){
       { _id: new ObjectId(user._id), 'scrapInfo.searchterm': searchterm },
       {
         $set: {
+          'scrapInfo.$.mode': mode,
           'scrapInfo.$.time': currentTime,
           'scrapInfo.$.page': parseInt(page)
         }

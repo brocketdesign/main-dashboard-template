@@ -665,6 +665,57 @@ async function takePageScreenshot(page) {
   console.log(`Screenshot saved to ${filePath}`);
 }
 
+async function cleanupDatabase(myCollection) {
+  try {
+    const dbCollection = global.db.collection(myCollection);
+    const tempCollectionName = myCollection + "_temp";
+    const tempCollection = global.db.collection(tempCollectionName);
+
+    await dbCollection.aggregate([
+      {
+        $group: {
+          _id: {
+            source: {
+              $cond: {
+                if: { $ne: ["$source", undefined] }, // Check if 'source' is not undefined
+                then: "$source",
+                else: "$noval" // Use a unique value to represent undefined
+              }
+            },
+            url: {
+              $cond: {
+                if: { $ne: ["$url", undefined] }, // Check if 'url' is not undefined
+                then: "$url",
+                else: "$noval" // Use a unique value to represent undefined
+              }
+            },
+            link: {
+              $cond: {
+                if: { $ne: ["$link", undefined] }, // Check if 'link' is not undefined
+                then: "$link",
+                else: "$noval" // Use a unique value to represent undefined
+              }
+            }
+          },
+          doc: { $first: "$$ROOT" }
+        }
+      },
+      { $replaceRoot: { newRoot: "$doc" } },
+      { $out: tempCollectionName }
+    ]).toArray();
+
+    await dbCollection.drop();
+    await tempCollection.rename(myCollection);
+
+    console.log('Database cleanup complete. Duplicates removed.');
+  } catch (error) {
+    console.error('Error during database cleanup:', error);
+    throw error;
+  }
+}
+
+
+
 module.exports = { 
   takePageScreenshot,
   formatDateToDDMMYYHHMMSS, 
@@ -688,5 +739,6 @@ module.exports = {
   getFileExtension,
   findTotalPage,
   calculatePayloadWidth,
-  downloadVideoRedGIF
+  downloadVideoRedGIF,
+  cleanupDatabase
 }

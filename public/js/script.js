@@ -3038,7 +3038,7 @@ function displayHistory(data) {
     $.each(data, function(category, items) {
        
         // Check if there are items in the category
-        if (items.length > 0) {
+        if (items.length >= 0 ) {
 
             let myID = "itemSlider_"+stringToID(category);
             let itemLink = `/dashboard/app/${mode}?searchterm=${category}&nsfw=true`;

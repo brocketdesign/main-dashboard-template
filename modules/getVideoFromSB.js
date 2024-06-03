@@ -7,7 +7,6 @@ const path = require('path');
 const urlLib = require('url');
 
 const getVideoFromPD = (query, mode, nsfw, url, pageNum, userId) => {
-  console.log(`Get video from PD`)
   return new Promise(async (resolve, reject) => {
     try {
       if (url) {
@@ -48,7 +47,6 @@ const ext3_url = 'https://hqporner.com/'
 const ext3_url2 = 'https://hqporner.com'
 
 const getVideoFromHQP = (query, mode, nsfw, url, pageNum, userId) => {
-  console.log(`Get video from ${ext3_title}`);
   return new Promise(async (resolve, reject) => {
     try {
       if (url) {
@@ -147,7 +145,6 @@ async function downloadImage(imageUrl) {
 }
 
 const getVideoFromSB = (query, mode, nsfw, url, pageNum, userId) => {
-  console.log(`Get video from SB`)
   return new Promise(async (resolve, reject) => {
     try {
       if (url) {

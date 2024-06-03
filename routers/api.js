@@ -1601,9 +1601,26 @@ router.post('/history', async (req, res) => {
     });
 
     const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
-    const scrapInfo = userInfo.scrapInfo.filter(item => item.mode !== undefined && item.searchterm !== undefined && parseInt(item.mode) == parseInt(mode));
-    const data = mapArrayHistory(medias,scrapInfo,mode)
+    const isValidMode = (item, mode) => item.mode !== undefined && parseInt(item.mode) === parseInt(mode);
+    const isRedditUrl = (item) => item.url && item.url.includes('/r/');
+    const hasValidSearchTerm = (item) => item.searchterm !== undefined;
+
+    // Filter items based on the mode and search term validity
+    const filteredByMode = userInfo.scrapInfo.filter(item => isValidMode(item, mode) && hasValidSearchTerm(item));
+    //console.log("Filtered by Mode:", filteredByMode);
+
+    // Filter items based on being a Reddit URL and mode being 9
+    const filteredByReddit = userInfo.scrapInfo.filter(item => parseInt(mode) === 9 && isRedditUrl(item));
+    //console.log("Filtered by Reddit URL:", filteredByReddit);
+
+    // Combine the two filtered lists, ensuring uniqueness if necessary
+    const combinedResults = [...filteredByMode, ...filteredByReddit.filter(item => !filteredByMode.includes(item))];
+    //console.log("Combined Filtered Results:", combinedResults);
+
+    const data = mapArrayHistory(medias,combinedResults,mode)
+
     const categories = await global.db.collection('category').find({nsfw}).toArray()
+
     res.json({status:true,data,categories}); 
   } catch (error) {
     res.json({status:false});
@@ -1611,30 +1628,23 @@ router.post('/history', async (req, res) => {
 });
 function mapArrayHistory(medias,scrapInfo, mode) {
   let queryMap = {};
-  const highestPagePerQuery = scrapInfo.reduce((accumulator, current) => {
-    accumulator[current.searchterm.trim()] = current.page;
-    return accumulator;
-  }, {});
-  // Iterate through filteredData again, adding items to queryMap only if they are on the highest page for that query
   medias.forEach(item => {
-    if (!item.searchterm) return;
+    let key = item.searchterm.trim();
 
-      const key = item.searchterm.trim();
+    if (!queryMap[key]) {
+      queryMap[key] = [];
+    }
 
-      if (!queryMap[key]) {
-        queryMap[key] = [];
-      }
-
-      if (queryMap[key].length < 4 && item.hide !== true) {
-        queryMap[key].push(item);
-      }
+    if (queryMap[key].length < 4 && item.hide !== true) {
+      queryMap[key].push(item);
+    }
     
   });
   for (let key in queryMap) {
     if (queryMap[key].length === 0) {
-        delete queryMap[key];
+        //delete queryMap[key];
     }
-}
+  }
   return queryMap
 }
 router.post('/hideHistory', async (req, res) => {
