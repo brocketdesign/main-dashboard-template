@@ -19,7 +19,7 @@ const app = express();
 const WebSocket = require('./routers/WebSocket');
 const server = http.createServer(app);
 const cors = require('cors');
-
+const {getToken} = require('./services/redgif')
 // Attach the WebSocket server to the HTTP server
 WebSocket(server);
 

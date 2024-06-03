@@ -27,6 +27,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         saveData, 
         getFileExtension,
         downloadVideo, 
+        downloadVideoRedGIF,
         updateSameElements, 
         generateFilePathFromUrl,
         downloadFileFromURL,
@@ -51,7 +52,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
             res.status(404).json({ error: 'Video URL not found.' });
             return;
           }
-
+          console.log(`Download : ${url}`)
           res.status(200).json({ url, message: 'Start Download' }); 
       
           if(!url.includes('http')){
@@ -82,7 +83,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           } 
           if(url.includes('redgifs.com')){
             done = true
-            await downloadVideo(url, filePath, video_id, myCollection);
+            await downloadVideoRedGIF(url, filePath, video_id, myCollection);
           }
           if(!done){
             await downloadFileFromURL(filePath,url)

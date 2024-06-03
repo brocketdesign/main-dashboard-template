@@ -8,6 +8,7 @@ const {
   formatDateToDDMMYYHHMMSS,
   saveData, 
   downloadVideo, 
+  downloadVideoRedGIF,
   updateSameElements,
   fetchOpenAICompletion,
   fetchOllamaCompletion,
@@ -809,20 +810,21 @@ const ffmpeg = require('fluent-ffmpeg');
 router.post('/downloadFileFromURL', async (req, res) => {
 
   try{
-    const url = req.body.url;
-    const itemID = req.body.itemID
-    const item = await global.db.collection('medias').findOne({ _id: new ObjectId(itemID) })
-
-    if(item.filePath){
-      res.json({url:item.filePath.replace('public','')})
-      return
+    const {url,itemID,mode} = req.body;
+    const myCollection = `medias_${mode}`
+    const item = await global.db.collection(myCollection).findOne({ _id: new ObjectId(itemID) })
+   
+    if(item && item.filePath){
+      console.log(item.filePath)
+      //res.json({url:item.filePath.replace('public','')})
+      //return
     }
     const {fileName,filePath} = generateFilePathFromUrl('public/downloads/',url)
     console.log(`Page URL : ${url}`)
-    const videoSource = await downloadVideo(url, filePath, itemID);
+    const videoSource = await downloadVideoRedGIF(url, filePath, itemID, myCollection);
     console.log(`Downloaded : ${filePath}`)
 
-    updateSameElements(item,{filePath:filePath.replace('public',''), isdl:true,isdl_end:new Date()})
+    updateSameElements(item, myCollection, {filePath:filePath.replace('public',''), isdl:true,isdl_end:new Date()})
     res.json({url:filePath.replace('public','')})
   }catch(error){
     console.log(error)

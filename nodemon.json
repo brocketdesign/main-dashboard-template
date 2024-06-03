@@ -1,3 +1,8 @@
 {
-  "ignore": ["/home/maho/main-dashboard-template/public/downloads/*"]
+  "ignore": [
+    "./public/output/**/*",
+    "./public/downloads/**/*",
+    "./public/modelpreview/**/*",
+    "./node_modules/**/*"
+  ]
 }

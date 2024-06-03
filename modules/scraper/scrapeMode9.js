@@ -26,7 +26,7 @@ async function scrapeMode(url, mode, nsfw, page, filter = 'videos',isAsync) {
     console.error("An unexpected error occurred during scraping", error);
   }
 
-  console.log("Combined data from Reddit and Scrolller");
+  //console.log("Combined data from Reddit and Scrolller");
   return data;
 }
 
@@ -35,7 +35,8 @@ async function scrapeReddit(url, mode, nsfw, page, filter) {
   if (!url) return [];
   if(url.includes('discover')){return []}
   const subreddit = url;
-  const collection = global.db.collection('medias');
+  const myCollection = `medias_${mode}`
+  const collection = global.db.collection(myCollection);
   const today = new Date().setHours(0, 0, 0, 0);
 
   // Check if the data has already been scraped today
@@ -51,16 +52,14 @@ async function scrapeReddit(url, mode, nsfw, page, filter) {
     page: parseInt(page) - 1,
     afterId: { $exists: true }
   });
-
-  //lastID = lastID?.afterId || '';
-  lastID =  '';
-  console.log('Latest afterID is:', lastID);
+  lastID = lastID?.afterId || '';
+  //console.log('Latest afterID is:', lastID);
 
   const getUrl = subreddit.includes('http')
     ? subreddit
     : `https://www.reddit.com${subreddit}new/.json?count=25&after=${lastID}`;
 
-  console.log('Searching data on reddit. ', getUrl);
+  //console.log('Searching data on reddit. ', getUrl);
 
   try {
     const response = await axios.get(getUrl);
@@ -68,10 +67,10 @@ async function scrapeReddit(url, mode, nsfw, page, filter) {
     const result = filterData(data, filter, nsfw);
     const afterId = response.data.data.after; // Get the 'after' field directly from the Reddit response
     
-    console.log(`New after ID is: ${afterId}`);
+    //console.log(`New after ID is: ${afterId}`);
     const AllData = processResults(result, subreddit, afterId, page);
 
-    console.log(`Founded ${AllData.length} elements.`);
+    //console.log(`Founded ${AllData.length} elements.`);
     return AllData;
   } catch (error) {
     console.log('Failed to fetch data from Reddit', error);
@@ -90,14 +89,15 @@ function _filterData(data, filter, nsfw) {
 }
 
 function filterData(data, filter, nsfw) {
-  console.log('Starting filterData function');
   
   return data.reduce((filteredData, post) => {
 
       let obj = {
           title: post.title,
           thumbnail: post.thumbnail,
-          link: post.url
+          imageUrl: extractImageUrl(post),
+          link: post.url,
+          extractor:'reddit'
       };
 
       try{
@@ -117,12 +117,12 @@ function filterData(data, filter, nsfw) {
       if (post.url && (post.url.includes('.mp4') || post.url.includes('redgifs.com') || post.url.includes('.gifv'))) {
           if (post.over_18 === nsfw || !post.over_18) {
               if (post.url.includes('.mp4')) {
-                  obj.type = 'video';
+                  obj.type = 'REDDIT';
               }
 
               if (post.url.includes('redgifs.com')) {
                   obj.name = post.url.split('/').pop();
-                  obj.type = 'redgifs';
+                  obj.extractor = 'redgifs';
               }
 
               if (post.url.includes('.gifv')) {
@@ -130,7 +130,7 @@ function filterData(data, filter, nsfw) {
                   obj.name = post.url.split('/').pop();
                   obj.url = objUrl.replace('.gifv', '.jpg');
                   obj.link = objUrl.replace('.gifv', '.mp4');
-                  obj.type = 'redgifs';
+                  obj.extractor = 'redgifs (gifv)';
               }
 
               // Correct the video URL if not done already
@@ -141,18 +141,30 @@ function filterData(data, filter, nsfw) {
               filteredData.push(obj);
           }
       }
-
-      return filteredData;
+      const uniqueData = removeDuplicates(filteredData);
+      return uniqueData;
   }, []);
 }
 
+function removeDuplicates(filteredData) {
+  const seenLinks = new Map();
+
+  filteredData.forEach(item => {
+      if (!seenLinks.has(item.link)) {
+          seenLinks.set(item.link, item);
+      }
+  });
+
+  // Convert the Map values back to an array
+  return Array.from(seenLinks.values());
+}
 
 
 function processResults(result, subreddit, afterId, page) {
   return result
     .map((post) => ({
+      ...post,
       thumb: post.thumbnail,
-      imageUrl: extractImageUrl(post),
       source: `https://www.reddit.com${post.permalink}`,
       url:post.url,
       link:post.link || post.url,
@@ -160,9 +172,8 @@ function processResults(result, subreddit, afterId, page) {
       name:post.name,
       subreddit,
       video_id: generateRandomID(8),
-      afterId:'',
+      afterId,
       page,
-      extractor:'reddit' 
     }));
 }
 

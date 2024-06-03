@@ -16,10 +16,10 @@ async function scrapeMode(url, mode, nsfw, page, filter = 'videos',isAsync) {
   });
 
   try {
-    console.log("Starting scraping from Reddit and Scrolller...");
+    console.log("Starting scraping from Scrolller...");
 
     // Use Promise.all to wait for all promises to resolve
-    const results = await Promise.all([scrolllerVideoPromise, scrolllerPicturePromise]);
+    const results = await Promise.all([scrolllerVideoPromise]);
 
     // Combine the results
     data = results.flat(); // Flattens the array of arrays into a single array
@@ -77,53 +77,7 @@ const scrapeScrolller = (subreddit, mode, nsfw, page, mediaType, isAsync) => {
     }
   });
 }
-async function scrapeReddit(url, mode, nsfw, page) {
-  if (!url) return [];
-  if(url.includes('discover')){return []}
-  const subreddit = url;
-  const collection = global.db.collection('medias');
-  const today = new Date().setHours(0, 0, 0, 0);
 
-  // Check if the data has already been scraped today
-  const existingData = await collection.findOne({ date: today, subreddit, page });
-
-  if (existingData) {
-    console.log('Data has already been scraped today.');
-    return collection.find({ subreddit, page }).toArray();
-  }
-
-  let lastID = await collection.findOne({
-    subreddit,
-    page: parseInt(page) - 1,
-    afterId: { $exists: true }
-  });
-
-  lastID = lastID?.afterId || '';
-  console.log('Latest afterID is:', lastID);
-
-  const getUrl = subreddit.includes('http')
-    ? subreddit
-    : `https://www.reddit.com${subreddit}new/.json?count=25&after=${lastID}`;
-
-  console.log('Searching data on reddit. ', getUrl);
-
-  try {
-    const response = await axios.get(getUrl);
-    const data = response.data.data.children.map((child) => child.data);
-    const result = filterData(data, filter, nsfw);
-    const afterId = response.data.data.after; // Get the 'after' field directly from the Reddit response
-    
-
-    console.log(`New after ID is: ${afterId}`);
-    const AllData = processResults(result, subreddit, afterId, page);
-
-    console.log(`Founded ${AllData.length} elements.`);
-    return AllData;
-  } catch (error) {
-    console.log('Failed to fetch data from Reddit', error);
-    return [];
-  }
-}
 async function scrollAndScrape(page, itemSelector, itemCount, mediaType) {
   const scrapedData = [];
   const uniqueItems = new Set(); // Using a Set to automatically avoid duplicate objects
@@ -147,9 +101,10 @@ async function scrollAndScrape(page, itemSelector, itemCount, mediaType) {
           try {
             const link = 'https://scrolller.com' + element.querySelector('a').getAttribute('href');
             const thumb = element.querySelector('img').getAttribute('src');
+            const title = element.querySelector('img').getAttribute('alt');
             const video = !!(mediaType.toUpperCase() === 'VIDEOS') || !!element.querySelector('.media-icon__play');
             const subreddit = element.querySelector('.item-panel__text-title:nth-child(2)').getAttribute('href');
-            return { link, thumb, video, subreddit, extractor: `scrolller (${mediaType})` };
+            return { link, thumb, title, video, subreddit, extractor: `scrolller (${mediaType})` };
           } catch (error) {
             return null;
           }

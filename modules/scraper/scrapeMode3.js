@@ -214,7 +214,10 @@ async function searchImage(query, isReset = false ){
     page = lastPageIndex.page;
   }
   const maxGifCount = 20;
-  const browser = await puppeteer.launch({ headless: 'new' });
+  const browser = await puppeteer.launch({ 
+    headless: 'new' ,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+  });
   const [tab] = await browser.pages();
   await tab.setViewport({ width: 1920, height: 5000 });
   let gifResponseCount = 0;
@@ -273,7 +276,10 @@ async function searchGifImage(query, isReset = false, topPage = false) {
   }
   
   const maxGifCount = 40;
-  const browser = await puppeteer.launch({ headless: 'new' }); 
+  const browser = await puppeteer.launch({ 
+    headless: 'new' ,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+  }); 
   const [tab] = await browser.pages();
   await tab.setViewport({ width: 1920, height: 5000 });
   let gifResponseCount = 0;

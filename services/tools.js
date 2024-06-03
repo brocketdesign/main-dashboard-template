@@ -135,7 +135,6 @@ async function findTotalPage(userId,query,elementsPerPage){
   return parseInt(totalItems/elementsPerPage)
 }
 async function findDataInMedias(userId, page, query, categoryId = null) {
-
   // Modify the query to include checking for userId in the userIDs array
   query.userId = userId;
   const myCollection = `medias_${query.mode}`
@@ -436,14 +435,18 @@ async function saveDataSummarize(videoId, format){
     console.log('Error while updating element:', error);
   }
 }
-async function downloadVideo(url, filePath, itemID, myCollection) {
+async function downloadVideoRedGIF(url, filePath, itemID, myCollection = 'medias'){
+  console.log(`Download : ${url}`)
+  return
+}
+async function downloadVideo(url, filePath, itemID, myCollection = 'medias') {
     let browser;
     let videoSrc;
 
     try {
         browser = await puppeteer.launch({
             headless: true,
-            //executablePath: '/usr/bin/google-chrome'
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
         });
 
         const page = await browser.newPage();
@@ -684,5 +687,6 @@ module.exports = {
   downloadYoutubeVideo,
   getFileExtension,
   findTotalPage,
-  calculatePayloadWidth
+  calculatePayloadWidth,
+  downloadVideoRedGIF
 }

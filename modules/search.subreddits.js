@@ -52,7 +52,7 @@ async function searchSubreddits(query) {
       return obj;
       
     }).filter(item => item !== null);
-    console.log(result)
+
     return result;
 
   } catch (err) {

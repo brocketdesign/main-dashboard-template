@@ -35,8 +35,6 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
 
   scrapedData = await findDataInMedias(userId, parseInt(page), query);
 
-  console.log(`Found ${scrapedData.length} items in the medias collection for page ${parseInt(page)}`)
-
   if(scrapedData && scrapedData.length > 0 ){ //&& searchterm != 'undefined'
     return scrapedData
   }
@@ -48,7 +46,6 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
   console.log(`Scrape data and found ${scrapedData.length} elements.`)
 
   const categories = await initCategories(userId)
-
   scrapedData = scrapedData.map((data) => ({
     ...data,
     searchterm,
@@ -62,9 +59,11 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
   })); 
 
   updateUserScrapInfo(user,searchterm,page)
-  let result = await insertInDB(myCollection, scrapedData)
+  await insertInDB(myCollection, scrapedData)
+  let result = await findDataInMedias(userId, parseInt(page), query);
+  console.log(`Return result for page ${page} : ${result.length}`)
   if(result){result=result.reverse()}
-  return result
+  return scrapedData
 }
 async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
   console.log('// AsyncManageScraper')
@@ -93,7 +92,8 @@ async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
   })); 
 
   updateUserScrapInfo(user,searchterm,page)
-  const result =  await insertInDB(myCollection, scrapedData)
+
+  const result = await insertInDB(myCollection, scrapedData)
 
   if(result && result.length > 30){
     return result.slice(0,30)
@@ -101,53 +101,16 @@ async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
   return result
 }
 
-async function updateOrInsert(myCollection,criteria, updateQuery) {
-  const updateResult = await global.db.collection(myCollection).findOneAndUpdate(criteria, updateQuery, { upsert: true, returnDocument: 'after' });
-  //return updateResult.matchedCount > 0 || updateResult.upsertedCount > 0;
-  return updateResult.value; // This returns the updated/inserted document
-}
-
-async function insertInDB(myCollection,scrapedData) {
-  let insertedDocuments = [];
-  if (scrapedData && scrapedData.length > 0) {
-    // Array to hold promises
-    let promises = [];
-
-    for (const itemWithId of scrapedData) {
-      const item = _.omit(itemWithId, ['_id']);
-      const query2 = {$addToSet: { favoriteCountry: item.favoriteCountry }}
-      delete item.favoriteCountry
-      const query1 = {$set:item}
-      promises.push(getUpdatedDocument(myCollection,itemWithId,query1,query2));
-    }
-
-    // Wait for all db operations to complete
-    insertedDocuments = await Promise.all(promises);
-    
-    return insertedDocuments.filter(doc => doc != null);
+async function insertInDB(myCollection, scrapedData) {
+  try {
+    const insertResult = await global.db.collection(myCollection).insertMany(scrapedData);
+    console.log('Inserted documents:', insertResult.insertedCount);
+  } catch (error) {
+    console.error('Error inserting documents:', error);
   }
 }
 
-async function getUpdatedDocument(myCollection,itemWithId,query1,query2) {
-  const item = _.omit(itemWithId, ['_id']);
-  let doc1 = doc2 = null
-  if (item.source) {
-    doc1 = updateOrInsert(myCollection, { 'source': item.source }, query1)
-    doc2 = updateOrInsert(myCollection, { 'source': item.source }, query2)
-  }
 
-  if (item.url) {
-    doc1 = updateOrInsert(myCollection, { 'url': item.url }, query1)
-    doc2 = updateOrInsert(myCollection, { 'url': item.url }, query2)
-  }
-
-  if (item.link) {
-    doc1 = updateOrInsert(myCollection, { 'link': item.link }, query1)
-    doc2 = updateOrInsert(myCollection, { 'link': item.link }, query2)
-  }
-  // Return the first non-null document
-  return doc1 || doc2;
-}
 async function checkUserScrapeInfo(user){
   const scrapInfo = Array.isArray(user.scrapInfo) 
   const userId = user._id

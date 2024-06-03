@@ -6,6 +6,7 @@ const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 const axios = require('axios');
 const cheerio = require('cheerio');
 const fetch = require('node-fetch')
+const {getToken} = require('../services/redgif') 
 
 async function getHighestQualityVideoURL(myCollection,video_id, user, stream = true) {
   try {
@@ -15,7 +16,9 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
       console.log(`Error could not found element ( ${video_id} ) in  ${myCollection}`)
       return
     }
+
     if(foundElement.filePath){
+      console.log(`Return filePath ${foundElement.filePath}`)
       await updateSameElements(foundElement, myCollection, {isdl:true,isdl_data:new Date(),filePath:foundElement.filePath})
       return foundElement.filePath.replace('public','')
     }
@@ -30,8 +33,10 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
           console.log(err)
         })
       }
-
-      return foundElement.highestQualityURL
+      if(foundElement.highestQualityURL){
+        console.log(`Return highestQualityURL : ${foundElement.highestQualityURL}`)
+        return foundElement.highestQualityURL
+      }
     }
 
     if (foundElement.mode == "3") {
@@ -46,6 +51,10 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
       return foundElement.link ; 
     }
     
+    if (foundElement.mode == "9" && foundElement.url.includes('v.redd.it')) {
+      return foundElement.url ; 
+    }
+    
     if(!foundElement.video && foundElement.mode == "2"){
       if( foundElement.link.includes('scrolller')){
         return foundElement.thumb
@@ -54,6 +63,7 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
     }
     const result = await searchVideo(foundElement, myCollection, user, stream);
     if(!foundElement.isdl_process){
+      console.log(`First time downloading`)
       global.db.collection(myCollection).updateOne({_id:new ObjectId(video_id)},{$set:{isdl_process:true}})
       .then(()=>{
         downloadMedia(myCollection, foundElement)
@@ -115,17 +125,58 @@ async function searchVideo(videoDocument, myCollection, user, stream) {
 }
 
 async function searchVideoRedgifs(videoDocument, myCollection, user) {
+  await updateSameElements(videoDocument, myCollection, {
+    highestQualityURL:videoDocument.gif,
+    isdl: true,
+    last_scraped: new Date()
+  });
+  return videoDocument.gif
   try {
-    const request_url = `https://api.redgifs.com/v2/gifs/${videoDocument.name}`
-    const response = await fetch(request_url)
+    // Retrieve the token
+    const token = await getToken();
+
+    // Check if the token was successfully retrieved
+    if (!token) {
+      throw new Error('Failed to retrieve token');
+    }
+
+    // Prepare the API request with the token
+    const request_url = `https://api.redgifs.com/v2/gifs/${videoDocument.name}`;
+    const response = await fetch(request_url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    // Check response status
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json();
-    let highestQualityURL = data.gif.urls.vthumbnail;
-    //await updateSameElements(videoDocument, myCollection, { highestQualityURL,isdl:true, last_scraped: new Date() });
+
+    // Check if the desired URL is present in the response
+    if (!data.gif || !data.gif.urls || !data.gif.urls.vthumbnail) {
+      throw new Error('URL data is missing in the response');
+    }
+
+    let highestQualityURL = data.gif.urls.hd || data.gif.urls.vthumbnail;
+
+    // Update the database entry with the new URL and other relevant data
+    await updateSameElements(videoDocument, myCollection, {
+      highestQualityURL,
+      isdl: true,
+      last_scraped: new Date()
+    });
 
     return highestQualityURL;
 
   } catch (error) {
-    console.log(videoDocument)
+    console.error('Error in searchVideoRedgifs:', error.message);
+    console.log('Video Document:', videoDocument);
+
+    // Return false or null to indicate failure
     return false;
   }
 }
@@ -134,7 +185,6 @@ async function searchVideoScroller(videoDocument, myCollection, user) {
   const videoURL = videoDocument.link;
   const browser = await puppeteer.launch({ headless: 'new' , args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']});
   const defaultPage = await browser.newPage();
-  console.log('searchVideoScroller',{videoURL})
   try {
     await defaultPage.goto(videoURL, { waitUntil: 'networkidle2' });
     await defaultPage.evaluate(() => localStorage.setItem('SCROLLLER_BETA_1:CONFIRMED_NSFW', true));

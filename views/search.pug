@@ -14,9 +14,9 @@ block dynamicContent
               
               .video-container.d-flex.position-relative(data-id=data._id)
                 .card-top
-                  if data.link && data.link.includes('redgif')
+                  if data.url && data.url.includes('v.redd.it')
                     .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
-                        button.iframe-button.btn.shadow.border.border-white(style="background: #ffffff61;", type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'', data-url=`${data.link.replace('watch','ifr')}`)
+                        button.instant-play-button.btn.shadow.border.border-white(style="background: #ffffff61;", type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'', data-url=`${data.url}`)
                           i.fas.fa-play
                   if mode == '1' || mode == '5' || (data.link && data.link.includes('scrolller') && data.video)
                     .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
@@ -40,18 +40,20 @@ block dynamicContent
                     else
                       img.card-img-top(type="button",data-id=data._id, style="object-fit:contain;height: 100%;", data-src=data.url , alt=data.title)
                   else
-                    img.card-img-top(type="button", data-id=data._id, style="object-fit:contain;height: 100%;", src=data.imageUrl || data.filePath, alt=data.title )
+                    img.card-img-top(type="button", data-id=data._id, style="object-fit:contain;height: 100%;", src= data.thumb || data.imageUrl || data.filePath,  alt=data.title )
                   if mode == 6
                     video(data-id=data._id, data-src=data.link, style="display:none;" width="100%" controls muted autoplay playsinline)
                   if mode == 8
                     video(data-id=data._id, data-src=data.highestQualityURL, style="display:none;" width="100%" controls muted autoplay loop playsinline)
-              .setting-not-absolute.card-title.px-3.my-0.bg-white.d-flex(data-id=data._id)
+                  if mode == 9
+                    video(data-id=data._id, data-src=data.url, style="display:none;" width="100%" controls muted autoplay loop playsinline)
+              .setting-not-absolute.card-title.px-3.my-0.bg-white.row(data-id=data._id)
                 if data.title
                   p.my-0.one-line=data.title 
                 .row.justify-content-start.flex-row.my-2.w-100(style="height:100%;overflow: auto;")
                   .col-12.text-start(style="overflow:hidden")
                     a.expand(href=`/dashboard/app/${mode}?searchterm=${data.subreddit}`)=data.subreddit
-                  .col-12.text-start.justify-content-between.d-flex
+                  .col-12.text-start.justify-content-between
                     button.expand-card.btn.btn-light.shadow-0.border.border-0.m-1(type="button")
                         i.fas.fa-expand
                     button.d-none.expand-button.btn.btn-light.border.border-0.m-1.shadow-0(type="button", data-id=data._id)
@@ -64,7 +66,7 @@ block dynamicContent
                         i.fas.fa-heart
                     a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target="_blank", href=data.source||data.link||data.webm||data.url)
                       i.fas.fa-link
-                    if mode == 2 && data.extractor == 'scrolller' || mode == 5
+                    if mode == 2 && data.extractor.includes('scrolller') || mode == 5
                       - moreLink = (mode == 5 ? data.moreLink : `/dashboard/app/${mode}?searchterm=${data.link}/discover`)
                       a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target='_blank' href=moreLink)
                         i.fas.fa-plus-square    
@@ -74,7 +76,7 @@ block dynamicContent
                       button.handle-roop.btn.btn-light.shadow-0.border.border-0.m-1(type="button", data-id=data._id)
                         i.fas.fa-meh-blank
                         .spinner-border.spinner-border-sm
-                    else 
+                    else if mode != 2
                       a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target='_blank' href=`/dashboard/app/${mode}?searchterm=${data.title || data.alt}`)
                         i.fas.fa-plus-square  
                     button.expand.delete-button.btn.btn-light.border.border-0.m-1.shadow-0(type="button", data-id=data._id)

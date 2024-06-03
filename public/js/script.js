@@ -261,7 +261,7 @@ $(document).ready(function() {
     handleAudio();
     handleHistory();
 
-   //handleInstantVideo();
+    handleInstantVideo();
 
     activateClickOnVisibleButtons();
     handleFavorite();
@@ -604,10 +604,10 @@ function LazyLoad(){
             ){
                 $(this).addClass('lazyLoad')
                 downloadAndShow($(this))
+                manageVideo(isVisible,$(this))
             }
         
 
-        manageVideo(isVisible,$(this))
     })
 }
 function isFavorite(){
@@ -2607,10 +2607,11 @@ function handleIframe(){
     })
 }
 function downloadFileFromURL(targetURL,itemID,callback){
+    const mode = $('#range').data('mode')
     $.ajax({
         type: "POST",
         url: "/api/downloadFileFromURL",
-        data: { url: targetURL,itemID },
+        data: { url: targetURL, itemID, mode },
         success: function(response) {
             if(callback){ callback(response) }
         },
@@ -2989,7 +2990,7 @@ async function instantPlay(dataId){
     
     var videoElement = $('video[data-id="' + dataId + '"]');
     videoElement.attr('src', videoElement.attr('data-src'));
-    
+    console.log(videoElement.attr('data-src'))
     
     videoElement.on('loadeddata', function() {
         $('img.card-img-top[data-id="' + dataId + '"]').hide();
@@ -3052,7 +3053,7 @@ function displayHistory(data) {
             cardLink.append(card);
 
             items.forEach((item) => {
-                let imageUrl = item.imageUrl || item.filePath || item.thumb;
+                let imageUrl = item.thumb || item.imageUrl || item.filePath ;
                 let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', category);
 
                 imageContainer.append(imgTag);
