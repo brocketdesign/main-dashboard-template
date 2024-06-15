@@ -242,7 +242,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           console.error("Error occurred: ", error);
         } 
       }
-            
+
       // Define a route to handle video requests
       router.get('/video', async (req, res) => {
         try {

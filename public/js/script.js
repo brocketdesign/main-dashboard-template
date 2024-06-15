@@ -300,9 +300,12 @@ $(document).ready(function() {
     handleRoop();
 });
 
+let triggerKeyDown = true
 $(document).off('keydown').on('keydown', function(e) {
+    if(!triggerKeyDown){return}
     if (e.which == 32 && isFullScreen) {
         e.preventDefault();
+        triggerKeyDown = false
 
         let currentActive = $('.custom-carousel-item.active');
         currentActive.removeClass('active');
@@ -318,6 +321,7 @@ $(document).off('keydown').on('keydown', function(e) {
         }, 800, function() {
             nextCard.addClass('active');
             LazyLoad()
+            triggerKeyDown = true
         });
     }
 });
@@ -604,10 +608,8 @@ function LazyLoad(){
             ){
                 $(this).addClass('lazyLoad')
                 downloadAndShow($(this))
-                manageVideo(isVisible,$(this))
             }
-        
-
+            manageVideo(isVisible,$(this))
     })
 }
 function isFavorite(){
@@ -1785,7 +1787,7 @@ function adjustSidebarAppearance2(){
         $('#sidebarMenu').fadeIn()
         $('#sidebarMenu').find('.list-group-item').removeClass('text-center').end()
         $('#sidebarMenu').find('.hide-text').show();
-        $('#sidebarMenu').animate({ 'max-height': '90vh' }, 500, function() {
+        $('#sidebarMenu').animate({ 'max-height': '50vh' }, 500, function() {
         });
     }
 }
@@ -3019,12 +3021,12 @@ function handleHistory(){
             displayHistoryTop(response)
         })
     }
-    if(mode == 7){
+    if(mode == 7 || mode == 5){
         getTopPageMode(function(response){
             displayHistoryGallery(response)
         })
     }
-    if(mode != 1 && mode != 7 ){
+    if(mode != 1 && mode != 7 && mode != 5){
         getTopPageMode(function(response){
             displayHistoryTop(response)
         })
@@ -3138,7 +3140,6 @@ function getTopPageSB(callback){
 }
 function getTopPageMode(callback){
     const mode = $('#display-history').data('mode');
-
     if($('#display-history').length == 0){
         return
     }
@@ -3164,7 +3165,7 @@ function displayHistoryTop(data){
         let imageUrl = item.imageUrl || item.filePath || item.thumb;
         const mode = parseInt($('#display-history').data('mode'))
         const searchTerm = mode == 1 ? item.link : item.alt
-        console.log(item)
+
         let itemLink = `/dashboard/app/${item.mode}?page=1&searchterm=${searchTerm}&nsfw=true`; // Adjust this based on your data structure
 
         // Create an anchor tag to wrap the card
@@ -3213,7 +3214,9 @@ function displayHistoryGallery(data){
         // Grab the imageUrl and link from the random item
         let imageUrl = item.imageUrl;
         let itemLink = `/dashboard/app/7?page=1&searchterm=${item.link}&nsfw=true`; // Adjust this based on your data structure
-
+        if(item.mode == 5){
+            itemLink = `/dashboard/app/5?page=1&searchterm=v${item.id}&nsfw=true`;
+        }
         // Create an anchor tag to wrap the card
         let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
 

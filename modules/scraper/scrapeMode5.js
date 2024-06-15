@@ -8,8 +8,13 @@ const scrapeData = async (query, pageNumber) => {
   try {
     
     const baseUrl = 'https://monsnode.com/'
-    const url = isQueryInCorrectFormat(query) ? `${baseUrl}${query}` : `${baseUrl}search.php?search=${query}&page=${pageNumber}`;
+    let url = baseUrl
 
+    if(query){
+      url = isQueryInCorrectFormat(query) ? `${baseUrl}${query}` : `${baseUrl}search.php?search=${query}&page=${pageNumber}`;
+    }
+
+    console.log({url})
     // Send a stealthy request to the website
     const { data } = await axios.get(url);
 

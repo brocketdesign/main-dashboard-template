@@ -1540,6 +1540,12 @@ router.post('/getTopPage', async (req, res) => {
   const userId = new ObjectId(req.user._id);
   const nsfw = req.user.nsfw == 'true'
   try {
+
+    if(mode == 5){
+      let data = await ManageScraper(false,nsfw,mode,req.user, 0);
+      res.status(200).json({data,status:true})
+      return
+    }
     const {scrapeTopPage} = require(`../modules/scraper/scrapeMode${mode}`)
     const data = await scrapeTopPage(mode)
     res.status(200).json({data})
@@ -1593,6 +1599,7 @@ router.post('/history', async (req, res) => {
   const {mode} = req.body
   const userId = new ObjectId(req.user._id);
   const nsfw = req.user.nsfw == 'true'
+
   try{
     const medias = await findDataInMedias(userId, false, {
       mode: mode,
@@ -1623,23 +1630,28 @@ router.post('/history', async (req, res) => {
 
     res.json({status:true,data,categories}); 
   } catch (error) {
+    console.log(error)
     res.json({status:false});
   }
 });
 function mapArrayHistory(medias,scrapInfo, mode) {
   let queryMap = {};
   medias.forEach(item => {
-    let key = item.searchterm.trim();
+    if(item.searchterm){
+      let key = item.searchterm.trim()
 
-    if (!queryMap[key]) {
-      queryMap[key] = [];
+      item.searchterm.trim();
+  
+      if (!queryMap[key]) {
+        queryMap[key] = [];
+      }
+  
+      if (queryMap[key].length < 4 && item.hide !== true) {
+        queryMap[key].push(item);
+      }
     }
-
-    if (queryMap[key].length < 4 && item.hide !== true) {
-      queryMap[key].push(item);
-    }
-    
   });
+
   for (let key in queryMap) {
     if (queryMap[key].length === 0) {
         //delete queryMap[key];
