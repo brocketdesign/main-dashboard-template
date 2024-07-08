@@ -600,6 +600,7 @@ function manageVideo(isVisible, $element) {
 }
 
 function LazyLoad(){
+    const mode = parseInt($('.mode-container').data('mode'))  
     $('.card.info-container').each(function(){
         const isVisible = checkIfElementIsInViewport($(this))
             if(
@@ -608,7 +609,13 @@ function LazyLoad(){
                 || isVisible && !$(this).hasClass('lazyLoad') && isFullScreen
             ){
                 $(this).addClass('lazyLoad')
-                downloadAndShow($(this))
+                const $this = $(this)
+                isLazyLoad(mode, function(isLazyLoadValue) {
+                    if(isLazyLoadValue){
+                        downloadAndShow($this)
+                    }
+                });
+                
             }
             manageVideo(isVisible,$(this))
     })
@@ -670,47 +677,39 @@ function downloadAndShow($thisCard){
     var id = $thisCard.data('id');
     var isdl = $thisCard.data('isdl');
     const playerButton = $thisCard.find(`.play-button`)
-    const mode = parseInt($('.mode-container').data('mode'))    
-    isLazyLoad(mode, function(isLazyLoadValue) {
-        // Handle the isLazyLoadValue here
-        if(isLazyLoadValue){
-            console.log('Lazy load value:', isLazyLoadValue);
-            // Check if the card has already been processed
-            if ($thisCard.hasClass('done')) {
-                console.log('Card has already been processed.');
-                return;
-            }
+    const mode = parseInt($('.mode-container').data('mode'))  
+    // Check if the card has already been processed
+    if ($thisCard.hasClass('done')) {
+        console.log('Card has already been processed.');
+        return;
+    }
 
-            //Reset all the other cards
-            $(`.card.info-container`).each(function(){
-                playerButton.removeClass('done')
-            })
+    //Reset all the other cards
+    $(`.card.info-container`).each(function(){
+        playerButton.removeClass('done')
+    })
 
-            playerButton.hide()
-            // Mark the card as done to avoid processing it again
-            $thisCard.addClass('done');
+    playerButton.hide()
+    // Mark the card as done to avoid processing it again
+    $thisCard.addClass('done');
 
-            if($thisCard.find('.instant-play-button').length>0 || mode == 7){
-                instantPlay(id)
-                return
-            }
-            // Check if the spinner is already present, if not, create and append it to the card
-            if (!$thisCard.find('.spinner-border .for-strm').length) {
-                var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute').css({inset:"0px", margin:"auto"}).attr('role', 'status');
-                var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
-                $spinner.append($span);
-                $thisCard.find('.card-body-over').append($spinner);
-            }
+    if($thisCard.find('.instant-play-button').length>0 || mode == 7){
+        instantPlay(id)
+        return
+    }
+    // Check if the spinner is already present, if not, create and append it to the card
+    if (!$thisCard.find('.spinner-border .for-strm').length) {
+        var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute').css({inset:"0px", margin:"auto"}).attr('role', 'status');
+        var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
+        $spinner.append($span);
+        $thisCard.find('.card-body-over').append($spinner);
+    }
 
-            // Show the spinner while the download is in progress
-                $thisCard.find('.card-body-over').show();
-            var $spinner = $thisCard.find('.spinner-border');
-            $spinner.show();
-            handleDownloadVideo(id)
-        }
-    });
-    
-   
+    // Show the spinner while the download is in progress
+        $thisCard.find('.card-body-over').show();
+    var $spinner = $thisCard.find('.spinner-border');
+    $spinner.show();
+    handleDownloadVideo(id)
 }
 
     // Initialize button state
@@ -3061,7 +3060,6 @@ function handleInstantVideo() {
     });
 }
 async function instantPlay(dataId){
-console.log('instantPlay')
     const mode = parseInt($('.mode-container').data('mode'))
     if(mode == 7){
         directDownloadFileFromURL(dataId)
