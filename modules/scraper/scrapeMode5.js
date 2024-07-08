@@ -31,9 +31,6 @@ const scrapeData = async (query, pageNumber) => {
         const moreLink = `/dashboard/app/5?&searchterm=${query}`; 
         const link = baseUrl+specialElement.attr('href');
         const imageUrl = specialElement.find('img').attr('src');
-          
-        console.log({ query, moreLink, link, imageUrl })
-        // Collect each treasure into our results chest
         results.push({ id:specialElementId, moreLink, link, imageUrl });
     }
 

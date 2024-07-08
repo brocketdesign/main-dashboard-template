@@ -481,7 +481,6 @@ router.post('/loadpage', async (req, res) => {
       updateUserScrapInfo(req.user._id, page, searchterm, mode).then(async ()=>{
         const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
         scrapInfo = userInfo.scrapInfo.find(info => info.searchterm === searchterm);
-        console.log({scrapInfo})
       })     
       res.status(200).send({status:true})
   } catch (error) {
