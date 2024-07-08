@@ -151,6 +151,11 @@ async function findDataInMedias(userId, page, query, categoryId = null) {
     return medias;
   }else{
     page_number = parseInt(page) || 1;
+    console.log(page_number)
+    let total = await mediasColelction.find({searchterm:query.searchterm}).toArray()
+    total = total.length
+    console.log(query)
+    console.log({total})
     const limit = 30; // Number of documents per page
     const skip = (page_number - 1) * limit; // Calculate skip value
     // Find the medias that match the query
@@ -159,12 +164,12 @@ async function findDataInMedias(userId, page, query, categoryId = null) {
     .skip(skip) // Skip N documents
     .limit(limit) // Limit to N documents
     .toArray();
-
+    console.log({medias_length : medias.length})
+    console.log(medias.slice(3))
     return medias;
   }
 
 }
-
 
 function sanitizeData(scrapedData,query) {
   //check for object with the same source and keep only one

@@ -3123,7 +3123,7 @@ function displayHistory(data) {
         if (items.length >= 0 ) {
 
             let myID = "itemSlider_"+stringToID(category);
-            let itemLink = `/dashboard/app/${mode}?searchterm=${category}&nsfw=true`;
+            let itemLink = `/dashboard/app/${mode}?searchterm=${category}&nsfw=true&page=${items[0].page}`;
             let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
             let card = $('<div>').addClass('card mb-3 col');
             let cardBody = $('<div>').addClass('card-body');

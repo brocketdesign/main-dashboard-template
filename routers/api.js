@@ -480,7 +480,7 @@ router.post('/loadpage', async (req, res) => {
       }
       updateUserScrapInfo(req.user._id, page, searchterm, mode).then(async ()=>{
         const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
-        scrapInfo = userInfo.scrapInfo.find(info => info.url === searchterm);
+        scrapInfo = userInfo.scrapInfo.find(info => info.searchterm === searchterm);
         console.log({scrapInfo})
       })     
       res.status(200).send({status:true})
@@ -1641,13 +1641,14 @@ router.post('/history', async (req, res) => {
   const nsfw = req.user.nsfw == 'true'
 
   try{
+    const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
+
     const medias = await findDataInMedias(userId, false, {
       mode: mode,
       nsfw: nsfw,
       hide_query: { $exists: false },
     });
 
-    const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
     const isValidMode = (item, mode) => item.mode !== undefined && parseInt(item.mode) === parseInt(mode);
     const isRedditUrl = (item) => item.url && item.url.includes('/r/');
     const hasValidSearchTerm = (item) => item.searchterm !== undefined;
@@ -1664,7 +1665,7 @@ router.post('/history', async (req, res) => {
     const combinedResults = [...filteredByMode, ...filteredByReddit.filter(item => !filteredByMode.includes(item))];
     //console.log("Combined Filtered Results:", combinedResults);
 
-    const data = mapArrayHistory(medias,combinedResults,mode)
+    const data = mapArrayHistory(medias,combinedResults,mode,userInfo.scrapInfo)
 
     const categories = await global.db.collection('category').find({nsfw}).toArray()
 
@@ -1674,10 +1675,11 @@ router.post('/history', async (req, res) => {
     res.json({status:false});
   }
 });
-function mapArrayHistory(medias,scrapInfo, mode) {
+function mapArrayHistory(medias, combinedResults, mode, scrapInfo) {
   let queryMap = {};
   medias.forEach(item => {
-    if(item.searchterm){
+    const itemMaxPage = findPageByUrl(scrapInfo,item.searchterm)
+    if(item.searchterm && parseInt(item.page) == parseInt(itemMaxPage)){
       let key = item.searchterm.trim()
 
       item.searchterm.trim();
@@ -1699,6 +1701,11 @@ function mapArrayHistory(medias,scrapInfo, mode) {
   }
   return queryMap
 }
+function findPageByUrl(scrapInfo,searchterm) {
+  const result = scrapInfo.find(obj => obj.searchterm === searchterm);
+  return result ? result.page : null;
+}
+
 router.post('/hideHistory', async (req, res) => {
   const { query, category } = req.body;
   console.log('クエリを非表示にする:', query); // Hide the query: query

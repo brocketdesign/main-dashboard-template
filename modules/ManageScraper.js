@@ -5,7 +5,8 @@ const {
   findDataInMedias,
   updateSameElements,
   initCategories,
-  sanitizeData
+  sanitizeData,
+  cleanupDatabase
 } = require('../services/tools')
 const scrapeMode1 = require(`./scraper/scrapeMode1`);
 
@@ -23,19 +24,19 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
 
   let userInfo = await findAndUpdateUser(userId);
   const query = {
-    searchterm,
+    searchterm, 
     mode: mode,
     nsfw: nsfw,
     $and: [ 
       { $or: [ { hide_query: { $exists: false } }, { hide_query: "false" } ] },
-      { $or: [ { hide: { $exists: false } }, { hide: "false" } ] }
+      { $or: [ { hide: { $exists: false } }, { hide: "false" } ] },
     ],
-    favoriteCountry: { $in: [userInfo.favoriteCountry] }
+    //favoriteCountry: { $in: [userInfo.favoriteCountry] }
   };
 
   scrapedData = await findDataInMedias(userId, parseInt(page), query);
 
-  if(scrapedData && scrapedData.length > 0 ){ //&& searchterm != 'undefined'
+  if(scrapedData && scrapedData.length >= 30 ){ //&& searchterm != 'undefined'
     return scrapedData
   }
   
@@ -44,6 +45,7 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
     return []
   }
   console.log(`Scrape data and found ${scrapedData.length} elements.`)
+  await cleanupDatabase(myCollection)
 
   const categories = await initCategories(userId)
   scrapedData = scrapedData.map((data) => ({
@@ -58,7 +60,7 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
     time :new Date()
   })); 
 
-  updateUserScrapInfo(user,searchterm,page,mode)
+  await updateUserScrapInfo(user,searchterm,page,mode)
   let result = await insertInDB(myCollection, scrapedData)
   console.log(`Return result for page ${page} : ${result.length}`)
   if(result){result=result.reverse()}
