@@ -2,6 +2,7 @@ extends dashboard
 
 block dynamicContent
   div.mode-container(id=section data-mode=mode)
+  button(id="lazyLoadButton" class="btn btn-primary" data-mode=mode) Toggle Lazy Load
   #imageList.image-container.auto-show.d-flex
   if (scrapedData && scrapedData.length > 0 ) || (medias2 && medias2.length > 0)
     .masonry-container.row.custom-carousel-container

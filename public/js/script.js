@@ -578,24 +578,25 @@ function controlVideoStatus(){
   }
   
 function manageVideo(isVisible, $element) {
-    // Find the video element within the provided element
-    const $video = $element.find('video');
+    const mode = parseInt($('.mode-container').data('mode'))    
+    isLazyLoad(mode, function(isLazyLoadValue) {
+            // Find the video element within the provided element
+            const $video = $element.find('video');
 
-    // Check if the video element exists
-    if ($video.length) {
-        // If the element is visible and the video is not already playing
-        if (isVisible && $video.get(0).paused) {
-            if($video.hasClass('force-pause')){
-                return
+            // Check if the video element exists
+            if ($video.length) {
+                // If the element is visible and the video is not already playing
+                if (isVisible && $video.get(0).paused && isLazyLoadValue) {
+                    $video.get(0).play();
+                    addCardToList($element)
+                } 
+                // If the element is not visible and the video is playing
+                else if (!isVisible && !$video.get(0).paused) {
+                    $video.get(0).pause();
+                }
             }
-            $video.get(0).play();
-            addCardToList($element)
-        } 
-        // If the element is not visible and the video is playing
-        else if (!isVisible && !$video.get(0).paused) {
-            $video.get(0).pause();
-        }
-    }
+    })
+
 }
 
 function LazyLoad(){
@@ -669,42 +670,121 @@ function downloadAndShow($thisCard){
     var id = $thisCard.data('id');
     var isdl = $thisCard.data('isdl');
     const playerButton = $thisCard.find(`.play-button`)
-    //console.log('Clicked card ID:', id);
+    const mode = parseInt($('.mode-container').data('mode'))    
+    isLazyLoad(mode, function(isLazyLoadValue) {
+        // Handle the isLazyLoadValue here
+        if(isLazyLoadValue){
+            console.log('Lazy load value:', isLazyLoadValue);
+            // Check if the card has already been processed
+            if ($thisCard.hasClass('done')) {
+                console.log('Card has already been processed.');
+                return;
+            }
 
-      // Check if the card has already been processed
-      if ($thisCard.hasClass('done')) {
-          console.log('Card has already been processed.');
-          return;
-      }
+            //Reset all the other cards
+            $(`.card.info-container`).each(function(){
+                playerButton.removeClass('done')
+            })
 
-      //Reset all the other cards
-      $(`.card.info-container`).each(function(){
-        playerButton.removeClass('done')
-      })
+            playerButton.hide()
+            // Mark the card as done to avoid processing it again
+            $thisCard.addClass('done');
 
-      playerButton.hide()
-      // Mark the card as done to avoid processing it again
-      $thisCard.addClass('done');
+            if($thisCard.find('.instant-play-button').length>0 || mode == 7){
+                instantPlay(id)
+                return
+            }
+            // Check if the spinner is already present, if not, create and append it to the card
+            if (!$thisCard.find('.spinner-border .for-strm').length) {
+                var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute').css({inset:"0px", margin:"auto"}).attr('role', 'status');
+                var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
+                $spinner.append($span);
+                $thisCard.find('.card-body-over').append($spinner);
+            }
 
-      const mode = parseInt($('.mode-container').data('mode'))
-      if($thisCard.find('.instant-play-button').length>0 || mode == 7){
-        instantPlay(id)
-        return
-      }
-      // Check if the spinner is already present, if not, create and append it to the card
-      if (!$thisCard.find('.spinner-border .for-strm').length) {
-          var $spinner = $('<div>').addClass('spinner-border for-strm position-absolute').css({inset:"0px", margin:"auto"}).attr('role', 'status');
-          var $span = $('<span>').addClass('visually-hidden').text('読み込み中...');
-          $spinner.append($span);
-          $thisCard.find('.card-body-over').append($spinner);
-      }
-
-      // Show the spinner while the download is in progress
-        $thisCard.find('.card-body-over').show();
-      var $spinner = $thisCard.find('.spinner-border');
-      $spinner.show();
-      handleDownloadVideo(id)
+            // Show the spinner while the download is in progress
+                $thisCard.find('.card-body-over').show();
+            var $spinner = $thisCard.find('.spinner-border');
+            $spinner.show();
+            handleDownloadVideo(id)
+        }
+    });
+    
+   
 }
+
+    // Initialize button state
+    initializeButtonState();
+
+    // Click event to update database and button state
+    $('#lazyLoadButton').click(function() {
+        const mode = parseInt($(this).data('mode'));
+        const isLazyLoadValue = $(this).hasClass('btn-primary') ? false : true; // Toggle state
+        updateDatabaseWithLazyLoad(isLazyLoadValue, mode);
+        updateButtonState(isLazyLoadValue);
+    });
+
+// Function to update database
+function updateDatabaseWithLazyLoad(isLazyLoadValue, mode) {
+    $.ajax({
+        url: '/api/islazyload',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            islazyload: isLazyLoadValue,
+            mode: mode
+        }),
+        success: function(response) {
+            console.log('Database updated successfully:', response);
+        },
+        error: function(error) {
+            console.error('Error updating database:', error);
+        }
+    });
+}
+
+// Function to update button state
+function updateButtonState(isLazyLoadValue) {
+    const button = $('#lazyLoadButton');
+    if (isLazyLoadValue) {
+        button.removeClass('btn-secondary').addClass('btn-primary');
+    } else {
+        button.removeClass('btn-primary').addClass('btn-secondary');
+    }
+}
+
+// Function to initialize button state
+function initializeButtonState() {
+    const mode = parseInt($('#lazyLoadButton').data('mode'));
+    $.ajax({
+        url: '/api/islazyload',
+        type: 'GET',
+        data: { mode: mode },
+        success: function(response) {
+            const isLazyLoadValue = response.islazyload; 
+            updateButtonState(isLazyLoadValue);
+        },
+        error: function(error) {
+            console.error('Error fetching initial state:', error);
+        }
+    });
+}
+function isLazyLoad(mode, callback){
+    $.ajax({
+        url: '/api/islazyload',
+        type: 'GET',
+        data: { mode: mode },
+        success: function(response) {
+            if (typeof callback === 'function') {
+                callback(response.islazyload);
+            }
+        },
+        error: function(error) {
+            console.error('Error:', error);
+        }
+    });
+}
+
 // Handling of card clicking
 const handleCardClickable = () => {
     $(document).on('click',`.play-button`,function(event) {
@@ -2979,9 +3059,9 @@ function handleInstantVideo() {
         addCardToList($thisCard)
         instantPlay(dataId)
     });
-    $('.instant-play-button.now').click()
 }
 async function instantPlay(dataId){
+console.log('instantPlay')
     const mode = parseInt($('.mode-container').data('mode'))
     if(mode == 7){
         directDownloadFileFromURL(dataId)

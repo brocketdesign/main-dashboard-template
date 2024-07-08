@@ -118,6 +118,46 @@ router.delete('/user/:elementRemoved/:elementId', async (req, res) => {
     }
 });
 
+// GET route to fetch islazyload value based on mode
+router.get('/islazyload', async (req, res) => {
+  try {
+      const mode = parseInt(req.query.mode);
+      const userID = new ObjectId(req.user._id); // Assuming you have user ID in req.user
+
+      const user = await global.db.collection('users').findOne({ _id: userID });
+      if (!user) {
+          return res.status(404).json({ error: 'User not found' });
+      }
+
+      const isLazyLoad = user.lazyLoadModes && user.lazyLoadModes[mode];
+      res.json({ islazyload: isLazyLoad || false });
+  } catch (error) {
+      console.error('Error fetching islazyload:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST route to update islazyload value based on mode
+router.post('/islazyload', async (req, res) => {
+  try {
+      const { islazyload, mode } = req.body;
+      const userID = new ObjectId(req.user._id); // Assuming you have user ID in req.user
+
+      const updateResult = await global.db.collection('users').updateOne(
+          { _id: userID },
+          { $set: { [`lazyLoadModes.${mode}`]: islazyload } }
+      );
+
+      if (updateResult.matchedCount === 0) {
+          return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json({ success: true });
+  } catch (error) {
+      console.error('Error updating islazyload:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Create a new route to handle the streaming
 router.get('/streamVideo/:itemID', async (req, res) => {
