@@ -33,7 +33,7 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
     ],
     //favoriteCountry: { $in: [userInfo.favoriteCountry] }
   };
-
+  
   scrapedData = await findDataInMedias(userId, parseInt(page), query);
 
   if(scrapedData && scrapedData.length >= 30 ){ //&& searchterm != 'undefined'

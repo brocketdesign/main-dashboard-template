@@ -48,41 +48,63 @@ block dynamicContent
                     video(data-id=data._id, data-src=data.highestQualityURL, style="display:none;" width="100%" controls muted autoplay loop playsinline)
                   if mode == 9
                     video(data-id=data._id, data-src=data.url, style="display:none;" width="100%" controls muted autoplay loop playsinline)
-              .setting-not-absolute.card-title.px-3.my-0.bg-white.row(data-id=data._id)
-                if data.title
-                  p.my-0.one-line=data.title 
-                .row.justify-content-start.flex-row.my-2.w-100(style="height:100%;overflow: auto;")
-                  .col-12.text-start(style="overflow:hidden")
-                    a.expand(href=`/dashboard/app/${mode}?searchterm=${data.subreddit}`)=data.subreddit
-                  .col-12.text-start.justify-content-between.d-flex
-                    button.expand-card.btn.btn-light.shadow-0.border.border-0.m-1(type="button")
-                        i.fas.fa-expand
-                    button.d-none.expand-button.btn.btn-light.border.border-0.m-1.shadow-0(type="button", data-id=data._id)
-                        i.fas.fa-expand
-                    if data.link && data.link.includes('redgif')
-                      button.expand.handle-fav.btn.btn-light.shadow-0.border.border-0.m-1(type="button", data-id=data._id, class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'', data-url=`${data.link.replace('watch','ifr')}`)
-                        i.fas.fa-heart
-                    else
-                      button.expand.handle-fav.btn.btn-light.shadow-0.border.border-0.m-1(type="button", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'')
-                        i.fas.fa-heart
-                    a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target="_blank", href=data.source||data.link||data.webm||data.url)
-                      i.fas.fa-link
-                    if mode == 2 && data.extractor.includes('scrolller') || mode == 5
-                      - moreLink = (mode == 5 ? data.moreLink : `/dashboard/app/${mode}?searchterm=${data.link}/discover`)
-                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target='_blank' href=moreLink)
-                        i.fas.fa-plus-square    
-                    if mode == 7
-                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target='_blank' href=`/dashboard/app/${mode}?searchterm=${data.isGallery ? data.link : data.alt}`)
-                        i.fas.fa-plus-square   
-                      button.handle-roop.btn.btn-light.shadow-0.border.border-0.m-1(type="button", data-id=data._id)
-                        i.fas.fa-meh-blank
-                        .spinner-border.spinner-border-sm
-                    else if mode != 2
-                      a.source.expand.btn.btn-light.border.border-0.m-1.shadow-0(target='_blank' href=`/dashboard/app/${mode}?searchterm=${data.title || data.alt}`)
-                        i.fas.fa-plus-square  
-                    button.expand.delete-button.btn.btn-light.border.border-0.m-1.shadow-0(type="button", data-id=data._id)
-                        i.fas.fa-trash-alt
-
+              .setting-absolute
+                .btn-group
+                  button.btn.btn-light.dropdown-toggle(type="button", id="dropdownMenuButton", data-bs-toggle="dropdown", aria-expanded="false")
+                    i.fas.fa-bars
+                  ul.dropdown-menu(aria-labelledby="dropdownMenuButton")
+                    if data.title
+                      li
+                        p.my-0.one-line.dropdown-item=data.title 
+                    li
+                      a.expand.dropdown-item(href=`/dashboard/app/${mode}?searchterm=${data.subreddit}`)
+                        i.fas.fa-link.me-2
+                        | View Subreddit
+                    li
+                      a.expand-card.btn.btn-light.shadow-0.border.border-0.w-100.text-start(type="button")
+                        i.fas.fa-expand.me-2
+                        | Expand
+                    li
+                      a.d-none.expand-button.btn.btn-light.border.border-0.shadow-0.w-100.text-start(type="button", data-id=data._id)
+                        i.fas.fa-expand.me-2
+                        | Expand
+                    li
+                      if data.link && data.link.includes('redgif')
+                        a.expand.handle-fav.btn.btn-light.shadow-0.border.border-0.w-100.text-start(type="button", data-id=data._id, class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'', data-url=`${data.link.replace('watch','ifr')}`)
+                          i.fas.fa-heart.me-2
+                          | Favorite
+                      else
+                        a.expand.handle-fav.btn.btn-light.shadow-0.border.border-0.w-100.text-start(type="button", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'')
+                          i.fas.fa-heart.me-2
+                          | Favorite
+                    li
+                      a.source.expand.btn.btn-light.border.border-0.shadow-0.w-100.text-start(target="_blank", href=data.source||data.link||data.webm||data.url)
+                        i.fas.fa-link.me-2
+                        | View Source
+                    li
+                      if mode == 2 && data.extractor.includes('scrolller') || mode == 5
+                        - moreLink = (mode == 5 ? data.moreLink : `/dashboard/app/${mode}?searchterm=${data.link}/discover`)
+                        a.source.expand.btn.btn-light.border.border-0.shadow-0.w-100.text-start(target='_blank' href=moreLink)
+                          i.fas.fa-plus-square.me-2
+                          | View More
+                    li
+                      if mode == 7
+                        a.source.expand.btn.btn-light.border.border-0.shadow-0.w-100.text-start(target='_blank' href=`/dashboard/app/${mode}?searchterm=${data.isGallery ? data.link : data.alt}`)
+                          i.fas.fa-plus-square.me-2
+                          | View More
+                        a.handle-roop.btn.btn-light.shadow-0.border.border-0.w-100.text-start(type="button", data-id=data._id)
+                          i.fas.fa-meh-blank.me-2
+                          | Handle Roop
+                          .spinner-border.spinner-border-sm
+                    li
+                      if mode != 2
+                        a.source.expand.btn.btn-light.border.border-0.shadow-0.w-100.text-start(target='_blank' href=`/dashboard/app/${mode}?searchterm=${data.title || data.alt}`)
+                          i.fas.fa-plus-square.me-2
+                          | View More
+                    li
+                      a.expand.delete-button.btn.btn-light.border.border-0.shadow-0.w-100.text-start(type="button", data-id=data._id)
+                        i.fas.fa-trash-alt.me-2
+                        | Delete
       if medias2 && medias2.length > 0 && mode == 'actresses'
         .card.bg-transparent.shadow-0
           .card-body.px-0

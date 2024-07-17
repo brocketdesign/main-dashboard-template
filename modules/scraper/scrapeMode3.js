@@ -259,12 +259,13 @@ async function searchImage(query, isReset = false ){
   return filePaths;
 }
 
-async function searchGifImage(query, isReset = false, topPage = false) {
+async function searchGifImage(query, isReset = false, topPage = false, page) {
 
   if(query == undefined){
     console.log(`Query is not defined`)
     return
   }
+  
   const lastPageIndex = await getLastPageIndex(query);
   const startTime = Date.now();
   console.log({lastPageIndex})
@@ -274,7 +275,6 @@ async function searchGifImage(query, isReset = false, topPage = false) {
   } else {
     page = lastPageIndex.page;
   }
-  
   const maxGifCount = 40;
   const browser = await puppeteer.launch({ 
     headless: 'new' ,
@@ -459,7 +459,7 @@ async function scrapeMode(url, mode, nsfw, page, user, isAsync) {
     }
     //const data1 = await searchPorn(query, mode, nsfw, url, page);
     
-    const SexGifPromise = query && query != 'undefined' ? searchGifImage(query,false,false).catch(error => {
+    const SexGifPromise = query && query != 'undefined' ? searchGifImage(query,false,false,page).catch(error => {
       console.error("Failed to scrape data from Sex Gif", error);
       return []; // Return empty array on failure
     }) : scrapeTopPage()
