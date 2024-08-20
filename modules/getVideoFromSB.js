@@ -315,7 +315,6 @@ async function scrapeSearchPage(query, mode, nsfw, url, pageNum, userId){
       });
 
       await page.goto(url, { waitUntil: 'networkidle2' });
-
       try {
         // The magic spell to detect if our element is basking in the spotlight
         const isVisible = await page.evaluate(() => {

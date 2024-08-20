@@ -2,7 +2,6 @@ extends dashboard
 
 block dynamicContent
   div.mode-container(id=section data-mode=mode)
-  button(id="lazyLoadButton" class="btn btn-primary" data-mode=mode) Toggle Lazy Load
   #imageList.image-container.auto-show.d-flex
   if (scrapedData && scrapedData.length > 0 ) || (medias2 && medias2.length > 0)
     .masonry-container.row.custom-carousel-container
@@ -10,9 +9,7 @@ block dynamicContent
         if data._id
           - displayscr = (mode == 3 )? 'displaysrc':''
           .mb-2.px-1.mx-0.masonry-item.custom-carousel-item.grid-item(data-mode=mode,data-type=data.video?'VIDEO':'IMAGE',data-extractor=data.extractor, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
-            .card.info-container.mx-0(class=`card-clickable-${mode} ${displayscr}`, style="cursor:pointer", data-id=data._id, data-title=data.title, data-link=data.link)
-
-              
+            .card.info-container.mx-0(class=`card-clickable-${mode} ${displayscr}`, style="cursor:pointer;background:#000", data-id=data._id, data-title=data.title, data-link=data.link)
               .video-container.d-flex.position-relative(data-id=data._id)
                 .card-top
                   if data.url && data.url.includes('v.redd.it')
@@ -48,9 +45,12 @@ block dynamicContent
                     video(data-id=data._id, data-src=data.highestQualityURL, style="display:none;" width="100%" controls muted autoplay loop playsinline)
                   if mode == 9
                     video(data-id=data._id, data-src=data.url, style="display:none;" width="100%" controls muted autoplay loop playsinline)
+              .position-absolute(style="top: 10px;left: 10px;")
+                  span.floating-fav.handle-fav(data-id=data._id, style="background-color: #fff9f9;border-radius: 50%;padding: 5px 9px;", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'')
+                    i.fas.fa-heart
               .setting-absolute
-                .btn-group
-                  button.btn.btn-light.dropdown-toggle(type="button", id="dropdownMenuButton", data-bs-toggle="dropdown", aria-expanded="false")
+                .btn-group.shadow-0
+                  button.btn.btn-light.dropdown-toggle.shadow-0(type="button", id="dropdownMenuButton", data-bs-toggle="dropdown", aria-expanded="false")
                     i.fas.fa-bars
                   ul.dropdown-menu(aria-labelledby="dropdownMenuButton")
                     if data.title
@@ -74,7 +74,7 @@ block dynamicContent
                           i.fas.fa-heart.me-2
                           | Favorite
                       else
-                        a.expand.handle-fav.btn.btn-light.shadow-0.border.border-0.w-100.text-start(type="button", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'')
+                        a.expand.handle-fav.btn.btn-light.shadow-0.border.border-0.w-100.text-start(type="button", data-id=data._id, class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'')
                           i.fas.fa-heart.me-2
                           | Favorite
                     li
@@ -140,9 +140,9 @@ block dynamicContent
   .d-none.position-fixed(style="bottom:10px;right:10px")
     button#activeSlider.btn.btn-dark.shadow-0.rouded 
       i.fas.fa-play
-  .carousel-toolbar.position-absolute.justify-content-end.py-3(style="z-index: 3;top: 0;right: 5px;display:none")
-    button.btn.btn-dark.rounded-0#toggleAudio.mx-3.text-white.border.border-white(type="button")
+  .carousel-toolbar.position-absolute.justify-content-center.py-3(style="z-index: 3;bottom: 0px;right: 15px;left: 15px;display:none")
+    button.btn.btn-dark.rounded.border-0.shadow-0#toggleAudio.mx-3.text-white.border.border-white(type="button")
       i.fas.fa-volume-off
       i.fas.fa-volume-up.d-none
-    button.btn.btn-dark.rounded-0#closeSlickModal.mx-3.text-white.border.border-white(type="button")
+    button.btn.btn-dark.rounded.border-0.shadow-0#closeSlickModal.mx-3.text-white.border.border-white(type="button")
       i.fas.fa-times

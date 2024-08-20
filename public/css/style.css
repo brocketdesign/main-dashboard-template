@@ -1,6 +1,25 @@
 main#dashboard {
   display:none;
 }
+.carousel-toolbar {
+  background: #ffffffc4;
+  border-radius: 50px 50px 0px 0px;
+}
+.swal2-custom-popup {
+  width: 250px; /* Smaller width */
+  padding: 10px;
+  font-size: 14px; /* Smaller font size */
+}
+
+.swal2-custom-title {
+  font-size: 16px; /* Adjust the title font size */
+  font-weight: 500;
+  color: #333; /* Darker title color */
+}
+.blurred .video-container {
+  filter: blur(25px);
+  transition: filter 0.3s ease-in-out;
+}
 
 .hide-text{
   font-size: 12px;
@@ -43,7 +62,7 @@ main#dashboard {
 #video-holder .card-title, #mobile-toolbar .card-title{
   color:white;
 }
-button.fav i {
+.fav i {
   color:red !important;
 }
 .masonry-container .download-button i,.masonry-container .spinner-border  {

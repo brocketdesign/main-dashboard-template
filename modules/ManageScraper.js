@@ -75,11 +75,11 @@ async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
   let userInfo = await findAndUpdateUser(userId);
   
   scrapedData = await scrapeMode(searchterm, mode, nsfw, page, user, true);
+  console.log({scrapedData})
   if(!scrapedData){
     return []
   }
 
-  
   const categories = await initCategories(userId)
 
   scrapedData = scrapedData.map((data) => ({
@@ -104,6 +104,7 @@ async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
 }
 
 async function insertInDB(myCollection, scrapedData) {
+  console.log({scrapedData})
   try {
     if (scrapedData.length === 0) {
       return [];

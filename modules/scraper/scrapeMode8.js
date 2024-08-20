@@ -63,47 +63,40 @@ async function scrapeTopPage(mode){
     if ((startTime - lastTime) < LAST_PAGE_RESET_INTERVAL) {
       return lastTopPageData
     }
-    let pornpics =  await searchImage(generateTopPageUrl()).catch(error => {
-      console.error("Failed to scrape data from Sex Gif", error);
-      return []; // Return empty array on failure
-    });
-    pornpics = pornpics.map((data) => ({
+    let imagedata = await fetchDataSrcArray(generateTopPageUrl());
+
+    if (!imagedata || imagedata.length === 0) {
+      console.log('No image data retrieved');
+      return lastTopPageData; // or handle accordingly
+    }
+
+    imagedata = imagedata.map((data) => ({
       ...data,
-      query:'top',
+      query: 'top',
       mode,
-      extractor:getExtractor(),
-      time :new Date()
-    })); 
-    const {insertInDB} = require('../ManageScraper')
-    await insertInDB(pornpics)
-    return pornpics
+      extractor: getExtractor(),
+      time: new Date()
+    }));
+    
+    return imagedata
   } catch (error) {
     console.log(error)
     console.log(`Error scraping top page for S8`)
   }
 }
 
-async function searchImage(galleryUrl){
-  return fetchDataSrcArray(galleryUrl)
-}
 async function fetchDataSrcArray(url) {
   try {
-    // Fetch the HTML of the page
     const { data } = await axios.get(url);
-    // Load the HTML into cheerio
     const $ = cheerio.load(data);
-    // An empty cauldron to fill with our data-src spells
     const dataSrcArray = [];
 
-    // Conjure the data-src attributes from each li.thumbwook img element
     $('.list-gifs .item').each((index, element) => {
-      // The magic essence of the data-src attribute
       const highestQualityURL = $(element).find('.gif-wrap').attr('data-full');
       if (highestQualityURL) {
         const imageUrl = $(element).find('.gif-wrap').attr('data-poster');
         const alt = $(element).find('.gif-thumb-image').attr('alt');
         const link = $(element).find('a.title-link').attr('href');
-        // Add the essence to our cauldron
         dataSrcArray.push({
           link,
           imageUrl,
@@ -117,9 +110,10 @@ async function fetchDataSrcArray(url) {
     return dataSrcArray;
   } catch (error) {
     console.error('Alas! The spell failed:', error.message);
-    return [];
+    return []; // Ensure an array is returned even in the event of an error
   }
 }
+
 
 async function scrapeMode(query, mode, nsfw, page, user, isAsync) {
   try {
@@ -128,12 +122,12 @@ async function scrapeMode(query, mode, nsfw, page, user, isAsync) {
       return []
     }
 
-    const PornPics = query && query != 'undefined' ? await searchImage(generateUrl(trimAndReplace(query),page)).catch(error => {
+    const imagedata = query && query != 'undefined' ? await fetchDataSrcArray(generateUrl(trimAndReplace(query),page)).catch(error => {
       console.error("Failed to scrape data from Sex Gif", error);
       return []; // Return empty array on failure
     }) : await scrapeTopPage(mode)
 
-    return PornPics;
+    return imagedata;
   } catch (error) {
     console.log('Error occurred while scraping and saving data:', error);
     return [];

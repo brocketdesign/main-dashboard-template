@@ -292,7 +292,7 @@ async function searchVideoDirectLink(videoDocument, myCollection, user){
   const videoLink = $('a').filter(function() {
     return $(this).attr('href') && $(this).attr('href').includes('video');
   }).attr('href'); 
-
+console.log({videoLink})
   return videoLink; 
 }
 

@@ -46,9 +46,10 @@ function startServer() {
         protocol: "http",
         defaultSampler: "DPM++ 2M Karras",
         defaultStepCount: 50,
-        safety_checker: true,
-        enhance_prompt: true,
+        safety_checker: false,  // Disabled safety checker
+        enhance_prompt: false,  // Disabled prompt enhancement
       });
+    
 
       global.sdapi = sd_api; //Save the API for stable diffusion in a global variable
       // Use the express-session middleware

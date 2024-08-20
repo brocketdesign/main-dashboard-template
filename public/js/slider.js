@@ -10,7 +10,7 @@ function generateNavigation(){
 $(document).ready(function() {
 
     $('#activeSlider,.expand-card').on('click', function() {
-      const currentItemId = $(this).closest('.card-title ').data('id')
+      const currentItemId = $(this).closest('.info-container').data('id')
       pauseAllVideoExept(currentSlideId)
       muteAllVideo();
       activeFirstVideo();
@@ -51,7 +51,7 @@ function scrollToCurrentSlide(currentItemId) {
   if (targetElement.length) {
       $('html, body, .custom-carousel-container').animate({
           scrollTop: targetElement.offset().top
-      }, 1000); // Smooth scroll with a duration of 1000ms
+      }, 100); // Smooth scroll with a duration of 1000ms
   } else {
       console.log("No element found with ID:", currentSlideId);
   }

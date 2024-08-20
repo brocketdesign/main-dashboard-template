@@ -68,6 +68,9 @@ block mainContent
     if searchterm || fav
       #extractors.my-3.col-auto
         button.btn.btn-primary.extractor.mx-2(data-extractor="false") All
+    if (scrapedData && scrapedData.length > 0 )
+      .my-3.col-auto
+        button(id="lazyLoadButton" class="btn btn-primary" data-mode=mode) Toggle Lazy Load
     .my-3.col.d-flex.justify-content-end
       //button.btn.btn-primary.me-2(type='button' onclick="getDownloadData()")
       a.btn.btn-primary.me-2(href=`/dashboard/app/${mode}/fav?searchterm=All`)

@@ -137,8 +137,14 @@ $(document).ready(function() {
     $(".card.pricing").hover(() => $(this).addClass('border-primary'), () => $(this).removeClass('border-primary'));
     $('.delete-button').click(function(e) { 
         e.preventDefault()
-
          handleHiding($(this).closest('.card').data('id'))  
+    });
+    $(document).on('keydown', function(e) {
+        if (e.key === 'd' || e.key === 'D') {
+            const currentActive = $('.custom-carousel-item.active');
+            const itemID = currentActive.data('id');
+            currentActive.find('.delete-button').click();
+        }
     });
     $('.expand-button').click(function(e) { 
         e.preventDefault()
@@ -255,7 +261,6 @@ $(document).ready(function() {
     
     //HandleCardSetting();
     //handleCardButton();
-
     backtothetop();
 
     handleAudio();
@@ -318,7 +323,7 @@ $(document).off('keydown').on('keydown', function(e) {
 
         $('.custom-carousel-container').animate({
             scrollTop: $('.custom-carousel-container').scrollTop() + nextCard.position().top
-        }, 800, function() {
+        }, 100, function() {
             nextCard.addClass('active');
             LazyLoad()
             triggerKeyDown = true
@@ -474,19 +479,27 @@ const handleFormError = (jqXHR, textStatus, errorThrown) => {
 }
 
 const handleFormResult = (isSuccess, message) => {
-    isSuccess = !!(isSuccess == true || isSuccess == 'success') 
-    let btnColor = isSuccess ? 'success' : 'danger';
-    let btnSelector = `button[type="submit"]`;
+    isSuccess = !!(isSuccess == true || isSuccess == 'success');
+    let iconType = isSuccess ? 'success' : 'error';
+    
+    Swal.fire({
+        position: 'top-end',
+        icon: iconType,
+        title: message,
+        showConfirmButton: false,
+        timer: 3000,
+        toast: true,
+        animation: false,
+        customClass: {
+            popup: 'animate__animated animate__fadeInDown',
+            container: 'animate__animated animate__fadeOutUp animate__delay-3s',
+            title: 'swal2-custom-title',
+            popup: 'swal2-custom-popup'
+        }
+    });
+};
 
-    //$(btnSelector).removeClass('btn-success').addClass(`btn-${btnColor}`);
 
-    $("#front-alert .alert-success").stop().hide();
-    $("#front-alert .alert-danger").stop().hide();
-
-    $("#front-alert .alert-"+btnColor).text(message).fadeIn().delay(3000).fadeOut();
-
-    //setTimeout(() => $(btnSelector).removeClass(`btn-${btnColor}`).addClass('btn-success'), 5000);
-}
 function HandleCardSetting() {
     $(document).find('.card.info-container').each(function() {
         const card = $(this);
@@ -556,7 +569,9 @@ $(document).ready(function() {
     }
 
     // Call LazyLoad once on page load
-    LazyLoad();
+    setTimeout(() => {
+        LazyLoad();
+    }, 1000);
 
     // Debounced LazyLoad call on scroll and resize
     const debouncedLazyLoad = debounce(LazyLoad, 100); // Adjust debounce time as needed
@@ -987,26 +1002,41 @@ const handleDownloadButton = () => {
       });
   });
 }
-function handleFavorite(){
-    $(document).find('.card.info-container').on('dblclick',function(){
-        $(this).find('.handle-fav').click()
-    })
- 
-    $(document).on('click','.handle-fav',function(){
+function handleFavorite() {
+    $(document).find('.card.info-container').on('dblclick', function() {
+        $(this).find('.handle-fav').click();
+    });
+
+    $(document).on('click', '.handle-fav', function() {
         const $buttonContainer = $(this);
         const itemID = $(this).data('id') || $(this).closest('.info-container').data('id');
-        // Check if the card has already been processed
+        
         if ($buttonContainer.hasClass('fav')) {
-            removeFromFav(itemID,function(){
-                $buttonContainer.removeClass('fav')
-            })
-        }else{
-            addtofav(itemID,function(){
-                $buttonContainer.addClass('fav')
-            })
+            removeFromFav(itemID, function() {
+                $(`.handle-fav[data-id=${itemID}]`).each(function() {
+                    $(this).removeClass('fav');
+                    handleFormResult(false, 'Media removed to favorite.');
+                });
+            });
+        } else {
+            addtofav(itemID, function() {
+                $(`.handle-fav[data-id=${itemID}]`).each(function() {
+                    $(this).addClass('fav');
+                    handleFormResult(true, 'Media added to favorite.');
+                });
+            });
         }
-    })
+    });
+
+    $(document).on('keydown', function(e) {
+        if (e.key === 'f' || e.key === 'F') {
+            const currentActive = $('.custom-carousel-item.active');
+            const itemID = currentActive.data('id');
+            currentActive.find('.handle-fav').click();
+        }
+    });
 }
+
 function removeFromFav(video_id,callback){
     const mode = $('#range').data('mode')
     $.post('/api/removeFromFav',{video_id, mode},function(response){
@@ -1378,33 +1408,72 @@ const enterFullScreen = (videoElement) => {
     }
 
   };
-
+  let hideQueue = [];
+  let isProcessing = false;
   
+  const handleHiding = (videoId) => {
+    hideQueue.push(videoId);
+    processQueue();
+};
 
- const handleHiding = (videoId) => {
-    const mode = $('#range').data('mode')
-     let $container = $(`.card[data-id=${videoId}]`)
- 
-     const confirmation = confirm("Are you sure you want to delete this item? This action cannot be undone.");
- 
-     if (confirmation) {
-         $.ajax({
-             url: '/api/hide',
-             method: 'POST',
-             data: { element_id: videoId,category:null, mode },
-             success: function(response) {
-                 $container.remove()
-                 updateMasonryLayout()
-                 handleFormResult(false,response.message)
-                 // Handle the success response
-                 console.log(response);
-                 },
-             error: handleFormError
-         });
-     }
- 
- 
- }
+const processQueue = () => {
+    if (isProcessing || hideQueue.length === 0) {
+        return;
+    }
+
+    isProcessing = true;
+    const videoId = hideQueue.shift(); // Get the next media to hide
+    const mode = $('#range').data('mode');
+    let $container = $(`.card[data-id=${videoId}]`);
+    
+    Swal.fire({
+        title: 'Hiding media...',
+        text: "This media will be hidden in 5 seconds unless you cancel.",
+        icon: 'info',
+        iconHtml: '<i class="fas fa-hourglass-half"></i>',
+        showCancelButton: true,
+        cancelButtonText: 'Cancel',
+        timer: 3000,
+        timerProgressBar: true,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        animation: false,
+        customClass: {
+            popup: 'animate__animated animate__fadeInDown',
+            container: 'animate__animated animate__fadeOutUp animate__delay-5s',
+            title: 'swal2-custom-title',
+            popup: 'swal2-custom-popup'
+        },
+        didOpen: () => {
+            Swal.showLoading();
+            $container.addClass('blurred');
+        }
+    }).then((result) => {
+        if (result.dismiss === Swal.DismissReason.timer) {
+            $.ajax({
+                url: '/api/hide',
+                method: 'POST',
+                data: { element_id: videoId, category: null, mode },
+                success: function(response) {
+                    //$container.remove();
+                    //updateMasonryLayout();
+                    handleFormResult(true, 'Media hidden successfully.');
+                },
+                error: handleFormError
+            });
+        } else {
+            $container.removeClass('blurred');
+            handleFormResult(false, 'Action canceled.');
+        }
+
+        isProcessing = false;
+        processQueue(); // Process the next item in the queue
+    });
+};
+
+
+
 
 const handleHidingHistory = (query) => {
     console.log(`Hide this query : ${query}`)
@@ -1461,6 +1530,8 @@ function updategridlayout(value = false) {
     if (rangeState !== null) {
       $('#grid-range').val(rangeState);
       updategridlayout(rangeState)
+    }else{
+        $('#grid-range').val(0);
     }
   
     // Save the state of the range input to local storage when it's toggled

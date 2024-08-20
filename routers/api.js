@@ -38,6 +38,13 @@ const fs = require('fs');
 const url = require('url');
 const { ObjectId } = require('mongodb');
 const { Configuration, OpenAIApi } = require('openai');
+const tf = require('@tensorflow/tfjs-node-gpu');
+
+function clearGpuMemory() {
+    tf.disposeVariables();
+    tf.engine().startScope();
+    tf.engine().endScope();
+}
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
@@ -1009,23 +1016,26 @@ const default_prompt = 'ultra realistic 8k cg, picture-perfect face, flawless, c
 const default_negative_prompt = 'illustration, 3d, 2d, painting, cartoons, sketch, (worst quality:1.9), (low quality:1.9), (normal quality:1.9), lowres, bad anatomy, bad hands, vaginas in breasts, ((monochrome)), ((grayscale)), collapsed eyeshadow, multiple eyeblows, (cropped), oversaturated, extra limb, missing limbs, deformed hands, long neck, long body, imperfect, (bad hands), signature, watermark, username, artist name, conjoined fingers, deformed fingers, ugly eyes, imperfect eyes, skewed eyes, unnatural face, unnatural body, error, bad image, bad photo, worst quality, low quality:1.5), clothes, lingerie, monochrome, blurry, condom, text, logo, ((child)), ((underage)), ((teenage)), crossed eyes, plain background, futa girl, futa, Sfw censored Blurry pixelated out of frame low resolution poor quality grainy monochrome gloves, horns, lowres, disfigured, ostentatious, ugly, oversaturated, grain, low resolution, disfigured, blurry, bad anatomy, disfigured, poorly drawn face, mutant, mutated, extra limb, ugly, poorly drawn hands, missing limbs, blurred, floating limbs, disjointed limbs, deformed hands, blurred out of focus, long neck, long body, ugly, disgusting, bad drawing, childish, cut off cropped, distorted, imperfect, surreal, bad hands, text, error, extra digit, fewer digits, cropped , worst quality, missing limbs, imperfect anatomy, Oriental, Asian, shiny skin, oily skin, unrealistic lighting, fake, airbrushed skin, deformed, blur, blurry, bokeh, warp hard bokeh, gaussian, out of focus, out of frame, obese, (odd proportions, asymmetrical), super thin, fat,dialog, words, fonts, teeth, ((((ugly)))), (((duplicate))), ((morbid)), monochrome, b&w, [out of frame], extra fingers, mutated hands, ((poorly drawn hands)), ((poorly drawn face)), (((mutation))), (((deformed))), ((ugly)), blurry, ((bad anatomy)), (((bad proportions))), ((extra limbs)), cloned face, (((disfigured))), out of frame, ugly, extra limbs, (bad anatomy), ((gross proportions)), (malformed limbs), ((missing arms)), ((missing legs)), (((extra arms))), (((extra legs))), mutated hands, (fused fingers), (too many fingers), (((long neck))), (worst quality:1.5), (low quality:1.5), (normal quality:1.5), lowres, bad anatomy, bad hands, vaginas in breasts, ((monochrome)), ((grayscale)), collapsed eyeshadow, multiple eyeblows, (cropped), oversaturated, extra limb, missing limbs, deformed hands, long neck, long body, imperfect, (bad hands), signature, watermark, username, artist name, conjoined fingers, deformed fingers, ugly eyes, imperfect eyes, skewed eyes, unnatural face, unnatural body, error, painting by bad-artist, 1girl with penis, 1girl with masculine features, backlight, (worst quality, low quality:1.2), watermark, logo, bad anatomy, topless, fat, bad anatomy'
 
 router.post('/txt2img', async (req, res) => {
+  // Call this function before making your API calls
+  clearGpuMemory();
 
-  const prompt = req.body.prompt ? default_prompt + req.body.prompt : default_prompt;
-  const negative_prompt = req.body.negativePrompt || default_negative_prompt;
+  const prompt = req.body.prompt ? req.body.prompt : default_prompt;
+  const negative_prompt = req.body.negativePrompt || '';
   const aspectRatio = req.body.aspectRatio;
-  
-
   // Calculate the width based on the aspect ratio and the fixed height of 768
-  const width = getWidthForAspectRatio(768, aspectRatio);
+  const width = getWidthForAspectRatio(1112, aspectRatio);
 
   const payload = {
     prompt,
     negative_prompt,
     width, // Use the calculated width
-    height: 768, // Fixed height as provided
-    sampler_name: 'DPM++ 2M'
+    height: 1112, // Fixed height as provided
+    sampler_name: 'Euler a',
+    steps: 8,
   };
 
+  console.log(payload)
+  console.log(`Local txt2img`)
   try {
     const result = await global.sdapi.txt2img(payload);
     const imageID = await saveImageToDB(global.db, req.user._id, prompt, result.image, aspectRatio);
@@ -1043,8 +1053,11 @@ router.post('/txt2img', async (req, res) => {
   }
 });
 router.post('/img2img', async (req, res) => {
+  // Call this function before making your API calls
+  clearGpuMemory();
+
   const prompt = req.body.prompt ? default_prompt + req.body.prompt : default_prompt;
-  const negative_prompt = req.body.negativePrompt || default_negative_prompt;
+  const negative_prompt = `` // req.body.negativePrompt || default_negative_prompt;
   const aspectRatio = req.body.aspectRatio;
   const imagePath = req.body.imagePath;
 
@@ -1078,12 +1091,15 @@ router.post('/img2img', async (req, res) => {
       width:metadata.width,
       height: metadata.height,
       strength: 0.8,
-      num_inference_steps: 50,
+      num_inference_steps: 8,
+      steps: 8,
       guidance_scale: 7.5,
       num_images_per_prompt: 1,
       eta: 0.0,
       sampler_name: 'DPM++ 2M'
     };
+    console.log(payload)
+    console.log(`Local img2img`)
     // Conditionally add scripts for isRoop
     if (isRoop) {
           
@@ -1136,77 +1152,94 @@ router.post('/img2img', async (req, res) => {
   }
 });
 
-//STABLE DIFFUSION STABILITY
-const STABILITY_API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image";
-const STABILITY_IMAGE_API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image";
+const STABILITY_API_URL = 'https://api.stability.ai/v2beta/stable-image/generate/sd3';
 const diffusionHeaders = {
-  'Content-Type': 'application/json',
-  Authorization: `Bearer ${process.env.STABLE_DIFFUSION_API_KEY}`
+  'Authorization': `Bearer ${process.env.STABLE_DIFFUSION_API_KEY}`,
+  'Accept': 'image/*'
 };
 
 async function fetchStabilityMagic(data) {
   try {
-    const response = await fetch(STABILITY_API_URL, {
-      headers: diffusionHeaders,  // Updated this part!
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+    const formData = new FormData();
+    formData.append('prompt', data.prompt);
+    formData.append('output_format', 'jpeg');
 
-    if (!response.ok) {
-      throw new Error(`Server said 'nope': ${await response.text()}`);
+    const response = await axios.post(
+      STABILITY_API_URL,
+      formData,
+      {
+        headers: {
+          ...diffusionHeaders,
+          ...formData.getHeaders(),
+        },
+        responseType: 'arraybuffer',
+        validateStatus: (status) => status < 500,
+      }
+    );
+
+    if (response.status !== 200) {
+      throw new Error(`${response.status}: ${response.data.toString()}`);
     }
 
-    const responseJSON = await response.json();
-
-    // Transform each image into a Buffer of awesomeness
-    return responseJSON.artifacts.map((image) => Buffer.from(image.base64, 'base64'));
-
+    return Buffer.from(response.data);
   } catch (error) {
-    console.error("Oopsie-daisy! Trouble in paradise: ", error.message);
+    console.error('Oopsie-daisy! Trouble in paradise: ', error.message);
+    if (error.response) {
+      console.error('Error response status: ', error.response.status);
+      console.error('Error response headers: ', error.response.headers);
+      console.error('Error response data: ', error.response.data);
+    } else {
+      console.error('Error without response: ', error);
+    }
     throw error;
   }
 }
+
 async function transmogrifyImage(data) {
   try {
-    const response = await fetch(STABILITY_IMAGE_API_URL, { 
-      method: 'POST',
-      headers: {
-        ...data.getHeaders(),
-        Accept: 'application/json',
-        Authorization: `Bearer ${process.env.STABLE_DIFFUSION_API_KEY}`
-      }, 
-      body: data,
-    });
+    const response = await axios.post(
+      STABILITY_API_URL,
+      data,
+      {
+        headers: {
+          ...data.getHeaders(),
+          Accept: 'image/*',
+          Authorization: `Bearer ${process.env.STABLE_DIFFUSION_API_KEY}`
+        },
+        responseType: 'arraybuffer',
+        validateStatus: (status) => status < 500,
+      }
+    );
 
-    if (!response.ok) {
-      throw new Error(`The server is being a bit grumpy: ${await response.text()}`);
+    if (response.status !== 200) {
+      throw new Error(`The server is being a bit grumpy: ${response.status}: ${response.data ? response.data.toString() : 'No response data'}`);
     }
 
-    const responseJSON = await response.json();
-
-    // Magically transform each image into a Buffer of wonders
-    return responseJSON.artifacts.map((image) => Buffer.from(image.base64, 'base64'));
-
+    return Buffer.from(response.data);
   } catch (error) {
-    console.error("Whoops! Hit a snag: ", error.message);
+    console.error('Whoops! Hit a snag: ', error.message);
+    if (error.response) {
+      console.error('Error response status: ', error.response.status);
+      console.error('Error response headers: ', error.response.headers);
+      console.error('Error response data: ', error.response.data);
+    } else {
+      console.error('Error without response: ', error);
+    }
     throw error;
   }
 }
+
 function createStabilityPayload(imagePath, prompt) {
   const formData = new FormData();
 
-  // Add the image file
   formData.append('init_image', fs.readFileSync(imagePath), 'init_image.png');
-
-  // Add the other parameters
-  formData.append('init_image_mode', "IMAGE_STRENGTH");
+  formData.append('init_image_mode', 'IMAGE_STRENGTH');
   formData.append('image_strength', 0.35);
   formData.append('steps', 40);
   formData.append('seed', 0);
   formData.append('cfg_scale', 5);
   formData.append('samples', 1);
-
-  // Text prompts
+  formData.append('prompt', prompt);
   formData.append('text_prompts[0][text]', prompt);
   formData.append('text_prompts[0][weight]', 1);
   formData.append('text_prompts[1][text]', 'blurry, bad');
@@ -1214,40 +1247,34 @@ function createStabilityPayload(imagePath, prompt) {
 
   return formData;
 }
+
+
 router.post('/stablediffusion/txt2img', async (req, res) => {
-  const prompt = req.body.prompt;
-  const negative_prompt = req.body.negative_prompt;
-  const aspectRatio = req.body.aspectRatio;
+  const { prompt, aspectRatio } = req.body;
   const closestDimension = getClosestAllowedDimension(1024, aspectRatio);
   const stableDiffusionPayload = {
-    steps: 20,
+    prompt: prompt,
     width: closestDimension.width,
     height: closestDimension.height,
+    steps: 20,
     seed: 0,
     cfg_scale: 5,
     samples: 1,
     text_prompts: [
-      {
-        "text": prompt,
-        "weight": 1
-      },
-      {
-        "text": 'bad,blurry',
-        "weight": -1
-      }
-    ],
+      { text: prompt, weight: 1 },
+      { text: 'bad,blurry', weight: -1 }
+    ]
   };
+  console.log(stableDiffusionPayload)
+  console.log(`txt2img`)
   try {
-    // Ensure that the output folder exists
     await ensureFolderExists('./public/output');
 
     const imageBuffer = await fetchStabilityMagic(stableDiffusionPayload);
     const imageID = await saveImageToDB(global.db, req.user._id, prompt, imageBuffer, aspectRatio);
 
     const imagePath = `./public/output/${imageID}.png`;
-
-    const fs2 = require('fs').promises; // Notice the .promises here
-    await fs2.writeFile(imagePath, imageBuffer);
+    await fs.promises.writeFile(imagePath, imageBuffer);
 
     const base64Image = await convertImageToBase64(imagePath);
     res.json({ image_id: imageID, image: base64Image });
@@ -1255,45 +1282,36 @@ router.post('/stablediffusion/txt2img', async (req, res) => {
     console.error(err);
     res.status(500).send('Error generating image');
   }
-});  
-router.post('/stablediffusion/img2img', async (req, res) => {
-  const prompt = req.body.prompt;
-  const negative_prompt = req.body.negative_prompt;
-  const aspectRatio = req.body.aspectRatio;
-  const imagePath = req.body.imagePath;
+});
 
-  // Validate the imagePath
+
+router.post('/stablediffusion/img2img', async (req, res) => {
+  const { prompt, negative_prompt, aspectRatio, imagePath } = req.body;
+
   if (!imagePath) {
     return res.status(400).send('An image path must be provided for img2img.');
   }
 
   try {
-    // Prepare the payload for the Hugging Face API
+    
+    console.log(`img2img`)
     const stabilityPayload = createStabilityPayload(imagePath, prompt);
-
-    // Call the Hugging Face API
     const resultImageBuffer = await transmogrifyImage(stabilityPayload);
-
-    // Save the resulting image to the database
     const imageID = await saveImageToDB(global.db, req.user._id, prompt, resultImageBuffer, aspectRatio);
 
-    // Ensure that the output folder exists
     await ensureFolderExists('./public/output');
-    
-    // Save the resulting image to a file
     const outputImagePath = `./public/output/${imageID}.png`;
-    await fs.writeFile(outputImagePath, resultImageBuffer);
-    
-    // Convert the resulting image to Base64 for the response
+    await fs.promises.writeFile(outputImagePath, resultImageBuffer);
+
     const base64ResultImage = await convertImageToBase64(outputImagePath);
-    
-    // Send the response
     res.json({ image_id: imageID, image: base64ResultImage });
   } catch (err) {
     console.error(err);
     res.status(500).send('Error generating image');
   }
 });
+
+
 
 // Hugging Face API Configuration
 const API_URL_Hugging = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
