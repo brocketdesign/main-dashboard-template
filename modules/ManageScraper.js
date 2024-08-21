@@ -41,6 +41,7 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
   }
   
   scrapedData = await scrapeMode(searchterm, mode, nsfw, page, user);
+
   if(!scrapedData){
     return []
   }
@@ -75,7 +76,7 @@ async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
   let userInfo = await findAndUpdateUser(userId);
   
   scrapedData = await scrapeMode(searchterm, mode, nsfw, page, user, true);
-  console.log({scrapedData})
+
   if(!scrapedData){
     return []
   }

@@ -50,22 +50,7 @@ function destroyMasonryLayout(){
         msnry.destroy();
     }
 }
-document.addEventListener('DOMContentLoaded', (event) => {
-    // Ensure the DOM is fully loaded
-    const chatInput = document.querySelector('#chat-input-section input'); // Adjust the selector if your input has a more specific identifier
-    const submitButton = document.querySelector('#chat-input-section button[type="submit"]');
-  
-    // Check if both the input and the button are found
-    if(chatInput && submitButton) {
-      chatInput.addEventListener('keypress', function(e) {
-        // Check if Enter is pressed without the Shift key
-        if(e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault(); // Prevent the default action to avoid submitting the form or adding a new line
-          submitButton.click(); // Trigger the button click
-        }
-      });
-    }
-  });
+
 // Masonry setup
 $(window).on('load', function() {
     handleMasonry()
@@ -74,6 +59,7 @@ $(window).on('resize', function() {
     if(isFullScreen){return}
     handleMasonry()
 });
+
 $(document).ready(function() {
     let formChanged = false;
     let form = $('#updateProfile form').not('#reset-form');
@@ -280,7 +266,6 @@ $(document).ready(function() {
 
     enableSubRedit();
 
-    //Handle SideBAR
     onLargeScreen(handleSideBar)
     onSmallScreen(handleSideBar2)
     
@@ -289,8 +274,6 @@ $(document).ready(function() {
     handleScrollDownButton();
     handleCardClickable();
     handleDownloadButton();
-    handleChat();
-    handleChatHistory();
     handleCOmpare();
     handleCOmparePDF();
     initNsfw();
@@ -305,38 +288,67 @@ $(document).ready(function() {
     handleRoop();
 });
 
-let triggerKeyDown = true
+let triggerKeyDown = true;
+
 $(document).off('keydown').on('keydown', function(e) {
-    if(!triggerKeyDown){return}
-    if (e.which == 32 && isFullScreen) {
+    if(!triggerKeyDown) return;
+
+    if (e.which == 32 && isFullScreen) { // Spacebar key (code 32) pressed
         e.preventDefault();
-        triggerKeyDown = false
+        triggerKeyDown = false;
 
-        let currentActive = $('.custom-carousel-item.active');
-        currentActive.removeClass('active');
-        
-        let nextCard = currentActive.next('.custom-carousel-item');
+        let currentVisible = null;
 
-        if (nextCard.length === 0) {
-            nextCard = $('.custom-carousel-item').first();
+        // Find the currently visible element
+        $('.custom-carousel-item').each(function() {
+            if (checkIfElementIsInViewportCurrent($(this))) {
+                currentVisible = $(this);
+                return false; // Break the loop once we find the visible element
+            }
+        });
+
+        if (!currentVisible) {
+            // If no visible element is found, scroll to the first element
+            currentVisible = $('.custom-carousel-item').first();
         }
 
+        currentVisible.removeClass('active');
+
+        let nextCard;
+        if (e.shiftKey) {
+            // Shift + Space pressed, scroll to the previous element
+            nextCard = currentVisible.prev('.custom-carousel-item');
+            if (nextCard.length === 0) {
+                nextCard = $('.custom-carousel-item').last(); // Loop back to the last element if at the start
+            }
+        } else {
+            // Space pressed, scroll to the next element
+            nextCard = currentVisible.next('.custom-carousel-item');
+            if (nextCard.length === 0) {
+                nextCard = $('.custom-carousel-item').first(); // Loop back to the first element if at the end
+            }
+        }
+
+        nextCard.find('.play-button, .instant-play-button').click();
+        nextCard.addClass('active');
+        triggerKeyDown = true;
+        
         $('.custom-carousel-container').animate({
             scrollTop: $('.custom-carousel-container').scrollTop() + nextCard.position().top
         }, 100, function() {
-            nextCard.addClass('active');
-            LazyLoad()
-            triggerKeyDown = true
+            LazyLoad();
         });
     }
 });
 
+function checkIfElementIsInViewportCurrent($element) {
+    const elementTop = $element.offset().top;
+    const elementBottom = elementTop + $element.outerHeight();
+    const viewportTop = $(window).scrollTop();
+    const viewportBottom = viewportTop + $(window).height();
 
-
-
-
-
-
+    return elementBottom > viewportTop && elementTop < viewportBottom;
+}
 
 
 function scrollBottomWindow(){
@@ -345,49 +357,6 @@ function scrollBottomWindow(){
         $('body').css('overflow', 'hidden');
     });
 }
-const handleScrollDownButton = () => {
-    if ($('#chat-input-section').length && $('.floating-chat').length == 0) {
-        scrollBottomWindow()
-        $('.chat-window').animate({ scrollTop: $('.chat-window')[0].scrollHeight }, 'slow');
-        disableTrackScroll()
-    }
-    
-    // Detect scroll event on the chat window
-    $('.chat-window').on('scroll', function() {
-        // If scrolled to bottom of the chat window, fade out the scroll down button
-        if ($('.chat-window').scrollTop() + $('.chat-window').innerHeight() >= $('.chat-window')[0].scrollHeight) {
-            $('.scroll-down').fadeOut();
-        } else {
-            // If not at the bottom, fade in the scroll down button
-            $('.scroll-down').fadeIn();
-        }
-
-          // Calculate the distance from the bottom
-            var scrollPosition = $(this).scrollTop() + $(this).innerHeight();
-            var nearBottom = $(this)[0].scrollHeight; // Adjust '100' based on your needs
-
-            allowAutoScroll = scrollPosition >= nearBottom;
-
-    });
-    $('.scroll-down').on('click', function() {
-        scrollChatDown(true)
-        return false;
-    });
-}
-let allowAutoScroll = true; // Global flag to control auto-scroll behavior
-
-function scrollChatDown(forceScroll = false) {
-    if(forceScroll){
-        $('.chat-window').stop().animate({ scrollTop: $('.chat-window')[0].scrollHeight }, 'slow');
-        return
-    }
-    if (allowAutoScroll) {
-        $('.chat-window').stop().animate({ scrollTop: $('.chat-window')[0].scrollHeight }, 'slow');
-    }
-}
-
-
-// Remember to call scrollChatDown() after appending each new message to the chat window
 
 const handleCardButton = () => {
     $(document).on('click','.info-button',function(){
@@ -613,28 +582,37 @@ function manageVideo(isVisible, $element) {
     })
 
 }
-
 function LazyLoad(){
-    const mode = parseInt($('.mode-container').data('mode'))  
+    const mode = parseInt($('.mode-container').data('mode'));
+    const maxLoadCount = 3;
+    let loadCount = 0;
+
     $('.card.info-container').each(function(){
-        const isVisible = checkIfElementIsInViewport($(this))
-            if(
-                isVisible && !$(this).hasClass('lazyLoad') && $('#search').data('mode') != 1 && $('#search').data('mode') != 2
-                || isVisible && !$(this).hasClass('lazyLoad') && isLargeScreen() && $('#search').data('mode') != 1 && $('#search').data('mode') != 2
-                || isVisible && !$(this).hasClass('lazyLoad') && isFullScreen
-            ){
-                $(this).addClass('lazyLoad')
-                const $this = $(this)
-                isLazyLoad(mode, function(isLazyLoadValue) {
-                    if(isLazyLoadValue){
-                        downloadAndShow($this)
-                    }
-                });
-                
-            }
-            manageVideo(isVisible,$(this))
-    })
+        if (loadCount >= maxLoadCount) {
+            return false;
+        }
+
+        const isVisible = checkIfElementIsInViewport($(this));
+        if(
+            isVisible && !$(this).hasClass('lazyLoad') && $('#search').data('mode') != 1 && $('#search').data('mode') != 2
+            || isVisible && !$(this).hasClass('lazyLoad') && isLargeScreen() && $('#search').data('mode') != 1 && $('#search').data('mode') != 2
+            || isVisible && !$(this).hasClass('lazyLoad') && isFullScreen
+        ){
+            $(this).addClass('lazyLoad');
+            const $this = $(this);
+            isLazyLoad(mode, function(isLazyLoadValue) {
+                if(isLazyLoadValue || isFullScreen){
+                    downloadAndShow($this);
+                }
+            });
+
+            loadCount++; // Increment the load count
+        }
+
+        manageVideo(isVisible, $(this));
+    });
 }
+
 function isFavorite(){
     return !! document.querySelector('#fav')
 }
@@ -646,13 +624,7 @@ function checkIfElementIsInViewport($element) {
     const viewportTop = $(window).scrollTop();
     const viewportBottom = viewportTop + $(window).height();
 
-    // Calculate 25% of the element's height
     const threshold = elementHeight * 0.25;
-
-    // Check if at least 25% of the element is visible
-    // The element is considered 25% visible if:
-    // - The bottom of the element is below the top of the viewport by at least the threshold, AND
-    // - The top of the element is above the bottom of the viewport by more than the threshold
     const isAtLeast25PercentVisible =
         (elementBottom - threshold > viewportTop) && (elementTop + threshold < viewportBottom);
 
@@ -1244,124 +1216,8 @@ const handleCOmpare = () => {
     });
 
 }
-function toggleFloatingChat(){
-    $('.floating-chat').toggle()
-    scrollChatDown(true);
-}
-function handleChatHistory(){
-    $.get('/api/openai/chat',function(data){
-        data.forEach(function(item){
-            const $messages = $('#messages');
-            const $template = $('.template').clone().removeAttr('style class');
-            
-            // Add user message
-            $template.addClass('p-4 bg-white');
-            $template.find('.userName').text('ユーザー');
-            $template.find('.message').addClass('user bg-white').text(item.prompt);
-            $template.find('.time').text(new Date(item.prompt_time).toLocaleTimeString('ja-JP'));
-            $messages.append($template);
 
-            const $agentTemplate = $('.template').clone().removeAttr('style class');
-            
-            $agentTemplate.addClass('p-4 text-end bg-dark text-white');
-            $agentTemplate.find('.userName').text('エージェント');
-            $agentTemplate.find('.time').text(new Date(item.completion_time).toLocaleTimeString('ja-JP'));
-            $agentTemplate.find('.message').addClass('agent text-start').attr('id',item._id).text(item.completion ? item.completion[0] : '')
-            $messages.append($agentTemplate);
-        });
-        $(document).find('.chat-message.agent').each(function(){
-            const text = $(this).text()
-            const HTML = convertMarkdownToHTML(text)
-            $(this).html(HTML)
-        })
-    })
-}
- const handleChat = () => {
 
-    //Convert all message to HTML
-    $('.chat-message.agent').each(function(){
-        const text = $(this).text()
-        const HTML = convertMarkdownToHTML(text)
-        $(this).html(HTML)
-    })
-
-    $('.close-chat').on('click',function(){
-        $('.floating-chat').hide()
-    })
-
-    $('#chat-input-section button').on('click', function(e) {
-        e.preventDefault();
-
-        const $this = $(this);
-        const $input = $('#chat-input-section input');
-        const prompt = $input.val() ;
-
-        if (!prompt) {
-            return;
-        }
-
-        $input.val(''); // clear input field
-        $this.find('i').hide(); // hide plane icon
-        $this.append('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>'); // add spinner
-
-        // update chat window
-        const $messages = $('#messages');
-        const $template = $('.template').clone().removeAttr('style class');
-        
-        // Add user message
-        $template.addClass('p-4 bg-white');
-        $template.find('.userName').text('ユーザー');
-        $template.find('.message').addClass('user bg-white').text(prompt);
-        $template.find('.time').text(new Date().toLocaleTimeString());
-        $messages.append($template);
-
-        $('.chat-window').scrollTop($('.chat-window').prop('scrollHeight'));
-
-        // simulate request
-        $.ajax({
-            url: '/api/openai/custom/chat', // replace with your endpoint
-            method: 'POST',
-            data: { 
-                prompt:prompt,
-                time:new Date() },
-            success: function(response) {
-                $('#temporary').html('')
-                handleStream(response, function(message) {
-
-                    if($(`#${response.insertedId}`).length==0){
-                        const $agentTemplate = $('.template').clone().removeAttr('style class');
-                        
-                        $agentTemplate.addClass('p-4 text-end bg-dark text-white');
-                        $agentTemplate.find('.userName').text('エージェント');
-                        $agentTemplate.find('.time').text(new Date().toLocaleTimeString('ja-JP'));
-                        $agentTemplate.find('.message').addClass('agent text-start').attr('id',response.insertedId)
-                        $agentTemplate.append(`<div id="temp-${response.insertedId}" class="d-none"></div>`)
-                        $messages.append($agentTemplate);
-                    }
-                    
-                    $(`#temp-${response.insertedId}`).append(message);
-                    ConvertMarkdown(`#temp-${response.insertedId}`, `#${response.insertedId}`); 
-                    scrollChatDown();
-                });
-     
-                $this.find('.spinner-border').remove(); // remove spinner
-                $this.find('i').show(); // show plane icon
-
-            },
-            error: function(error) {
-                console.error(error);
-                $this.find('.spinner-border').remove(); // remove spinner
-                $this.find('i').show(); // show plane icon
-            },
-            finally: function(error) {
-                console.error(error);
-                $this.find('.spinner-border').remove(); // remove spinner
-                $this.find('i').show(); // show plane icon
-            }
-        });
-    });
- }
-   
 // Function to enter fullscreen
 const enterFullScreen = (videoElement) => {
     if (videoElement.requestFullscreen) {
@@ -1396,12 +1252,6 @@ const enterFullScreen = (videoElement) => {
   const handleExpand = (videoId) => {
     let videoElement = $(`.card[data-id=${videoId}]`).find('video').get(0);
   
-    // Enter full screen
-    //enterFullScreen(videoElement);
-  
-    // Log the action
-    //console.log(`Video ${videoId} requested to go fullscreen.`);
-
     if(!$(videoElement).attr('controls')){
         toggleVideoControls(videoElement,true);
         toggleMenu($(`.card[data-id=${videoId}]`),true);
