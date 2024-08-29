@@ -1,148 +1,95 @@
 extends default
 
 block content
-    //- Background image
+    script.
+        document.addEventListener('DOMContentLoaded', function() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.remove('hidden'); // Remove the hidden class
+                        entry.target.classList.add('animate__animated');
+                        entry.target.classList.add(entry.target.dataset.animate); // Apply the animation class
+                        entry.target.classList.add(entry.target.dataset.delay); // Apply delay if present
+                        observer.unobserve(entry.target); // Stop observing after animation
+                    }
+                });
+            }, {
+                threshold: 0.1 // Adjust the threshold as needed
+            });
+
+            document.querySelectorAll('[data-animate]').forEach(element => {
+                element.classList.add('hidden'); // Add the hidden class initially
+                observer.observe(element);
+            });
+        });
+    style.
+        .cta-button{
+            font-size:1.3em;
+        }
+        .hidden {
+            opacity: 0;
+        }
+        .b-custom-gradient-text {
+            background: linear-gradient(90.9deg, #0ea8cc 2.74%, #a514f9 102.92%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .b-custom-gradient {
+            background: linear-gradient(90.9deg, #0ea8cc 2.74%, #a514f9 102.92%);
+        }
+
+    //- ログインポップアップ
+    #login-container.position-fixed.d-flex.align-items-center.d-none(data-animate="animate__fadeIn" onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
+        .position-fixed.top-50.start-50.translate-middle#positionElement.d-flex.justify-content-center
+            .col(style="max-width: 90%;")
+                #login-form.card.shadow.bg-light.border.border-white.text-center
+                    .card-body.d-flex.flex-column.justify-content-center(style="min-height: 250px;")
+                        h1.card-title.text-center 
+                            span.b-custom-gradient-text.fw-bold UniDash
+                        span.fw-bold(style="font-size:16px;") Your MultiFuntional Dashboard
+                        .mb-3
+                        .verify-email.d-none(style="min-height: 60px;")
+                            span メールアドレスを確認してログインしてください
+                            a#resend-email(href="#" style="display:block" onclick="resendSigninMail()") メールを再送する
+
+                        .container.text-center
+                            a(href='/user/login', class='google-login-button btn btn-light')
+                                <div class="bg-white" style="borer-radius:50px"><i class="fas fa-envelope me-2"></i></div>
+                                Login with mail
+                            span.d-block.w-100 OR
+                            a(href='/auth/google', class='google-login-button btn btn-light')
+                                img.me-2(src='/img/googleauth.svg', alt='Googleで続ける')
+                                span Register/Login
+                        .copyright.mt-3
+                            hr
+                            span.text-muted.small(style="font-size:12px") 続行することで、当社の利用規約およびプライバシーポリシーに同意するものとします。
+
+
+
+    //- 背景画像
     div#intro.bg-image.shadow-1-strong
-        div(style="background:linear-gradient(45deg, rgba(23, 88, 213, 0.7), rgba(14, 167, 214, 0.7) 100%);")
-            div.container.d-flex.align-items-center.h-100(style="min-height:70vh;")
-                div.text-white.col-12.col-md-6.py-5
-                    h1.mb-3.fw-bold.display-4
-                        span コンテンツ制作を
-                        p 10倍速に
-                    h5 高品質な記事やSNS・広告文を数秒で作成
-                    h5.mb-4 AIライティングアシスタント
-                    .d-flex
-                        a.btn.btn-outline-light.btn-lg.m-2(href="/user/login", role="button", style="font-size:1em;") Login
-                        a.btn.btn-warning.btn-lg.m-2(href="/user/signup", role="button", style="font-size:1em;") まずは無料で使ってみる
-    div.container.pt-5(style="overflow-x:hidden;")
-        //- Section: Features
-        section 
-            #icon-grid.container.px-4.py-5
-                h1.display-4.fw-bold ChatGPTよりも効率よく
-                h1.display-4.fw-bold コンテンツ作成を進めましょう
-                h6.fw-normal ブログ記事や広告文など100種類以上の効果的な日本語テンプレートを備えており、必要なジャンルのコンテンツをすぐに作成することが可能です。
-                .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.py-5
-                    .col.d-flex.align-items-start
-                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-pencil-alt(style='width: 1.75em; height: 1.75em;')   
-                        div
-                            h4.fw-bold.mb-0 SEOブログ作成
-                            p ChatGPTを使用して最適化されたブログ記事を作成します。
-                    .col.d-flex.align-items-start
-                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-twitter(style='width: 1.75em; height: 1.75em;')   
-                        div
-                            h4.fw-bold.mb-0 Twitter投稿アシスタント
-                            p 効果的なツイートを作成するための提案とサポート。
-                    .col.d-flex.align-items-start
-                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-search-dollar(style='width: 1.75em; height: 1.75em;')   
-                        div
-                            h4.fw-bold.mb-0 キーワード最適化
-                            p 人気のキーワードを取得してコンテンツを最適化します。
-                    .col.d-flex.align-items-start
-                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-chart-line(style='width: 1.75em; height: 1.75em;')   
-                        div
-                            h4.fw-bold.mb-0 パフォーマンス分析
-                            p 投稿の効果を分析して最適な戦略を見つけます。
-                    .col.d-flex.align-items-start
-                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-robot(style='width: 1.75em; height: 1.75em;')   
-                        div
-                            h4.fw-bold.mb-0 AI対話
-                            p ユーザーの要求に応じてChatGPTと対話します。
-                    .col.d-flex.align-items-start
-                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-images(style='width: 1.75em; height: 1.75em;')
-                        div
-                            h4.fw-bold.mb-0 ビジュアルコンテンツ提案
-                            p 画像やグラフィックを最適化するための提案。
-                    .col.d-flex.align-items-start
-                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-share-alt(style='width: 1.75em; height: 1.75em;')
-                        div
-                            h4.fw-bold.mb-0 ソーシャルメディア統合
-                            p 一つのプラットフォームで複数のソーシャルメディアに投稿。
-                    .col.d-flex.align-items-start
-                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-cogs(style='width: 1.75em; height: 1.75em;')
-                        div
-                            h4.fw-bold.mb-0 カスタマイズ設定
-                            p ユーザーのニーズに合わせてアプリをカスタマイズ。
-
-        hr.my-5
-        //- Section: Content
-        section
-            div.row
-                div.col-md-6.gx-5.mb-4
-                    div.bg-image.hover-overlay.ripple.shadow-2-strong.rounded-5(data-mdb-ripple-color="light")
-                        img.img-fluid(src="https://storage.googleapis.com/studio-design-asset-files/projects/VGOKDzGlqn/s-2400x1925_v-frms_webp_5dc7a9f1-627e-4515-a6ab-6b5b6dc66218_middle.webp")
-                        a(href="#!")
-                            div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
-                div.col-md-6.gx-5.mb-4
-                    h4.fw-bold.display-4  ChatGPTよりも効率よく
-                    h4.fw-bold.display-4 コンテンツ作成を進めましょう
-                    p.text-muted
-                        | ブログ記事や広告文など100種類以上の効果的な日本語テンプレートを備えており、必要なジャンルのコンテンツをすぐに作成することが可能です。
-                    p.strong セキュアで信頼性があります
-                    p.text-muted
-                        | 当社のサービスはセキュリティに優れており、個人情報や機密データは厳重に保護されます。安心してご利用いただけます。
-        hr.my-5
-        //- Section: Content
-        section
-            div.row
-                div.col-md-6.gx-5.mb-4.order-md-2
-                    div.bg-image.hover-overlay.ripple.shadow-2-strong.rounded-5(data-mdb-ripple-color="light")
-                        img.img-fluid(src="https://storage.googleapis.com/studio-design-asset-files/projects/VGOKDzGlqn/s-2400x1610_v-frms_webp_918879e4-e6ce-4e95-92d6-37688b3bde50_middle.webp")
-                        a(href="#!")
-                            div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
-                div.col-md-6.gx-5.mb-4
-                    h4.fw-bold.display-4  AIエディターで
-                    h4.fw-bold.display-4 長文コンテンツを作成
-                    p.text-muted
-                        | ブログ記事や広告文など100種類以上の効果的な日本語テンプレートを備えており、必要なジャンルのコンテンツをすぐに作成することが可能です。
-                    p.strong セキュアで信頼性があります
-                    p.text-muted
-                        | 当社のサービスはセキュリティに優れており、個人情報や機密データは厳重に保護されます。安心してご利用いただけます。
-        hr.my-5
-        //- Section: Content
-        section.text-center
-            h4.mb-5.strong 多様な機能があります
-            div.row
-                div.col-lg-4.col-md-12.mb-4
-                    div.card
-                        div.bg-image.hover-overlay.ripple(data-mdb-ripple-color="light")
-                            img.img-fluid(src="https://mdbootstrap.com/img/new/standard/nature/184.jpg")
-                            a(href="#!")
-                                div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
-                        div.card-body
-                            h5.card-title 契約書作成
-                            p.card-text
-                                | クラウドサインでは簡単に契約書を作成できます。カスタマイズ可能なテンプレートを使用して、手間なく契約内容を記入できます。
-                            a.btn.btn-primary 詳細を見る
-
-                div.col-lg-4.col-md-6.mb-4
-                    div.card
-                        div.bg-image.hover-overlay.ripple(data-mdb-ripple-color="light")
-                            img.img-fluid(src="https://mdbootstrap.com/img/new/standard/nature/023.jpg")
-                            a(href="#!")
-                                div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
-                        div.card-body
-                            h5.card-title 署名の管理
-                            p.card-text
-                                | クラウドサインでは電子署名を簡単に管理できます。複数の参加者との契約にも対応しています。
-                            a.btn.btn-primary 詳細を見る
-
-                div.col-lg-4.col-md-6.mb-4
-                    div.card
-                        div.bg-image.hover-overlay.ripple(data-mdb-ripple-color="light")
-                            img.img-fluid(src="https://mdbootstrap.com/img/new/standard/nature/111.jpg")
-                            a(href="#!")
-                                div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
-                        div.card-body
-                            h5.card-title 安全性と信頼性
-                            p.card-text
-                                | クラウドサインでは個人情報の保護に力を入れています。安心して大切な契約を行いましょう。
-                            a.btn.btn-primary 詳細を見る
-        hr.my-5
-        //- Section: Pricing
-        section.text-center
-            .pricing-header.p-3.pb-md-4.mx-auto.text-center
-                h1.display-4.fw-bold 利用規模に合わせた
-                h1.display-4.fw-bold 最適なプランを用意しています。
-                p.fs-5.text-muted Quickly build an effective pricing table for your potential customers with this Bootstrap example. It’s built with default Bootstrap components and utilities with little customization.
-        include subscription-plan
-
+        div(style="background: linear-gradient(120.9deg, #fff 50.74%, #2a1eae 102.92%);")
+            div.container.row.align-items-center.h-100.m-auto
+                div.col-12.col-md-6.py-5.text-dark(data-animate="animate__slideInLeft")
+                    h1.mb-3.fw-bold.text-dark.text-center#headline-container
+                        span.b-custom-gradient-text UniDash
+                        p.generate-text#headline
+                    .text-center
+                        | Your MultiFuntional Dashboard
+                    .text-center.d-flex.flex-column.justify-content-center.align-items-center.mt-3
+                        button.btn.b-custom-gradient.text-white.btn-lg.m-2.px-5.py-3.mb-3.cta-button(data-animate="animate__bounce"  data-delay="animate__delay-1s" onclick="displayLogin()", role="button", style="border-radius:50px") まずは無料でお試し
+                .col-12.col-sm-6(data-animate="animate__slideInRight")
+                    .container.p-3.text-center
+                        img(src="/img/neon-woman-interacting-with-a-virtual-infographic.gif" style="width:90%")
+                        span.text-muted(style="font-size: 12px;position: absolute;bottom: 5px;right: 0;" data-animate="animate__fadeIn" data-delay="animate__delay-2s")
+                            | Illustration by 
+                            a(href="https://icons8.com/illustrations/author/eEbrZFlkyZbD") Anna A
+                            |  from 
+                            a(href="https://icons8.com/illustrations") Ouch!
+    script.
+        function displayLogin(){
+            $('#login-container').removeClass('d-none')
+        }
+        function hideLogin(){
+            $('#login-container').addClass('d-none')
+        }

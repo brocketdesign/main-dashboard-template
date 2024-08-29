@@ -14,6 +14,7 @@ $(document).ready(function() {
     activateCarousel(currentItemId);
     generateNavigation();
     scrollToCurrentSlide(currentItemId);
+    $(`.play-button[data-id="${currentItemId}"],.instant-play-button[data-id="${currentItemId}"]`).click();
   });
 
   $('#closeSlickModal').on('click', function() {
@@ -59,6 +60,7 @@ function activateCarousel(currentItemId) {
   $('.setting-absolute').each(function() {
     $(this).hide();
   });
+  $('.pagination').toggleClass('d-flex d-none')
   $('#imageList').hide();
   const carouselContainer = $('.custom-carousel-container');
   const cards = $('.custom-carousel-item');
@@ -79,6 +81,7 @@ function deactivateCarousel() {
   $('.setting-absolute').each(function() {
     $(this).show();
   });
+  $('.pagination').toggleClass('d-flex d-none')
   $('#imageList').show();
   const carouselContainer = $('.custom-carousel-container');
   const cards = $('.custom-carousel-item');

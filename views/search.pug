@@ -124,7 +124,7 @@ block dynamicContent
   if scrapedData && scrapedData.length > 0 
     - var startPage = Math.max(1, page - 2);
     - var endPage = Math.min(totalPage, page + 2);
-    .pagination.my-4.d-flex.justify-content-center.w-auto
+    .pagination.py-4.d-flex.justify-content-center.w-auto.sticky-bottom
       if page > 1
         .btn.btn-dark.border.load-more(type="button",class=page<=1?'d-none':'', data-fav=favmode ? "true" : "false", data-userId=user._id data-mode=mode, data-page=page<=1?1:page-1, data-searchterm=searchterm, data-nsfw= user.nsfw)             
           i.fas.fa-angle-left

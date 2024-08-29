@@ -403,15 +403,14 @@ function changeModel(hash) {
   })
     .then((response) => {
       if (!response.ok) throw new Error('Network response was not ok');
+      if(!response.status){return false}
       return response.json();
     })
     .then((data) => {
-      console.log(data)
-      // Update the dropdown button text to reflect the selected model
       document.getElementById('modelDropdown').innerText = data.model;
     })
     .catch((error) => {
-      console.error('There has been a problem with your fetch operation:', error);
+      //console.error('There has been a problem with your fetch operation:', error);
     });
 }
 

@@ -128,6 +128,10 @@ router.delete('/user/:elementRemoved/:elementId', async (req, res) => {
 // GET route to fetch islazyload value based on mode
 router.get('/islazyload', async (req, res) => {
   try {
+    if(!req.user){
+      res.status(500).json({ error: 'User not found' });
+      return
+    }
       const mode = parseInt(req.query.mode);
       const userID = new ObjectId(req.user._id); // Assuming you have user ID in req.user
 
@@ -922,7 +926,7 @@ router.get('/current-model', async (req, res) => {
     const currentModel = await global.sdapi.getCurrentModel();
     res.json({ model: currentModel });
   } catch (err) {
-    res.status(500).send('Error fetching current model');
+    res.status(200).send({status:false,message:'Error fetching current model'});
   }
 });
 
@@ -968,8 +972,8 @@ router.post('/model', async (req, res) => {
     // Send a success response with the current model
     res.json({ model: currentModel });
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error changing model');
+    console.log(err);
+    res.status(200).send({status:false,message:'Error changing model'});
   }
 });
 
@@ -1535,54 +1539,30 @@ async function getImageArray(images){
   return base64Images
 }
 router.post('/hide', async (req, res) => {
-  let { element_id, category, mode} = req.body;
-  const myCollection = `medias_${mode}`
-  if (!element_id ) {
+  let { element_id, category, mode } = req.body;
+  const myCollection = `medias_${mode}`;
+
+  if (!element_id) {
     return res.status(400).json({ message: 'IDまたはカテゴリが提供されていません' });
   }
-  if(!category){
-      // Find the current user's data
+
+  if (!category) {
     const user = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
-
-    // Check if the category "All" already exists
     let base_category = user.categories && user.categories.find(cat => cat.name === 'All');
-
-    // If the category already exists, return its ID in an array
     category = [base_category.id];
   }
+
   try {
-    // このエレメントIDに関連するソースを見つける (Find the source related to this element_id)
-    const element = await global.db.collection(myCollection).findOne({ _id: new ObjectId(element_id) });
-    const source = element.source; // ソースの取得 (Assuming 'source' is the field you want to match)
-
-    if(source && source != undefined){
-      // 同じソースを持つすべてのエレメントを更新する (Update all elements with the same source)
-      const result = await global.db.collection(myCollection).updateMany(
-        { source: source }, // 条件 (Criteria: Match all documents with the same source)
-        {
-          $pull: { categories: category.toString() }, // カテゴリの削除 (Removing the category)
-          $set: { hide: true } // 非表示フィールドを追加 (Add hide field)
-        }
-      );   
-      console.log(`Updated ${result.modifiedCount} elements with the same source.`);
-
-      if (result.modifiedCount === 0) {
-        return res.status(404).json({ message: '要素が見つかりませんでした' });
+    const element = await global.db.collection(myCollection).updateOne(
+      { _id: new ObjectId(element_id) },
+      {
+        $pull: { categories: category.toString() },
+        $set: { hidden_item: true }
       }
+    );
 
-    }else{
-      const result = await global.db.collection(myCollection).updateOne(
-        { _id: new ObjectId(element_id) }, // 条件 (Criteria: Match all documents with the same source)
-        {
-          $pull: { categories: category.toString() }, // カテゴリの削除 (Removing the category)
-          $set: { hide: "true" } // 非表示フィールドを追加 (Add hide field)
-        }
-      );   
-      console.log(`Updated ${result.modifiedCount} : ${element_id}`);
-
-      if (result.modifiedCount === 0) {
-        return res.status(404).json({ message: '要素が見つかりませんでした' });
-      }
+    if (element.modifiedCount === 0) {
+      return res.status(404).json({ message: '要素が見つかりませんでした' });
     }
 
     res.status(200).json({ message: 'The medias is hidden' });
@@ -1591,6 +1571,7 @@ router.post('/hide', async (req, res) => {
     res.status(500).json({ message: 'エラーが発生しました' });
   }
 });
+
 
 router.post('/getTopPage', async (req, res) => {
   const {mode} = req.body
@@ -1705,7 +1686,7 @@ function mapArrayHistory(medias, combinedResults, mode, scrapInfo) {
         queryMap[key] = [];
       }
   
-      if (queryMap[key].length < 4 && item.hide !== true) {
+      if (queryMap[key].length < 1 && item.hide !== true) {
         queryMap[key].push(item);
       }
     }

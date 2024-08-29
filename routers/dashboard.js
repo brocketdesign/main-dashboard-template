@@ -270,7 +270,6 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, res) => {
 
-  console.log('Dashboard fav page requested');
   const userAgent = req.headers['user-agent'];
   const { mode } = req.params; // Get the 'mode' parameter from the route URL
   let { searchterm, nsfw, page } = req.query; // Get the search term from the query parameter
@@ -288,14 +287,14 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
       mode:mode,
       nsfw:nsfw,
       fav_user_list:req.user._id,
-      hide: { $exists: false },
+      hidden_item: { $exists: false },
     }
     if(!searchterm){
       query_obj = {
         mode:mode,
         nsfw:nsfw,
         fav_user_list:req.user._id,
-        hide: { $exists: false },
+        hidden_item: { $exists: false },
       }
     }
     if(searchterm=='All'){
@@ -303,7 +302,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
         mode:mode,
         nsfw:nsfw,
         isdl:true,
-        hide: { $exists: false },
+        hidden_item: { $exists: false },
       }
     }
     const totalPage = await findTotalPage(req.user._id,query_obj,30);

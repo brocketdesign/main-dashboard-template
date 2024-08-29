@@ -1,11 +1,193 @@
 extends dashboard
 
 block dynamicContent
-  - colclass='row-cols-1'
-  - gridclass='col-12 col-sm-3'
-  .row.w-100.m-0(class=colclass)
+  .w-100.m-0
     .col.order-1.pb-3
-      #display-history.row-cols-1.row-cols-md-2.row-cols-lg-4.horizontal-scroll(data-mode=mode)
+      #display-history.row.row-cols-2.row-cols-md-3.row-cols-lg-4(data-mode=mode)
     .col.order-1.pb-3
       hr.mb-4
       #osusume-history.row.row-cols-1.row-cols-md-2.row-cols-lg-4(data-mode=mode)
+  style.
+    #display-history .card{
+      position:relative;
+    }
+    #display-history .card-body {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #display-history .card-title{
+      background:#fffffff2 !important;;
+    }
+    .slider-container img {
+      width: 100%;
+    }
+  script.
+    $(document).ready(function(){
+        handleHistory();
+    })
+    function handleHistory(){
+        if($('#display-history').length == 0 ){
+            return
+        }
+        const mode = $('#display-history').data('mode')
+        $.post('/api/history', { mode }, function(response) {
+            displayHistory(response.data,$('#display-history'))
+        })
+        if(mode == 1){
+            getTopPageSB(function(response){
+                displayHistory(response, $('#osusume-history'))
+            })
+        }
+        if(mode == 7 || mode == 5){
+            getTopPageMode(function(response){
+                displayHistoryGallery(response)
+            })
+        }
+        if(mode != 1 && mode != 7 && mode != 5){
+            getTopPageMode(function(response){
+                displayHistoryTop(response)
+            })
+        }
+    }
+
+    function displayHistory(data,$container) {
+        // Clear the current content
+        
+        $container.empty();
+        const mode = $(`#display-history`).data('mode')
+        // Loop through each category in the data
+        $.each(data, function(category, items) {
+          
+            // Check if there are items in the category
+            if (items.length >= 0 ) {
+
+                let myID = "itemSlider_"+stringToID(category);
+                let itemLink = `/dashboard/app/${mode}?searchterm=${category}&nsfw=true&page=${items[0].page}`;
+                let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item small py-0 px-1');
+                let card = $('<div>').addClass('card mx-0 my-1');
+                let cardBody = $('<div>').addClass('card-body');
+                let imageContainer = $('<div>').attr('id',myID).addClass('slider-container rounded')
+
+                card.append(imageContainer);
+                cardBody.append($('<h5>').addClass('card-title btn bg-white fw-bold text-secondary').text(category));
+                card.append(cardBody);
+                cardLink.append(card);
+
+                items.forEach((item) => {
+                    let imageUrl = item.thumb || item.imageUrl || item.filePath ;
+                    let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', category);
+
+                    imageContainer.append(imgTag);
+
+                });
+
+                $(`#display-history`).append(cardLink);
+
+            }
+        });
+
+        // Initialize lazy loading
+        //reorderElementByTime($container)
+        
+        $container.on('scroll', function() {
+            $('.lazy').lazy('update');
+        });
+        var lazyItems = $('#display-history .slider-container').slice(0, 4);
+        for (var i = 0; i < lazyItems.length; i++) {
+            $(lazyItems[i]).find('.lazy').lazy('update');
+        }
+
+        
+    }
+    function displayHistoryTop(data){
+
+        $('#osusume-history').empty();
+        // Loop through each category in the data
+        $.each(data, function(index, item) {
+            if(item == null){
+                return
+            }
+            let imageUrl = item.imageUrl || item.filePath || item.thumb;
+            const mode = parseInt($('#display-history').data('mode'))
+            const searchTerm = mode == 1 ? item.link : item.alt
+
+            let itemLink = `/dashboard/app/${item.mode}?page=1&searchterm=${searchTerm}&nsfw=true`; // Adjust this based on your data structure
+            let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
+            let card = $('<div>').addClass('card mb-3 col');
+            let cardBody = $('<div>').addClass('card-body py-1');
+            cardBody.append($('<h5>').addClass('card-title one-line').text(item.alt));
+            
+            let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', item.alt);
+
+            // Append the image to the card
+            card.append(imgTag);
+
+            // Append card body to the card
+            card.append(cardBody);
+
+            // Wrap the card with the link
+            cardLink.append(card);
+
+            // Append the linked card to the display history
+            $('#osusume-history').append(cardLink);
+            
+        });
+        
+        // Initialize lazy loading
+        $('.lazy').lazy();
+        $('#osusume-history').on('scroll', function() {
+            $('.lazy').lazy('update');
+        });
+        
+    }
+
+    function displayHistoryGallery(data){
+        $('#osusume-history').empty();
+        // Loop through each category in the data
+        $.each(data, function(index, item) {
+            if(item == null){
+                return
+            }
+            // Grab the imageUrl and link from the random item
+            let imageUrl = item.imageUrl;
+            let itemLink = `/dashboard/app/7?page=1&searchterm=${item.link}&nsfw=true`; // Adjust this based on your data structure
+            if(item.mode == 5){
+                itemLink = `/dashboard/app/5?page=1&searchterm=v${item.id}&nsfw=true`;
+            }
+            // Create an anchor tag to wrap the card
+            let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
+
+            // Create a card for each category
+            let card = $('<div>').addClass('card mb-3 col');
+            let cardBody = $('<div>').addClass('card-body py-1');
+
+            // Add category name as card title
+            cardBody.append($('<h5>').addClass('card-title one-line').text(item.alt));
+
+            // Create an image tag for the imageUrl
+            // Add 'lazy' class and set 'data-src' for lazy loading
+            let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', item.alt);
+
+            // Append the image to the card
+            card.append(imgTag);
+
+            // Append card body to the card
+            card.append(cardBody);
+
+            // Wrap the card with the link
+            cardLink.append(card);
+
+            // Append the linked card to the display history
+            $('#osusume-history').append(cardLink);
+            
+        });
+        
+        // Initialize lazy loading
+        $('.lazy').lazy();
+        $('#osusume-history').on('scroll', function() {
+            $('.lazy').lazy('update');
+        });
+    }

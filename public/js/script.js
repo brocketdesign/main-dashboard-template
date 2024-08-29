@@ -123,7 +123,8 @@ $(document).ready(function() {
     $(".card.pricing").hover(() => $(this).addClass('border-primary'), () => $(this).removeClass('border-primary'));
     $('.delete-button').click(function(e) { 
         e.preventDefault()
-         handleHiding($(this).closest('.card').data('id'))  
+        $(this).closest('.card').find('video').get(0).pause();
+        handleHiding($(this).closest('.card').data('id'))  
     });
     $(document).on('keydown', function(e) {
         if (e.key === 'd' || e.key === 'D') {
@@ -250,7 +251,6 @@ $(document).ready(function() {
     backtothetop();
 
     handleAudio();
-    handleHistory();
 
     handleInstantVideo();
 
@@ -329,7 +329,8 @@ $(document).off('keydown').on('keydown', function(e) {
             }
         }
 
-        nextCard.find('.play-button, .instant-play-button').click();
+        const currentItemId = nextCard.data('id')
+        $(`.play-button[data-id="${currentItemId}"],.instant-play-button[data-id="${currentItemId}"]`).not('.play').click();
         nextCard.addClass('active');
         triggerKeyDown = true;
         
@@ -624,7 +625,7 @@ function checkIfElementIsInViewport($element) {
     const viewportTop = $(window).scrollTop();
     const viewportBottom = viewportTop + $(window).height();
 
-    const threshold = elementHeight * 0.25;
+    const threshold = elementHeight * 0.50;
     const isAtLeast25PercentVisible =
         (elementBottom - threshold > viewportTop) && (elementTop + threshold < viewportBottom);
 
@@ -681,6 +682,7 @@ function downloadAndShow($thisCard){
     $thisCard.addClass('done');
 
     if($thisCard.find('.instant-play-button').length>0 || mode == 7){
+        $thisCard.find('.instant-play-button').addClass('play')
         instantPlay(id)
         return
     }
@@ -775,6 +777,7 @@ function isLazyLoad(mode, callback){
 const handleCardClickable = () => {
     $(document).on('click',`.play-button`,function(event) {
         event.stopPropagation();
+        $(this).addClass('play')
         const $thisCard = $(this).closest('.card.info-container')
         addCardToList($thisCard)
         downloadAndShow($thisCard)
@@ -1275,7 +1278,8 @@ const processQueue = () => {
     const videoId = hideQueue.shift(); // Get the next media to hide
     const mode = $('#range').data('mode');
     let $container = $(`.card[data-id=${videoId}]`);
-    
+    $container.addClass('blurred');
+
     Swal.fire({
         title: 'Hiding media...',
         text: "This media will be hidden in 5 seconds unless you cancel.",
@@ -1297,7 +1301,6 @@ const processQueue = () => {
         },
         didOpen: () => {
             Swal.showLoading();
-            $container.addClass('blurred');
         }
     }).then((result) => {
         if (result.dismiss === Swal.DismissReason.timer) {
@@ -2974,6 +2977,7 @@ function handleIframeActress(itemID){
 }
 function handleInstantVideo() {
     $('.instant-play-button').on('click', function() {
+        $(this).addClass('play')
         var dataId = $(this).attr('data-id');
         const $thisCard = $('.info-container[data-id="' + dataId + '"]')
         addCardToList($thisCard)
@@ -2991,7 +2995,6 @@ async function instantPlay(dataId){
     
     var videoElement = $('video[data-id="' + dataId + '"]');
     videoElement.attr('src', videoElement.attr('data-src'));
-    console.log(videoElement.attr('data-src'))
     
     videoElement.on('loadeddata', function() {
         $('img.card-img-top[data-id="' + dataId + '"]').hide();
@@ -3007,78 +3010,7 @@ function directDownloadFileFromURL(dataId){
         //console.log('Download API Response:', response);
       })
 }
-function handleHistory(){
-    if($('#display-history').length == 0 ){
-        return
-    }
-    const mode = $('#display-history').data('mode')
-    $.post('/api/history', { mode }, function(response) {
-        displayHistory(response.data)
-    })
-    if(mode == 1){
-        getTopPageSB(function(response){
-            displayHistoryTop(response)
-        })
-    }
-    if(mode == 7 || mode == 5){
-        getTopPageMode(function(response){
-            displayHistoryGallery(response)
-        })
-    }
-    if(mode != 1 && mode != 7 && mode != 5){
-        getTopPageMode(function(response){
-            displayHistoryTop(response)
-        })
-    }
-}
-function displayHistory(data) {
-    // Clear the current content
-    $('#display-history').empty();
-    const mode = $(`#display-history`).data('mode')
-    // Loop through each category in the data
-    $.each(data, function(category, items) {
-       
-        // Check if there are items in the category
-        if (items.length >= 0 ) {
 
-            let myID = "itemSlider_"+stringToID(category);
-            let itemLink = `/dashboard/app/${mode}?searchterm=${category}&nsfw=true&page=${items[0].page}`;
-            let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
-            let card = $('<div>').addClass('card mb-3 col');
-            let cardBody = $('<div>').addClass('card-body');
-            let imageContainer = $('<div>').attr('id',myID).addClass('slider-container')
-
-            card.append(imageContainer);
-            cardBody.append($('<h5>').addClass('card-title').text(category));
-            card.append(cardBody);
-            cardLink.append(card);
-
-            items.forEach((item) => {
-                let imageUrl = item.thumb || item.imageUrl || item.filePath ;
-                let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', category);
-
-                imageContainer.append(imgTag);
-
-            });
-
-            $(`#display-history`).append(cardLink);
-
-        }
-    });
-
-    // Initialize lazy loading
-    //reorderElementByTime($('#display-history'))
-    
-    $('#display-history').on('scroll', function() {
-        $('.lazy').lazy('update');
-    });
-    var lazyItems = $('#display-history .slider-container').slice(0, 4);
-    for (var i = 0; i < lazyItems.length; i++) {
-        $(lazyItems[i]).find('.lazy').lazy('update');
-    }
-
-    
-}
 function stringToID(str) {
     // First, trim the string to remove any leading or trailing spaces
     let trimmedStr = str.trim();
@@ -3152,104 +3084,6 @@ function getTopPageMode(callback){
     })
 }
 
-function displayHistoryTop(data){
-
-    $('#osusume-history').empty();
-    // Loop through each category in the data
-    $.each(data, function(index, item) {
-        if(item == null){
-            return
-        }
-        // Grab the imageUrl and link from the random item
-        let imageUrl = item.imageUrl || item.filePath || item.thumb;
-        const mode = parseInt($('#display-history').data('mode'))
-        const searchTerm = mode == 1 ? item.link : item.alt
-
-        let itemLink = `/dashboard/app/${item.mode}?page=1&searchterm=${searchTerm}&nsfw=true`; // Adjust this based on your data structure
-
-        // Create an anchor tag to wrap the card
-        let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
-
-        // Create a card for each category
-        let card = $('<div>').addClass('card mb-3 col');
-        let cardBody = $('<div>').addClass('card-body py-1');
-
-        // Add category name as card title
-        cardBody.append($('<h5>').addClass('card-title one-line').text(item.alt));
-
-        // Create an image tag for the imageUrl
-        // Add 'lazy' class and set 'data-src' for lazy loading
-        let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', item.alt);
-
-        // Append the image to the card
-        card.append(imgTag);
-
-        // Append card body to the card
-        card.append(cardBody);
-
-        // Wrap the card with the link
-        cardLink.append(card);
-
-        // Append the linked card to the display history
-        $('#osusume-history').append(cardLink);
-        
-    });
-    
-    // Initialize lazy loading
-    $('.lazy').lazy();
-    $('#osusume-history').on('scroll', function() {
-        $('.lazy').lazy('update');
-    });
-    
-}
-
-function displayHistoryGallery(data){
-    $('#osusume-history').empty();
-    // Loop through each category in the data
-    $.each(data, function(index, item) {
-        if(item == null){
-            return
-        }
-        // Grab the imageUrl and link from the random item
-        let imageUrl = item.imageUrl;
-        let itemLink = `/dashboard/app/7?page=1&searchterm=${item.link}&nsfw=true`; // Adjust this based on your data structure
-        if(item.mode == 5){
-            itemLink = `/dashboard/app/5?page=1&searchterm=v${item.id}&nsfw=true`;
-        }
-        // Create an anchor tag to wrap the card
-        let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
-
-        // Create a card for each category
-        let card = $('<div>').addClass('card mb-3 col');
-        let cardBody = $('<div>').addClass('card-body py-1');
-
-        // Add category name as card title
-        cardBody.append($('<h5>').addClass('card-title one-line').text(item.alt));
-
-        // Create an image tag for the imageUrl
-        // Add 'lazy' class and set 'data-src' for lazy loading
-        let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', item.alt);
-
-        // Append the image to the card
-        card.append(imgTag);
-
-        // Append card body to the card
-        card.append(cardBody);
-
-        // Wrap the card with the link
-        cardLink.append(card);
-
-        // Append the linked card to the display history
-        $('#osusume-history').append(cardLink);
-        
-    });
-    
-    // Initialize lazy loading
-    $('.lazy').lazy();
-    $('#osusume-history').on('scroll', function() {
-        $('.lazy').lazy('update');
-    });
-}
 function backtothetop(){
     // Back to top button markup
     $("body").append('<a href="#" class="btn btn-dark btn-back-to-top" style="display: none; position: fixed; bottom: 20px; right: 20px;"><i class="fas fa-arrow-up"></i></a>');

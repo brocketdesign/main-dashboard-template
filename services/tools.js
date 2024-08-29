@@ -664,6 +664,32 @@ async function takePageScreenshot(page) {
 
   console.log(`Screenshot saved to ${filePath}`);
 }
+async function removeDuplicates(array, collectionName) {
+  try {
+    const dbCollection = global.db.collection(collectionName);
+    const uniqueObjects = [];
+
+    for (const obj of array) {
+      const query = {
+        $or: [
+          { source: obj.source ?? null },
+          { url: obj.url ?? null },
+          { link: obj.link ?? null }
+        ]
+      };
+
+      const existing = await dbCollection.findOne(query);
+      if (!existing) {
+        uniqueObjects.push(obj);
+      }
+    }
+
+    return uniqueObjects;
+  } catch (error) {
+    console.error('Error during duplicate removal:', error);
+    throw error;
+  }
+}
 
 async function cleanupDatabase(myCollection) {
   try {
@@ -707,7 +733,6 @@ async function cleanupDatabase(myCollection) {
     await dbCollection.drop();
     await tempCollection.rename(myCollection);
 
-    console.log('Database cleanup complete. Duplicates removed.');
   } catch (error) {
     console.error('Error during database cleanup:', error);
     throw error;
@@ -740,5 +765,6 @@ module.exports = {
   findTotalPage,
   calculatePayloadWidth,
   downloadVideoRedGIF,
-  cleanupDatabase
+  cleanupDatabase,
+  removeDuplicates
 }

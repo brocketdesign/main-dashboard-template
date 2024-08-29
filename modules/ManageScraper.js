@@ -6,7 +6,8 @@ const {
   updateSameElements,
   initCategories,
   sanitizeData,
-  cleanupDatabase
+  cleanupDatabase,
+  removeDuplicates
 } = require('../services/tools')
 const scrapeMode1 = require(`./scraper/scrapeMode1`);
 
@@ -27,16 +28,13 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
     searchterm, 
     mode: mode,
     nsfw: nsfw,
-    $and: [ 
-      { $or: [ { hide_query: { $exists: false } }, { hide_query: "false" } ] },
-      { $or: [ { hide: { $exists: false } }, { hide: "false" } ] },
-    ],
-    //favoriteCountry: { $in: [userInfo.favoriteCountry] }
+    hidden_item : { $exists: false } 
   };
   
   scrapedData = await findDataInMedias(userId, parseInt(page), query);
 
-  if(scrapedData && scrapedData.length >= 30 ){ //&& searchterm != 'undefined'
+  if(scrapedData && scrapedData.length > 0 ){
+    console.log(`Return in database ${scrapedData.length}`)
     return scrapedData
   }
   
@@ -58,7 +56,7 @@ async function ManageScraper(searchterm, nsfw, mode, user, page) {
     userId: userId,
     categories:categories,
     favoriteCountry: userInfo.favoriteCountry,
-    time :new Date()
+    time :new Date(),
   })); 
 
   await updateUserScrapInfo(user,searchterm,page,mode)
@@ -105,7 +103,6 @@ async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
 }
 
 async function insertInDB(myCollection, scrapedData) {
-  console.log({scrapedData})
   try {
     if (scrapedData.length === 0) {
       return [];
