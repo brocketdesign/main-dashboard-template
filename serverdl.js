@@ -53,7 +53,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
             return;
           }
           console.log(`Download : ${url}`)
-          res.status(200).json({ url, message: 'Start Download' }); 
+          //res.status(200).json({ url, message: 'Start Download' }); 
       
           if(!url.includes('http')){
             saveData(req.user, video_id, myCollection, {isdl:true})
@@ -96,7 +96,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
       
           updateSameElements(foundElement,myCollection,{filePath:filePath.replace('public',''), isdl:true,isdl_end:new Date()})
           // Send a success status response after the file is downloaded
-          //res.status(200).json({ message: 'アイテムが成功的に保存されました。' });
+          res.status(200).send({ fileName, message: 'アイテムが成功的に保存されました。' });
       
         } catch (err) {
           console.log('Error occurred while downloading file:', err.message);
@@ -188,9 +188,9 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         const {query, mode, nsfw, url, pageNum, userId}=req.body
         const result1 =  getVideoFromSB(query, mode, nsfw, url, pageNum, userId)
         const result2 =  getVideoFromPD(query, mode, nsfw, url, pageNum, userId)
-        //const result3 =  getVideoFromHQP(query, mode, nsfw, url, pageNum, userId)
+        const result3 =  getVideoFromHQP(query, mode, nsfw, url, pageNum, userId)
         
-        const combinedresult = await Promise.all([result1,result2])
+        const combinedresult = await Promise.all([result1,result2, result3])
 
         const result = combinedresult.flat();
         res.status(200).json({result})

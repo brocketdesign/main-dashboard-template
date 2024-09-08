@@ -497,7 +497,7 @@ router.post('/loadpage', async (req, res) => {
         query_obj = {
           mode: mode,
           nsfw: nsfw,
-          isdl_process: true,
+          isdl: true,
           hidden_item: { $exists: false }
         };
       }

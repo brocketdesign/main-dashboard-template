@@ -74,7 +74,7 @@ $(window).on('load', function() {
 });
 $(window).on('resize', function() {
     if(isFullScreen){return}
-    handleMasonry()
+    //handleMasonry()
 });
 
 $(document).ready(function() {
@@ -816,12 +816,13 @@ function handleDownloadVideo(id){
 
     $.get(`http://192.168.10.115:3100/api/video?videoId=${id}&mode=${mode}`)
     .done(function(response) {
+        console.log(response)
         try {
             updateImageList(id);
-            $spinner.hide();
-            $thisCard.find('.card-body-over').addClass('hover-hide');
 
             if (response && response.url) {
+                $spinner.hide();
+                $thisCard.find('.card-body-over').addClass('hover-hide');
                 displayMedia(response.url, id);
                 $('#video-holder').html('').data('id', id);
 
@@ -3025,10 +3026,11 @@ async function instantPlay(dataId){
     })
     directDownloadFileFromURL(dataId)
 }
-function directDownloadFileFromURL(dataId){
+function directDownloadFileFromURL(dataId,callback){
     const mode = $('#range').data('mode')
     $.post('http://192.168.10.115:3100/api/dl', { video_id: dataId,mode }, function(response) {
         //console.log('Download API Response:', response);
+        if(typeof callback == 'function'){callback(response)}
       })
 }
 

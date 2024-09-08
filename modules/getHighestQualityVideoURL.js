@@ -331,16 +331,13 @@ async function searchVideoPD(videoDocument, myCollection, user){
 async function searchVideoHQPorner(videoDocument, myCollection, user) {
   try {
     const url = videoDocument.link;
-    console.log({url})
     const response = await axios.get(url);
     const $ = cheerio.load(response.data);
     
     // Correct the protocol and format the URL properly
     const videoPage = 'https:' + $('#playerWrapper iframe').attr('src');
-    console.log({videoPage})
     // Fetch the highest quality video source and handle it
     const highestQualityVideoSource = await fetchHighestQualityVideoSource(videoPage);
-    console.log({highestQualityVideoSource});
     if(highestQualityVideoSource){
       // Update the document in the collection
       await updateSameElements(videoDocument, myCollection, {
@@ -363,13 +360,13 @@ async function fetchHighestQualityVideoSource(url) {
     const page = await browser.newPage();
     await page.goto(url);
     const highestQualitySource = await page.evaluate(() => {
-        const videoElement = document.querySelector('video#flvv');
+        const videoElement = document.querySelector('#player video');
         if (!videoElement) return null;
 
         const sources = Array.from(videoElement.querySelectorAll('source'));
         const qualityMap = {
-            '1080p Full HD': 3,
-            '720p HD': 2,
+            '1080p': 3,
+            '720p': 2,
             '360p': 1
         };
 
@@ -377,7 +374,7 @@ async function fetchHighestQualityVideoSource(url) {
         let bestSource = null;
 
         sources.forEach(source => {
-            const qualityKey = source.getAttribute('title');
+            const qualityKey = source.getAttribute('label');
             const qualityScore = qualityMap[qualityKey];
 
             if (qualityScore > maxQuality) {
@@ -385,8 +382,11 @@ async function fetchHighestQualityVideoSource(url) {
                 bestSource = source.getAttribute('src');
             }
         });
-
-        return 'https:'+bestSource;
+        if(bestSource){
+          return 'https:'+bestSource;
+        }else{
+          return false
+        }
     });
 
     await browser.close();

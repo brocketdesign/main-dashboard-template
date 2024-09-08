@@ -61,35 +61,35 @@ block mainContent
     div#range(data-mode=mode)
       input.form-range(type="range" id="grid-range" min="1" max="4" value="3")
   
-  .row
-    .my-3.col.col-auto
+  .row.main-tools
+    .my-3.col.col-auto.pe-0
       a.btn.btn-dark.me-2(href=`/dashboard/app/${mode}/`)
         i.fas.fa-home
     if searchterm || fav
       #extractors.my-3.col-auto.pe-0
-        button.btn.btn-primary.extractor(data-extractor="false") All
-    .my-3.col.d-flex.justify-content-end
+        button.btn.btn-secondary.extractor(data-extractor="false") All
+    .my-3.col.d-flex.justify-content-end.flex-wrap
       button.me-2(id="lazyLoadButton" class="btn btn-primary" data-mode=mode)  
         <i class="fas fa-play"></i>
-      //button.btn.btn-primary.me-2(type='button' onclick="getDownloadData()")
-      a.btn.btn-primary.me-2(href=`/dashboard/app/${mode}/fav?searchterm=All`)
+      //button.btn.btn-secondary.me-2(type='button' onclick="getDownloadData()")
+      a.btn.btn-secondary.me-2(href=`/dashboard/app/${mode}/fav?searchterm=All`)
         i.fas.fa-download
         ul#download-list.list-group.position-fixed.m-3.shadow(style="bottom: 0;right:0;width: 20%;z-index:99")
-      a.btn.btn-primary.me-2(href=`/dashboard/app/${mode}/fav?searchterm=${searchterm?searchterm:''}`)
+      a.btn.btn-secondary.me-2(href=`/dashboard/app/${mode}/fav?searchterm=${searchterm?searchterm:''}`)
         i.fas.fa-heart
         
-      button.btn.btn-primary.me-2(onclick='toggleFloatingChat()')
+      button.btn.btn-secondary.me-2(onclick='toggleFloatingChat()')
         i.fas.fa-robot
       if mode == 7
-        button.handle-roop.global.btn.btn-primary.shadow-0.border.border-0.me-2(type="button")
+        button.handle-roop.global.btn.btn-secondary.shadow-0.border.border-0.me-2(type="button")
           i.fas.fa-meh-blank
           .spinner-border.spinner-border-sm
-      button.btn.btn-primary.me-2(onclick='selectCountry()')
+      button.btn.btn-secondary.me-2(onclick='selectCountry()')
         i.fas.fa-globe
       .d-flex
         .form-check.form-switch.input-group-text.rounded-0.position-relative.border-0.p-0
-          label.form-check-label.btn.me-2.btn-danger.p-2.text-center(for="nsfw")
-            | NSFW
+          label.form-check-label.btn.me-2.btn-danger.text-center(for="nsfw")
+            i.fas.fa-eye
           input.form-check-input.position-absolute(type="checkbox", role="switch", id="nsfw", name="nsfw", style="z-index: 1;opacity:0;")
 
   if result && mode == 1

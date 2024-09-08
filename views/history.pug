@@ -116,7 +116,7 @@ block dynamicContent
 
             let itemLink = `/dashboard/app/${item.mode}?page=1&searchterm=${searchTerm}&nsfw=true`; // Adjust this based on your data structure
             let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
-            let card = $('<div>').addClass('card mb-3 col');
+            let card = $('<div>').addClass('card mb-3 col mx-0');
             let cardBody = $('<div>').addClass('card-body py-1');
             cardBody.append($('<h5>').addClass('card-title one-line').text(item.alt));
             
@@ -161,7 +161,7 @@ block dynamicContent
             let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item');
 
             // Create a card for each category
-            let card = $('<div>').addClass('card mb-3 col');
+            let card = $('<div>').addClass('card mb-3 col mx-0');
             let cardBody = $('<div>').addClass('card-body py-1');
 
             // Add category name as card title
