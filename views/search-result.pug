@@ -1,0 +1,105 @@
+if (scrapedData && scrapedData.length > 0 ) || (medias2 && medias2.length > 0)
+  each data in scrapedData.reverse()
+    if data._id
+      - displayscr = (mode == 3 )? 'displaysrc':''
+      .mb-2.px-1.mx-0.masonry-item.custom-carousel-item.grid-item(data-mode=mode,data-type=data.video?'VIDEO':'IMAGE',data-extractor=data.extractor, data-id=data._id, data-isdl=(data.filePath?"true":"false"))
+        .card.info-container.mx-0(class=`card-clickable-${mode} ${displayscr}`, style="cursor:pointer;background:#000;min-height:100px;", data-id=data._id, data-title=data.title, data-link=data.link)
+
+          .video-container.d-flex.position-relative(data-id=data._id)
+            .position-absolute(style="top: 10px;left: 10px;z-index: 1;")
+              span.floating-fav.handle-fav(data-id=data._id, style="border-radius: 50%;padding: 5px 3spx;", class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'')
+                i.fas.fa-heart
+            .setting-absolute(style="z-index: 10;")
+              .btn-group.shadow-0
+                button.btn.btn-transparent.dropdown-toggle.shadow-0.dropdownMenuButton(type="button", data-bs-toggle="dropdown", aria-expanded="false")
+                  i.fas.fa-bars
+                ul.dropdown-menu(aria-labelledby="dropdownMenuButton", style="z-index: 2;")
+                  if data.title
+                    li
+                      p.my-0.one-line.dropdown-item=data.title 
+                  li
+                    a.expand.dropdown-item(href=`/dashboard/app/${mode}?searchterm=${data.subreddit}`)
+                      i.fas.fa-link.me-2
+                      | View Subreddit
+                  li
+                    a.expand-card.btn.btn-light.shadow-0.border.border-0.w-100.text-start(type="button")
+                      i.fas.fa-expand.me-2
+                      | Expand
+                  li
+                    a.d-none.expand-button.btn.btn-light.border.border-0.shadow-0.w-100.text-start(type="button", data-id=data._id)
+                      i.fas.fa-expand.me-2
+                      | Expand
+                  li
+                    if data.link && data.link.includes('redgif')
+                      a.expand.handle-fav.btn.btn-light.shadow-0.border.border-0.w-100.text-start(type="button", data-id=data._id, class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'', data-url=`${data.link.replace('watch','ifr')}`)
+                        i.fas.fa-heart.me-2
+                        | Favorite
+                    else
+                      a.expand.handle-fav.btn.btn-light.shadow-0.border.border-0.w-100.text-start(type="button", data-id=data._id, class=(data.fav_user_list && data.fav_user_list.includes(user._id.toString()) || data.fav_user_list == user._id.toString())?'done fav':'')
+                        i.fas.fa-heart.me-2
+                        | Favorite
+                  li
+                    a.source.expand.btn.btn-light.border.border-0.shadow-0.w-100.text-start(target="_blank", href=data.source||data.link||data.webm||data.url)
+                      i.fas.fa-link.me-2
+                      | View Source
+                  li
+                    if mode == 2 && data.extractor.includes('scrolller') || mode == 5
+                      - moreLink = (mode == 5 ? data.moreLink : `/dashboard/app/${mode}?searchterm=${data.link}/discover`)
+                      a.source.expand.btn.btn-light.border.border-0.shadow-0.w-100.text-start(target='_blank' href=moreLink)
+                        i.fas.fa-plus-square.me-2
+                        | View More
+                  li
+                    if mode == 7
+                      a.source.expand.btn.btn-light.border.border-0.shadow-0.w-100.text-start(target='_blank' href=`/dashboard/app/${mode}?searchterm=${data.isGallery ? data.link : data.alt}`)
+                        i.fas.fa-plus-square.me-2
+                        | View More
+                      a.handle-roop.btn.btn-light.shadow-0.border.border-0.w-100.text-start(type="button", data-id=data._id)
+                        i.fas.fa-meh-blank.me-2
+                        | Handle Roop
+                        .spinner-border.spinner-border-sm
+                  li
+                    if mode != 2
+                      a.source.expand.btn.btn-light.border.border-0.shadow-0.w-100.text-start(target='_blank' href=`/dashboard/app/${mode}?searchterm=${data.title || data.alt}`)
+                        i.fas.fa-plus-square.me-2
+                        | View More
+                  li
+                    a.expand.delete-button.btn.btn-light.border.border-0.shadow-0.w-100.text-start(type="button", data-id=data._id)
+                      i.fas.fa-trash-alt.me-2
+                      | Delete
+            .card-top
+              if data.url && data.url.includes('v.redd.it')
+                .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
+                    button.instant-play-button.btn.shadow.border.border-white(style="background: #ffffff61;", type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'', data-url=`${data.url}`)
+                      i.fas.fa-play
+              if mode == '1' || mode == '5' || (data.link && data.link.includes('scrolller') && data.video)
+                .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
+                    button.play-button.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
+                      i.fas.fa-play
+              if mode == '6' || mode == '8'
+                .card-body-over.position-absolute.d-flex.justify-content-center.align-items-center(style="inset:0;")
+                    button.instant-play-button.now.btn.shadow.border.border-white(type="button", data-id=data._id, class=data.isdl || data.highestQualityURL ?'done bg-dark text-white':'' style="background: #ffffff61;")
+                      i.fas.fa-play
+            if mode == 2
+              - favsrc = data.filePath && data.filePath.includes('.mp4') ? false : data.filePath
+              if data.link.includes('redgif') || data.link.includes('scrolller')
+                  img.card-img-top(type="button",data-id=data._id, style="object-fit:contain;height: 100%;", src=favsrc || data.thumb , alt=data.title )
+              else 
+                img.card-img-top(type="button", data-id=data._id, style="object-fit:contain;height: 100%;", src=favsrc || data.link, alt=data.title )
+            else
+              if data.webm 
+                if !isSafari && false
+                  - favsrc = data.filePath && data.filePath.includes('.webm') ? data.filePath : data.webm
+                  video.webm(src=favsrc controls loop)
+                else
+                  img.card-img-top(type="button",data-id=data._id, style="object-fit:contain;height: 100%;", data-src=data.url , alt=data.title)
+              else
+                img.card-img-top(type="button", data-id=data._id, style="object-fit:contain;height: 100%;", src= data.thumb || data.imageUrl || data.filePath,  alt=data.title )
+              if mode == 6
+                video(data-id=data._id, data-src=data.link, style="display:none;" width="100%" controls muted autoplay playsinline)
+              if mode == 8
+                video(data-id=data._id, data-src=data.highestQualityURL, style="display:none;" width="100%" controls muted autoplay loop playsinline)
+              if mode == 9
+                video(data-id=data._id, data-src=data.url, style="display:none;" width="100%" controls muted autoplay loop playsinline)
+                  
+else
+  p ここには何もありません！

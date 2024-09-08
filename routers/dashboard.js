@@ -234,33 +234,26 @@ router.get('/app/actresses/profile/:actressID', ensureAuthenticated, ensureMembe
 });
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) => {
-  const userAgent = req.headers['user-agent'];
   try {
       const { mode } = req.params; 
       let { searchterm, nsfw, page } = req.query; 
       nsfw = req.user.nsfw === 'true'?true:false
       page = parseInt(page) || 1
 
-      let currentQuery = {searchterm, nsfw, page, mode}
 
       if(!searchterm){
         res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
         return
       }
-      let scrapedData = await ManageScraper(searchterm,nsfw,mode,req.user, page);
-
-      const totalPage = await findTotalPage(req.user._id,currentQuery,30);
-
+      
       res.render(`search`, { 
         user: req.user,
-        scrapedData, 
-        result:true, 
-        isSafari:isSafari(userAgent), 
         searchterm, 
         mode, 
         page, 
-        totalPage,
-        title: `Mode ${mode} : ${searchterm}` });
+        title: `Mode ${mode} : ${searchterm}` 
+      });
+
   } catch (error) {
     console.error('An error occurred:', error);
     res.status(500).send('An error occurred while scraping.');
@@ -270,73 +263,20 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
 // Route for handling '/dashboard/:mode'
 router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, res) => {
 
-  const userAgent = req.headers['user-agent'];
   const { mode } = req.params; // Get the 'mode' parameter from the route URL
   let { searchterm, nsfw, page } = req.query; // Get the search term from the query parameter
   nsfw = req.user.nsfw === 'true'?true:false
   page = parseInt(page) || 1
 
-  // If 'mode' is not provided, use the mode from the session (default to '1')
-  const currentMode = mode || req.session.mode || '1';
-
-  try{
-    let query_obj = {
-      searchterm: {
-        $regex: searchterm,
-      },
-      mode:mode,
-      nsfw:nsfw,
-      fav_user_list:req.user._id,
-      hidden_item: { $exists: false },
-    }
-    if(!searchterm){
-      query_obj = {
-        mode:mode,
-        nsfw:nsfw,
-        fav_user_list:req.user._id,
-        hidden_item: { $exists: false },
-      }
-    }
-    if(searchterm=='All'){
-      query_obj = {
-        mode:mode,
-        nsfw:nsfw,
-        isdl:true,
-        hidden_item: { $exists: false },
-      }
-    }
-    const totalPage = await findTotalPage(req.user._id,query_obj,30);
-    let medias = await findDataInMedias(req.user._id, page, query_obj);
-    medias = medias.reverse()
-
-    let medias2 = []
-    if(mode == 'actresses'){
-      medias2 = await global.db.collection('actresses_profile').find({isdl:true}).toArray();
-      console.log(`Found ${medias2.length} element(s).`)
-    }
-
-    //medias = getUniqueElement(medias)
-    res.render(`search`, { 
-      user: req.user,
-      result:true,
-      favmode:true, 
-      fav:true,
-      searchterm, 
-      section:'fav', 
-      isSafari:isSafari(userAgent), 
-      scrapedData:medias ,
-      medias2, 
-      mode, 
-      page, 
-      totalPage,
-      title: `Mode ${mode}` 
-    }); // Pass the user data and scrapedData to the template
-
-  }catch(err){
-    console.log(err)
-    res.render(`search`, { user: req.user, searchterm,fav:true, scrapedData:[], mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
-
-  }
+  res.render(`search`, { 
+    user: req.user,
+    favmode:true, 
+    fav:true,
+    searchterm, 
+    mode, 
+    page, 
+    title: `Mode ${mode} : ${searchterm}` 
+  });
   
 });
 // Function to get unique elements from the medias array based on fields 'url', 'link', 'source'

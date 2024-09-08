@@ -64,24 +64,35 @@ const getVideoFromHQP = (query, mode, nsfw, url, pageNum, userId) => {
       const $ = cheerio.load(data);
 
       const promises = []; // Array to hold all the promises
-      $('.image.featured.non-overlay.atfib.n8hu6s').each((i, element) => {
+      $('.image.featured.non-overlay.atfib.n8hu6s').each(async (i, element) => {
         const item = {};
         item.link = ext3_url2 + $(element).attr('href');
-        item.video_id = item.link.split('/')[2].split('-')[0];
-        const imageUrl = matchImageUrl($, element);
-
-        // Instead of waiting here, push the promise to the array
-        const imagePromise = downloadImage(imageUrl).then(filePath => {
-          item.imageUrl = filePath;
-        });
-
-        promises.push(imagePromise.then(() => { // Wait for image download, then finalize the item
-          item.alt = $(element).find('.meta-data-title').text();
-          item.currentPage = url;
-          item.extractor = ext3_title;
-          return item; // Ensure the item is returned after the imageUrl is set
-        }));
-      });
+      
+        try {
+          const response = await fetch(item.link);
+      
+          if (response.ok) {
+            item.video_id = item.link.split('/')[2].split('-')[0];
+            const imageUrl = matchImageUrl($, element);
+      
+            // Push the downloadImage promise if the link is valid
+            const imagePromise = downloadImage(imageUrl).then(filePath => {
+              item.imageUrl = filePath;
+            });
+      
+            promises.push(imagePromise.then(() => {
+              item.alt = $(element).find('.meta-data-title').text();
+              item.currentPage = url;
+              item.extractor = ext3_title;
+              return item;
+            }));
+          } else {
+            console.log(`Link returned status ${response.status}: ${item.link}`);
+          }
+        } catch (error) {
+          console.error(`Error fetching link: ${item.link}`, error);
+        }
+      });      
 
       // Resolve all promises and then resolve the outer promise with the results
       Promise.all(promises).then(results => {

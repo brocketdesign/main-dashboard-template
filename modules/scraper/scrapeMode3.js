@@ -96,7 +96,7 @@ async function downloadResource(response, dirPath, mediaType) {
 
         // Write the file like it's the next bestseller
         await fs.promises.writeFile(filePath, content);
-        console.log(`Downloaded and saved: ${filePath} (with a little twist!)`);
+        
         return filePath;
     } catch (error) {
         console.error(`Oops! Sherlock Holmes couldn't download or save the resource from URL: ${response.url()} - Error: ${error}`);
@@ -268,7 +268,7 @@ async function searchGifImage(query, isReset = false, topPage = false, page) {
   
   const lastPageIndex = await getLastPageIndex(query);
   const startTime = Date.now();
-  console.log({lastPageIndex})
+  
   if (isReset || (startTime - lastPageIndex.time) > LAST_PAGE_RESET_INTERVAL) {
     await resetLastPageIndex(query);
     page = 1;
@@ -329,7 +329,7 @@ async function searchGifImage(query, isReset = false, topPage = false, page) {
     //await processGifResponseQueue();
     console.log(`${gifResponseCount} new images on page ${page}`);
 
-    if (gifResponseCount === 0 && pageStatus <= 2) {
+    if (gifResponseCount === 0 && pageStatus <= 1) {
       pageStatus ++
       page++;
     } else {
@@ -352,7 +352,6 @@ async function getLastPageIndex(query) {
   }
 }
 async function saveLastPageIndex(page, time, query) {
-  console.log(`saveLastPageIndex ${time}`)
   try {
     await global.db.collection('scrapInfo').updateOne(
       { extractor: getExtractor() +'_'+ query },

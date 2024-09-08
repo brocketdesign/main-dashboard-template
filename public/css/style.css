@@ -1,6 +1,9 @@
 main#dashboard {
   display:none;
 }
+.invisible {
+  opacity: 0;
+}
 .carousel-toolbar {
   background: #ffffffc4;
   border-radius: 50px 50px 0px 0px;

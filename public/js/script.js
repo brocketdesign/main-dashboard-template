@@ -23,15 +23,11 @@ const inputTrigger = (inputElement, triggerElement) => {
 let msnry = null ;
 let isFullScreen = false
 const handleMasonry = () => {
-    if(
-        document.querySelector('.masonry-container')
-        && window.innerWidth >= YOUR_LARGE_SCREEN_BREAKPOINT 
-        ||
-        document.querySelector('.masonry-container')
-        && $('#grid-range').val() >= 2
+    const masonryContainer = document.querySelector('.masonry-container');
+    const gridRangeValue = $('#grid-range').val();
 
-    ){
-        msnry = new Masonry('.masonry-container', {
+    if(masonryContainer && (window.innerWidth >= YOUR_LARGE_SCREEN_BREAKPOINT || gridRangeValue >= 2)) {
+        msnry = new Masonry(masonryContainer, {
             itemSelector: '.masonry-item:not([style*="display: none"])', 
             columnWidth: '.masonry-item',
             percentPosition: true
@@ -39,16 +35,37 @@ const handleMasonry = () => {
     }
 }
 
-function updateMasonryLayout(){
+function updateMasonryLayout() {
     if (msnry && !isFullScreen) {
         msnry.layout();
     }
 }
-function destroyMasonryLayout(){
 
+function destroyMasonryLayout(callback) {
     if (msnry) {
         msnry.destroy();
+        if(callback) { callback(); }
     }
+}
+function reinitializeMasonry() {
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    const masonryContainer = document.querySelector('.masonry-wrapper');
+    
+    // Lock the height to prevent scrolling
+    const originalHeight = masonryContainer.offsetHeight;
+    masonryContainer.style.height = `${originalHeight}px`;
+
+    destroyMasonryLayout(() => {
+        handleMasonry();
+        updateMasonryLayout();
+
+        // Restore the scroll position
+        window.scrollTo(scrollLeft, scrollTop);
+
+        // Unlock the height after layout update
+        masonryContainer.style.height = '';
+    });
 }
 
 // Masonry setup
@@ -121,9 +138,10 @@ $(document).ready(function() {
     // Other event listeners
     $(document).on('click', '.alert-container', function() { $(this).fadeOut();  });
     $(".card.pricing").hover(() => $(this).addClass('border-primary'), () => $(this).removeClass('border-primary'));
-    $('.delete-button').click(function(e) { 
+    $(document).on('click','.delete-button',function(e) { 
         e.preventDefault()
-        $(this).closest('.card').find('video').get(0).pause();
+        const video = $(this).closest('.card').find('video').length > 0 ? $(this).closest('.card').find('video').get(0).pause() : null;
+       
         handleHiding($(this).closest('.card').data('id'))  
     });
     $(document).on('keydown', function(e) {
@@ -133,12 +151,12 @@ $(document).ready(function() {
             currentActive.find('.delete-button').click();
         }
     });
-    $('.expand-button').click(function(e) { 
+    $(document).on('click','.expand-button',function(e) { 
         e.preventDefault()
-         handleExpand($(this).closest('.card').data('id'))  
+        handleExpand($(this).closest('.card').data('id'))  
     });
     
-    $('.delete-button-history').click(function(e) {  
+    $(document).on('click','.delete-button-history',function(e) { 
         e.preventDefault()
         $(this).closest('a').remove()
         handleHidingHistory($(this).closest('.card').data('query'))  
@@ -245,7 +263,11 @@ $(document).ready(function() {
         downloadVideo($(this).attr('data-id'), $(this).attr('data-name'))
     })
 
-    
+    if(window.innerWidth <= YOUR_LARGE_SCREEN_BREAKPOINT ){
+        $(document).on('click', '.dropdownMenuButton', function(){
+            $(this).dropdown('toggle');
+          });
+    }
     //HandleCardSetting();
     //handleCardButton();
     backtothetop();
@@ -330,7 +352,7 @@ $(document).off('keydown').on('keydown', function(e) {
         }
 
         const currentItemId = nextCard.data('id')
-        $(`.play-button[data-id="${currentItemId}"],.instant-play-button[data-id="${currentItemId}"]`).not('.play').click();
+        $(document).find(`.play-button[data-id="${currentItemId}"],.instant-play-button[data-id="${currentItemId}"]`).not('.play').click();
         nextCard.addClass('active');
         triggerKeyDown = true;
         
@@ -444,7 +466,6 @@ const handleFormSuccess = response => {
 }
 
 const handleFormError = (jqXHR, textStatus, errorThrown) => {
-    console.log('予期せぬエラーが発生しました。')
     handleFormResult(false, '予期せぬエラーが発生しました。');
 }
 
@@ -632,7 +653,7 @@ function checkIfElementIsInViewport($element) {
     return isAtLeast25PercentVisible;
 }
 
-function addCardToList(container) {
+function addCardToList(container,active = false) {
     const mode = parseInt($('.mode-container').data('mode'))
     if(mode == 6){
         return
@@ -656,6 +677,9 @@ function addCardToList(container) {
     });
 
     imgContainer.prepend(imgElement); // Prepend the image to the container
+    if(active){
+        updateImageList(itemId)
+    }
 
 }
 function updateImageList(itemId){
@@ -695,7 +719,7 @@ function downloadAndShow($thisCard){
     }
 
     // Show the spinner while the download is in progress
-        $thisCard.find('.card-body-over').show();
+    $thisCard.find('.card-body-over').show();
     var $spinner = $thisCard.find('.spinner-border');
     $spinner.show();
     handleDownloadVideo(id)
@@ -705,7 +729,7 @@ function downloadAndShow($thisCard){
     initializeButtonState();
 
     // Click event to update database and button state
-    $('#lazyLoadButton').click(function() {
+    $(document).on('click','#lazyLoadButton', function() {
         const mode = parseInt($(this).data('mode'));
         const isLazyLoadValue = $(this).hasClass('btn-primary') ? false : true; // Toggle state
         updateDatabaseWithLazyLoad(isLazyLoadValue, mode);
@@ -786,40 +810,44 @@ const handleCardClickable = () => {
 function handleDownloadVideo(id){
     const $thisCard = $(`.card.info-container[data-id="${id}"]`)
     const $spinner = $thisCard.find('.spinner-border');
+    const $playButton = $thisCard.find('.play-button');
     const isdl = $thisCard.data('isdl');
     const mode = $('#range').data('mode');
 
-    // Make a request to the server to get the highest quality video URL for the given ID
-    $.get(`http://192.168.10.115:3100/api/video?videoId=${id}&mode=${mode}`, function(response) {
-        //console.log('API Response:', response);
-        updateImageList(id)
-        // Hide the spinner
+    $.get(`http://192.168.10.115:3100/api/video?videoId=${id}&mode=${mode}`)
+    .done(function(response) {
+        try {
+            updateImageList(id);
+            $spinner.hide();
+            $thisCard.find('.card-body-over').addClass('hover-hide');
 
-        $spinner.hide();
-        $thisCard.find('.card-body-over').addClass('hover-hide')
-            // Assuming the response from the API is a JSON object with a 'url' property
             if (response && response.url) {
-                displayMedia(response.url,id)
-                //$thisCard.prepend($video);
-                $('#video-holder').html('')
-                $('#video-holder').data('id',id)
+                displayMedia(response.url, id);
+                $('#video-holder').html('').data('id', id);
 
-                if (isdl==false && response.url.includes('http')) {
-                    // Add the download button
-                    var $downloadButton = $thisCard.find('.download-button')
-                    $downloadButton.show()
-                    console.log('Download button added to card body.');
+                if (!isdl && response.url.includes('http')) {
+                    var $downloadButton = $thisCard.find('.download-button');
+                    $downloadButton.show();
                 }
-                
             } else {
-                // If the response does not contain a URL, show an error message or handle it as needed
-                console.error('Error: Video URL not available.');
-
-                $thisCard.find('.card-body-over').addClass('hover-hide');
-                // Hide the spinner if there's an error
-                $spinner.hide();
+                throw new Error('Video URL not available.');
             }
-        });
+        } catch (error) {
+            $spinner.hide();
+            $playButton.removeClass('play')
+            $playButton.show()
+            $thisCard.find('.card-body-over').removeClass('hover-hide');
+            $thisCard.removeClass('done')
+        }
+    })
+    .fail(function(error) {
+        $spinner.hide();
+        $thisCard.find('.card-body-over').removeClass('hover-hide');
+        $playButton.removeClass('play')
+        $playButton.show()
+        $thisCard.removeClass('done')
+    });
+
   }
 function displayMedia(url,id){
 
@@ -978,7 +1006,7 @@ const handleDownloadButton = () => {
   });
 }
 function handleFavorite() {
-    $(document).find('.card.info-container').on('dblclick', function() {
+    $(document).on('dblclick','.card.info-container', function() {
         $(this).find('.handle-fav').click();
     });
 
@@ -1253,7 +1281,7 @@ const enterFullScreen = (videoElement) => {
     
   // Main function to expand the video
   const handleExpand = (videoId) => {
-    let videoElement = $(`.card[data-id=${videoId}]`).find('video').get(0);
+    let videoElement = $(document).find(`.card[data-id=${videoId}]`).find('video').get(0);
   
     if(!$(videoElement).attr('controls')){
         toggleVideoControls(videoElement,true);
@@ -1280,48 +1308,16 @@ const processQueue = () => {
     let $container = $(`.card[data-id=${videoId}]`);
     $container.addClass('blurred');
 
-    Swal.fire({
-        title: 'Hiding media...',
-        text: "This media will be hidden in 5 seconds unless you cancel.",
-        icon: 'info',
-        iconHtml: '<i class="fas fa-hourglass-half"></i>',
-        showCancelButton: true,
-        cancelButtonText: 'Cancel',
-        timer: 3000,
-        timerProgressBar: true,
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        animation: false,
-        customClass: {
-            popup: 'animate__animated animate__fadeInDown',
-            container: 'animate__animated animate__fadeOutUp animate__delay-5s',
-            title: 'swal2-custom-title',
-            popup: 'swal2-custom-popup'
+    $.ajax({
+        url: '/api/hide',
+        method: 'POST',
+        data: { element_id: videoId, category: null, mode },
+        success: function(response) {
+            //$container.remove();
+            //updateMasonryLayout();
+            handleFormResult(true, 'Media hidden successfully.');
         },
-        didOpen: () => {
-            Swal.showLoading();
-        }
-    }).then((result) => {
-        if (result.dismiss === Swal.DismissReason.timer) {
-            $.ajax({
-                url: '/api/hide',
-                method: 'POST',
-                data: { element_id: videoId, category: null, mode },
-                success: function(response) {
-                    //$container.remove();
-                    //updateMasonryLayout();
-                    handleFormResult(true, 'Media hidden successfully.');
-                },
-                error: handleFormError
-            });
-        } else {
-            $container.removeClass('blurred');
-            handleFormResult(false, 'Action canceled.');
-        }
-
-        isProcessing = false;
-        processQueue(); // Process the next item in the queue
+        error: handleFormError
     });
 };
 
@@ -1343,7 +1339,7 @@ const handleHidingHistory = (query) => {
         error: handleFormError
     });
 }
-function updategridlayout(value = false) {
+function updategridlayout(value = false,callback) {
     if(!value){value=$('#grid-range').val()}
     // Function implementation goes here
     // This function will be called when the range input is changed
@@ -1359,7 +1355,10 @@ function updategridlayout(value = false) {
   
     // Add the new col- class to each grid item
     $('.grid-item').addClass(colClass);
-    updateMasonryLayout()
+    setTimeout(() => {
+        reinitializeMasonry();
+        if(typeof callback == 'function'){callback()}
+    }, 500);
   }
   
   
@@ -1394,69 +1393,91 @@ function updategridlayout(value = false) {
       updategridlayout(value); // Call the function to update the grid layout with the new value
     });
   };
-  
+ 
+  let paginationNumber = 1
   const handleLoadMore = () => {
-    const currentPage = $('#page').val()
-    if(currentPage==1){
-        $('.load-more-previous').remove()
+      if (paginationNumber === 1) {
+          $('.load-more-previous').remove();
+      }
+  
+      $('form#search').on('submit', function (e) {
+          e.preventDefault();
+  
+          const formData = new FormData(this);
+          const searchdata = $('form#search').data();
+  
+          let formDataObject = {};
+          for (let [key, value] of formData.entries()) {
+              formDataObject[key] = value;
+          }
+  
+          const data = Object.assign({}, searchdata, formDataObject);
+  
+          const $buttonContainer = $('form#search').find('button[type="submit"]');
+          const $spinner = showSpinner($buttonContainer, 'loadmore');
+  
+          if (!data.searchterm) { return; }
+  
+          sendSearchForm(data, function () {
+              $spinner.hide();
+              $buttonContainer.find('i').show();
+          }, true);
+      });
+  
+  
+      $('.load-more').off().on('click', function () {
+          const $buttonContainer = $(this);
+  
+          if ($buttonContainer.hasClass('process')) {
+              return;
+          }
+          
+          const data = $(this).data();
+          data.page = paginationNumber;  // Use the correct current page for the request
+    
+          const $spinner = showSpinner($buttonContainer, 'loadmore');
+  
+          $buttonContainer.addClass('process');
+  
+          sendSearchForm(data, function () {
+              $spinner.hide();
+              $buttonContainer.find('i').show();
+              $buttonContainer.removeClass('process');
+  
+              updategridlayout(null, function () {
+                  $(document).find('.invisible').fadeIn().removeClass('invisible');
+              });
+              paginationNumber ++
+              $('#page').val(paginationNumber);
+              $('.load-more').attr('data-page', paginationNumber);
+          });
+      });
+      $('.load-more').click();  // Ensure the form gets triggered initially
+  };
+  
+  function sendSearchForm(data,callback,isNew = false) {
+
+    let url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchterm=${data.searchterm}&nsfw=${data.nsfw}`
+    if (data.fav) {
+        url = `/dashboard/app/${data.mode}/fav?page=${parseInt(data.page)}&searchterm=${data.searchterm ? data.searchterm : ''}&nsfw=${data.nsfw ? data.nsfw : 'false'}`;
     }
-    $('form#search').on('submit',function(e){
-        e.preventDefault()
-        
-        const formData = new FormData(this);
-        const searchdata = $('form#search').data();
-        
-        // Convert FormData to a plain object
-        let formDataObject = {};
-        for (let [key, value] of formData.entries()) {
-          formDataObject[key] = value;
-        }
-        
-        // Combine searchdata and formDataObject
-        const data = Object.assign(searchdata, formDataObject);
-
-        const $buttonContainer = $('form#search').find('button[type="submit"]')
-        const $spinner = showSpinner($buttonContainer,'loadmore')
-
-        sendSearchForm(data,function(){
-            $spinner.hide();
-            $buttonContainer.find('i').show();
-        })
-    })
-    $('.load-more').on('click', function(){
-        const data = $(this).data()
-
-        const $buttonContainer = $(this)
-        const $spinner = showSpinner($buttonContainer,'loadmore')
-
-        if($(this).data('fav')){
-            const url =`/dashboard/app/${data.mode}/fav?page=${parseInt(data.page)}&searchterm=${data.searchterm?data.searchterm:''}&nsfw=${data.nsfw?data.nsfw:'false'}`
-            window.location = url 
-            return
-            
-        }
-        
-        if(!$buttonContainer.hasClass('process')){
-            $buttonContainer.addClass('process')
-            sendSearchForm(data,function(){
-                $spinner.hide();
-                $buttonContainer.find('i').show();
-                $buttonContainer.removeClass('process')
-            })
-        }
-
-    })
-  }
-  function sendSearchForm(data,callback) {
-    
-    const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchterm=${data.searchterm}&nsfw=${data.nsfw}`
-    
     $.ajax({
         url: `/api/loadpage`,
         type: 'POST',
         data,
         success: function(response){
-           window.location=url
+            if(isNew){
+                window.location=url
+                return
+            }
+            if($('#results').length > 0 ){
+                const newResult = $(response);
+                newResult.addClass('invisible');
+                $('section#results').append(newResult);
+            }else{
+                window.location=url
+            }
+            if(callback){callback()}
         },
         error: function(){
             handleFormError()
@@ -1826,7 +1847,7 @@ $('button#memo').on('click', function() {
     });
 });
 // Listen for click events on buttons with the class .remove-memo
-$('.remove-memo').on('click', function(e) {
+$(document).on('click','.remove-memo',  function(e) {
     e.preventDefault()
     const confirmation = confirm("削除してもよろしいでしょうか？");
 
@@ -2297,7 +2318,7 @@ function handleCounterAndAddForm(){
 let counters = {};
 
 // Use a more generalized class for the event listener
-$('.add-item').click(function() {
+$(document).on('click','.add-item', function() {
     // Get the type and label from data attributes
     const type = $(this).data('name');
     const label = $(this).data('label');
@@ -2737,7 +2758,7 @@ function displaySrc(el) {
     $('#select-country').toggle().toggleClass('d-flex')
   }
   function handleSelectCountry() {
-    // Using jQuery to listen for changes on the dropdown
+    // Using jQuery to listen for changes on the f
     $('#countryDropdown').change(function() {
         const selectedCountry = $(this).val();
         updateUserFvoriteCountry(selectedCountry)
@@ -2953,7 +2974,7 @@ async function streamVideo(itemID, actressName) {
     console.log(`Started streaming video for itemID: ${itemID}, actressName: ${actressName}`);
 }
 function handleAudio(){
-    $('#toggleAudio').click(function() {
+    $(document).on('click','#toggleAudio',function(){
         // Toggle audio on all video elements
         $('video').each(function() {
         if (this.muted) {
@@ -2976,11 +2997,11 @@ function handleIframeActress(itemID){
     element.append(iframeHTML)
 }
 function handleInstantVideo() {
-    $('.instant-play-button').on('click', function() {
+    $(document).on('click','.instant-play-button', function() {
         $(this).addClass('play')
         var dataId = $(this).attr('data-id');
         const $thisCard = $('.info-container[data-id="' + dataId + '"]')
-        addCardToList($thisCard)
+        addCardToList($thisCard,true)
         instantPlay(dataId)
     });
 }
@@ -3098,7 +3119,7 @@ function backtothetop(){
     });
 
     // Click event
-    $('.btn-back-to-top').click(function() {
+    $(document).on('click','.btn-back-to-top',function(){
         $('html, body').animate({scrollTop: 0}, 500);
         return false;
     });

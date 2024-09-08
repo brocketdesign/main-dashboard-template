@@ -292,7 +292,6 @@ async function searchVideoDirectLink(videoDocument, myCollection, user){
   const videoLink = $('a').filter(function() {
     return $(this).attr('href') && $(this).attr('href').includes('video');
   }).attr('href'); 
-console.log({videoLink})
   return videoLink; 
 }
 
@@ -301,58 +300,64 @@ async function searchVideoPD(videoDocument, myCollection, user){
   const response = await axios.get(url);
   const $ = cheerio.load(response.data);
   
-  const videoPage = $('.video_iframe_container iframe').attr('src');
-  
+  const videoPage = $('.video_iframe_container iframe').attr('src');  
   const videoPageResponse = await axios.get(videoPage);
   const $$ = cheerio.load(videoPageResponse.data);
   
   let vcJsonString;
+  let highestQualityURL;
   $$('script').each((i, elem) => {
-    const scriptContent = $$(elem).html();
-    // Adjust the regex to match multi-line JSON assignment
-    const vcVariableMatch = scriptContent.match(/var vc = ({[\s\S]*?});/);
-    if (vcVariableMatch && vcVariableMatch.length > 1) {
-      vcJsonString = vcVariableMatch[1];
-      // Break the loop once we find the match
+    const scriptContent = $$(elem).html().trim();
+    const vcVariableMatch = scriptContent.indexOf('window.player_args.push') > 0;
+    if (vcVariableMatch) {
+      var match = scriptContent.match(/\{.*\}/);
+      if (match) {
+          var vcData = JSON.parse(match[0]);
+          highestQualityURL = vcData?.src[1]?.srcSet[0].url || null
+      }
       return false;
     }
   });
   
-  // Assuming vcJsonString is found and is a valid JSON string
-  let vcData;
-  if (vcJsonString) {
-    try {
-      vcData = JSON.parse(vcJsonString);
-     // console.log('VC Data:', vcData);
-    } catch (error) {
-      console.error('Failed to parse vc JSON string:', error);
-    }
+  if(highestQualityURL){
+    await updateSameElements(videoDocument, myCollection, {highestQualityURL:highestQualityURL,last_scraped:new Date()})
+    return highestQualityURL;
+  }else{
+    console.log('Video link not founded')
+    return false
   }
-  const highestQualityURL = vcData.sources[0].src
-  await updateSameElements(videoDocument, myCollection, {highestQualityURL:highestQualityURL,last_scraped:new Date()})
-  return highestQualityURL; // This will contain the parsed JSON, or undefined if not found/parsed
 
 }
 async function searchVideoHQPorner(videoDocument, myCollection, user) {
   try {
     const url = videoDocument.link;
+    console.log({url})
     const response = await axios.get(url);
     const $ = cheerio.load(response.data);
     
     // Correct the protocol and format the URL properly
     const videoPage = 'https:' + $('#playerWrapper iframe').attr('src');
+    console.log({videoPage})
     // Fetch the highest quality video source and handle it
     const highestQualityVideoSource = await fetchHighestQualityVideoSource(videoPage);
-    console.log('Highest quality video source:', highestQualityVideoSource);
-    await updateSameElements(videoDocument, myCollection, {highestQualityURL:highestQualityVideoSource,last_scraped:new Date()})
-    return highestQualityVideoSource;
+    console.log({highestQualityVideoSource});
+    if(highestQualityVideoSource){
+      // Update the document in the collection
+      await updateSameElements(videoDocument, myCollection, {
+        highestQualityURL: highestQualityVideoSource,
+        last_scraped: new Date()
+      });
+      
+      return highestQualityVideoSource;
+    }else{
+      return false
+    }
   } catch (error) {
-    console.log(error)
-
-    console.error('Error during video search or fetching the video source');
+    console.error('Error during video search:', error.message || 'Unknown error occurred');
     return null;  // Return null or handle error appropriately
   }
 }
+
 async function fetchHighestQualityVideoSource(url) {
     const browser = await puppeteer.launch({ headless: false , args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']});
     const page = await browser.newPage();

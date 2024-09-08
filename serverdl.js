@@ -188,9 +188,9 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         const {query, mode, nsfw, url, pageNum, userId}=req.body
         const result1 =  getVideoFromSB(query, mode, nsfw, url, pageNum, userId)
         const result2 =  getVideoFromPD(query, mode, nsfw, url, pageNum, userId)
-        const result3 =  getVideoFromHQP(query, mode, nsfw, url, pageNum, userId)
+        //const result3 =  getVideoFromHQP(query, mode, nsfw, url, pageNum, userId)
         
-        const combinedresult = await Promise.all([result1,result2,result3])
+        const combinedresult = await Promise.all([result1,result2])
 
         const result = combinedresult.flat();
         res.status(200).json({result})

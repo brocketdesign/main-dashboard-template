@@ -4,7 +4,7 @@ function generateNavigation() {
 }
 
 $(document).ready(function() {
-  $('#activeSlider,.expand-card').on('click', function() {
+  $(document).on('click','#activeSlider,.expand-card', function() {
     const currentItemId = $(this).closest('.info-container').data('id');
     pauseAllVideoExept(currentSlideId);
     muteAllVideo();

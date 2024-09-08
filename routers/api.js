@@ -18,7 +18,8 @@ const {
   saveDataSummarize,
   generateFilePathFromUrl,
   getOpenaiTypeForUser,
-  calculatePayloadWidth
+  calculatePayloadWidth,
+  findTotalPage
 } = require('../services/tools')
 const fetch = require('node-fetch');
 const FormData = require('form-data');
@@ -470,35 +471,97 @@ router.get('/ollama/completion/', async (req, res) => {
 
 // ルーターを定義して '/loadpage' への POST リクエストを処理します
 router.post('/loadpage', async (req, res) => {
-    try {
-      let { searchterm, nsfw, page, mode } = req.body; // Get the search term from the query parameter
-      nsfw = req.user.nsfw === 'true'?true:false
-      page = parseInt(page) || 1
-    
-      console.log({mode,page,searchterm,nsfw})
+  const isSafari = (userAgent) => {
+    return /^((?!chrome|android).)*safari/i.test(userAgent);
+  };
+  try {
+    const userAgent = req.headers['user-agent'];
+    let { searchterm, nsfw, page, mode, fav } = req.body; // Added fav to body
+    nsfw = req.user.nsfw === 'true' ? true : false;
+    page = parseInt(page) || 1;
 
-      if(!searchterm){
-        res.redirect(`/dashboard/app/${mode}/history`); // Pass the user data and scrapedData to the template
-        return
+    if (fav === 'true') {
+      // Handle the case where `fav` is true, return favorite data directly
+      let query_obj = {
+        mode: mode,
+        nsfw: nsfw,
+        fav_user_list: req.user._id,
+        hidden_item: { $exists: false }
+      };
+
+      if (searchterm) {
+        query_obj.searchterm = { $regex: searchterm };
       }
-      // If 'mode' is not provided, use the mode from the session (default to '1')
-      const currentMode = mode || req.session.mode || '1';
-    
-      await initCategories(req.user._id)
-      let scrapedData = await ManageScraper(searchterm,nsfw,mode,req.user, page);
-      if(mode == 2 || mode == 1 ){
-        AsyncManageScraper(searchterm,nsfw,mode,req.user, page);
+
+      if (searchterm === 'All') {
+        query_obj = {
+          mode: mode,
+          nsfw: nsfw,
+          isdl_process: true,
+          hidden_item: { $exists: false }
+        };
       }
-      updateUserScrapInfo(req.user._id, page, searchterm, mode).then(async ()=>{
-        const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
-        scrapInfo = userInfo.scrapInfo.find(info => info.searchterm === searchterm);
-      })     
-      res.status(200).send({status:true})
+
+      const totalPage = await findTotalPage(req.user._id, query_obj, 30);
+      let scrapedData = await findDataInMedias(req.user._id, page, query_obj);
+      scrapedData = scrapedData.reverse();
+
+      res.render(`search-result`, {
+        user: req.user,
+        scrapedData,
+        isSafari: isSafari(userAgent),
+        searchterm,
+        mode,
+        page,
+        totalPage,
+        title: `Mode ${mode} : ${searchterm}`
+      });
+
+      return;
+    }
+
+    // Normal flow if `fav` is false
+    let currentQuery = { searchterm, nsfw, page, mode };
+    console.log({ mode, page, searchterm, nsfw });
+
+    if (!searchterm) {
+      res.redirect(`/dashboard/app/${mode}/history`);
+      return;
+    }
+
+    const currentMode = mode || req.session.mode || '1';
+
+    await initCategories(req.user._id);
+    let scrapedData = await ManageScraper(searchterm, nsfw, mode, req.user, page);
+
+    if (mode == 2 || mode == 1) {
+      AsyncManageScraper(searchterm, nsfw, mode, req.user, page);
+    }
+
+    updateUserScrapInfo(req.user._id, page, searchterm, mode).then(async () => {
+      const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
+      scrapInfo = userInfo.scrapInfo.find(info => info.searchterm === searchterm);
+    });
+
+    const totalPage = await findTotalPage(req.user._id, currentQuery, 30);
+
+    res.render(`search-result`, {
+      user: req.user,
+      scrapedData,
+      isSafari: isSafari(userAgent),
+      searchterm,
+      mode,
+      page,
+      totalPage,
+      title: `Mode ${mode} : ${searchterm}`
+    });
+
   } catch (error) {
     console.error('An error occurred:', error);
     res.status(500).send('An error occurred while scraping.');
   }
 });
+
 
 async function updateUserScrapInfo(userId, page, searchterm, mode) {
   try {
@@ -1540,6 +1603,7 @@ async function getImageArray(images){
 }
 router.post('/hide', async (req, res) => {
   let { element_id, category, mode } = req.body;
+  
   const myCollection = `medias_${mode}`;
 
   if (!element_id) {
@@ -1548,29 +1612,43 @@ router.post('/hide', async (req, res) => {
 
   if (!category) {
     const user = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      return res.status(404).json({ message: 'ユーザーが見つかりませんでした' });
+    }
+
     let base_category = user.categories && user.categories.find(cat => cat.name === 'All');
+    
+    if (!base_category) {
+      return res.status(404).json({ message: 'カテゴリ "All" が見つかりませんでした' });
+    }
+
     category = [base_category.id];
   }
 
   try {
+
     const element = await global.db.collection(myCollection).updateOne(
       { _id: new ObjectId(element_id) },
-      {
-        $pull: { categories: category.toString() },
-        $set: { hidden_item: true }
-      }
+      { $pull: { categories: category.toString() } }
     );
-
-    if (element.modifiedCount === 0) {
-      return res.status(404).json({ message: '要素が見つかりませんでした' });
-    }
-
+    const setHidden = await global.db.collection(myCollection).updateOne(
+      { _id: new ObjectId(element_id) },
+      { $set: { hidden_item: true } }
+    );
+    const doc = await global.db.collection(myCollection).findOne(
+      { _id: new ObjectId(element_id) },
+    );
+    const hideMany = await global.db.collection(myCollection).updateMany(
+      { imageUrl: doc.imageUrl },
+      { $set: { hidden_item: true } }
+    );
     res.status(200).json({ message: 'The medias is hidden' });
   } catch (err) {
-    console.log(err);
+    console.log('Error:', err);
     res.status(500).json({ message: 'エラーが発生しました' });
   }
 });
+
 
 
 router.post('/getTopPage', async (req, res) => {

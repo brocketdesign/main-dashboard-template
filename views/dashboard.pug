@@ -41,7 +41,7 @@ block mainContent
           option(value="RU") Russia
           option(value="JP") Japan
 
-  form#search(data-mode=mode, data-page=page, data-nsfw= user.nsfw)
+  form#search(data-mode=mode, data-page=1, data-nsfw= user.nsfw)
     .input-group.mb-3
       input(type="hidden" name="page" id="page" value=page)
       if mode == 4
@@ -66,12 +66,11 @@ block mainContent
       a.btn.btn-dark.me-2(href=`/dashboard/app/${mode}/`)
         i.fas.fa-home
     if searchterm || fav
-      #extractors.my-3.col-auto
-        button.btn.btn-primary.extractor.mx-2(data-extractor="false") All
-    if (scrapedData && scrapedData.length > 0 )
-      .my-3.col-auto
-        button(id="lazyLoadButton" class="btn btn-primary" data-mode=mode) Toggle Lazy Load
+      #extractors.my-3.col-auto.pe-0
+        button.btn.btn-primary.extractor(data-extractor="false") All
     .my-3.col.d-flex.justify-content-end
+      button.me-2(id="lazyLoadButton" class="btn btn-primary" data-mode=mode)  
+        <i class="fas fa-play"></i>
       //button.btn.btn-primary.me-2(type='button' onclick="getDownloadData()")
       a.btn.btn-primary.me-2(href=`/dashboard/app/${mode}/fav?searchterm=All`)
         i.fas.fa-download
@@ -92,7 +91,6 @@ block mainContent
           label.form-check-label.btn.me-2.btn-danger.p-2.text-center(for="nsfw")
             | NSFW
           input.form-check-input.position-absolute(type="checkbox", role="switch", id="nsfw", name="nsfw", style="z-index: 1;opacity:0;")
-
 
   if result && mode == 1
     block dynamicContent

@@ -53,9 +53,11 @@ block content
                             a#resend-email(href="#" style="display:block" onclick="resendSigninMail()") メールを再送する
 
                         .container.text-center
-                            a(href='/user/login', class='google-login-button btn btn-light')
-                                <div class="bg-white" style="borer-radius:50px"><i class="fas fa-envelope me-2"></i></div>
-                                Login with mail
+                            a(href='/user/login', class='btn btn-light')
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <div class="bg-white me-2 border border-dark" style="border-radius:50px"><i class="fas fa-envelope" style="padding: 10px;font-size: 16px;"></i></div>
+                                    span Login with mail
+                                </div>
                             span.d-block.w-100 OR
                             a(href='/auth/google', class='google-login-button btn btn-light')
                                 img.me-2(src='/img/googleauth.svg', alt='Googleで続ける')

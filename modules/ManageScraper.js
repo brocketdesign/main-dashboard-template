@@ -11,60 +11,42 @@ const {
 } = require('../services/tools')
 const scrapeMode1 = require(`./scraper/scrapeMode1`);
 
-// Helper function to find user and update their scraped data
-async function findAndUpdateUser(userId, newScrapedData = null) {
-  const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-  if (!user) console.log('User not found in the database.',userId);
-  return user;
-}
-
 async function ManageScraper(searchterm, nsfw, mode, user, page) {
-  const myCollection = `medias_${mode}`
-  const {scrapeMode} = require(`./scraper/scrapeMode${mode}`);
-  const userId = user._id
+  const myCollection = `medias_${mode}`;
+  const { scrapeMode } = require(`./scraper/scrapeMode${mode}`);
+  const userId = user._id;
 
-  let userInfo = await findAndUpdateUser(userId);
-  const query = {
-    searchterm, 
-    mode: mode,
-    nsfw: nsfw,
-    hidden_item : { $exists: false } 
-  };
-  
-  scrapedData = await findDataInMedias(userId, parseInt(page), query);
-
-  if(scrapedData && scrapedData.length > 0 ){
-    console.log(`Return in database ${scrapedData.length}`)
-    return scrapedData
+  const userInfo = await findAndUpdateUser(userId);
+  searchterm = searchterm.trim()
+  const query = { searchterm, mode, nsfw, hidden_item: { $exists: false } };
+  if (true || await checkUserScrapTimeAndMode(user, searchterm, mode)) {
+    const scrapedData = await findDataInMedias(userId, parseInt(page), query);
+    if (scrapedData?.length) return scrapedData;
   }
-  
-  scrapedData = await scrapeMode(searchterm, mode, nsfw, page, user);
 
-  if(!scrapedData){
-    return []
-  }
-  console.log(`Scrape data and found ${scrapedData.length} elements.`)
-  await cleanupDatabase(myCollection)
+  let scrapedData = await scrapeMode(searchterm, mode, nsfw, page, user);
+  if (!scrapedData?.length) return [];
 
-  const categories = await initCategories(userId)
-  scrapedData = scrapedData.map((data) => ({
+  await cleanupDatabase(myCollection);
+  const categories = await initCategories(userId);
+
+  scrapedData = scrapedData.map(data => ({
     ...data,
     searchterm,
-    mode: mode,
-    nsfw: nsfw,
-    page:parseInt(page),
-    userId: userId,
-    categories:categories,
+    mode,
+    nsfw,
+    page: parseInt(page),
+    userId,
+    categories,
     favoriteCountry: userInfo.favoriteCountry,
-    time :new Date(),
-  })); 
+    time: new Date(),
+  }));
 
-  await updateUserScrapInfo(user,searchterm,page,mode)
-  let result = await insertInDB(myCollection, scrapedData)
-  console.log(`Return result for page ${page} : ${result.length}`)
-  if(result){result=result.reverse()}
-  return result
+  await updateUserScrapInfo(user, searchterm, page, mode);
+  const result = await insertInDB(myCollection, scrapedData);
+  return result?.reverse() || [];
 }
+
 async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
 
   const myCollection = `medias_${mode}`
@@ -135,7 +117,9 @@ async function insertInDB(myCollection, scrapedData) {
         } else {
           // Check if this document is already added to newEntries
           if (!addedIds.has(exists._id.toString())) {
-            newEntries.push(exists);
+            if(!exists.hidden_item){
+              newEntries.push(exists);
+            }
             addedIds.add(exists._id.toString()); // Track this ID as added
           }
         }
@@ -143,7 +127,7 @@ async function insertInDB(myCollection, scrapedData) {
     }
 
     console.log('Inserted documents:', newEntries.length);
-    return newEntries; // Return the array of newly inserted documents with their MongoDB _id
+    return newEntries;
   } catch (error) {
     console.error('Error processing documents:', error);
     throw error; // It's often a good practice to rethrow the error after logging
@@ -151,6 +135,11 @@ async function insertInDB(myCollection, scrapedData) {
 }
 
 
+async function findAndUpdateUser(userId, newScrapedData = null) {
+  const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+  if (!user) console.log('User not found in the database.',userId);
+  return user;
+}
 
 async function checkUserScrapeInfo(user){
   const scrapInfo = Array.isArray(user.scrapInfo) 
@@ -201,6 +190,19 @@ async function updateUserScrapInfo(user,searchterm,page,mode){
     );
   }
 }
+async function checkUserScrapTimeAndMode(user, searchterm, mode) {
+  const userInfo = await findAndUpdateUser(user._id);
+  const scrapInfo = userInfo.scrapInfo.find(info => info.searchterm === searchterm);
+
+  if (scrapInfo) {
+    const currentTime = new Date().getTime();
+    const timeDifference = currentTime - scrapInfo.time;
+    return timeDifference < (24 * 60 * 60 * 1000) && scrapInfo.mode === mode;
+  }
+
+  return false; 
+}
+
 
 
 module.exports = {ManageScraper,AsyncManageScraper,insertInDB};

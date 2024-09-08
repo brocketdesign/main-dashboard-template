@@ -134,37 +134,21 @@ async function findTotalPage(userId,query,elementsPerPage){
   const totalItems = medias.length
   return parseInt(totalItems/elementsPerPage)
 }
+
 async function findDataInMedias(userId, page, query, categoryId = null) {
-  // Modify the query to include checking for userId in the userIDs array
   query.userId = userId;
-  const myCollection = `medias_${query.mode}`
+  if (categoryId) query.categoryId = categoryId;
 
-  // If a categoryId is provided, include it in the query
-  if (categoryId !== null) {
-    query.categoryId = categoryId;
-  }
+  const mediasCollection = global.db.collection(`medias_${query.mode}`);
+  const page_number = parseInt(page) || 1;
+  const limit = 30;
+  const skip = (page_number - 1) * limit;
 
-  const mediasColelction = global.db.collection(myCollection);
-
-  if(!page){
-    const medias = await mediasColelction.find(query).sort({_id:-1}).toArray();
-    return medias;
-  }else{
-    page_number = parseInt(page) || 1;
-    let total = await mediasColelction.find({searchterm:query.searchterm}).toArray()
-    total = total.length
-    const limit = 30; // Number of documents per page
-    const skip = (page_number - 1) * limit; // Calculate skip value
-    // Find the medias that match the query
-    const medias = await mediasColelction.find(query)
-    .sort({_id:-1})
-    .skip(skip) // Skip N documents
-    .limit(limit) // Limit to N documents
-    .toArray();
-    return medias;
-  }
-
+  return page
+    ? await mediasCollection.find(query).sort({_id: -1}).skip(skip).limit(limit).toArray()
+    : await mediasCollection.find(query).sort({_id: -1}).toArray();
 }
+
 
 function sanitizeData(scrapedData,query) {
   //check for object with the same source and keep only one
