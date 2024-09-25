@@ -159,7 +159,7 @@ $(document).ready(function() {
     $(document).on('click','.delete-button-history',function(e) { 
         e.preventDefault()
         $(this).closest('a').remove()
-        handleHidingHistory($(this).closest('.card').data('query'))  
+        handleHidingHistory($(this).closest('.card').attr('data-query'))  
     });
 
     $(document).on('click','.summarize-button', function(event) { 
@@ -304,8 +304,6 @@ $(document).ready(function() {
     handleLoadMore();
     handleResetFormSubmission();
     handleIframe()
-    
-    initializeExtractor();
 
     handleRoop();
 });
@@ -1290,21 +1288,10 @@ const enterFullScreen = (videoElement) => {
     }
 
   };
-  let hideQueue = [];
-  let isProcessing = false;
+  
   
   const handleHiding = (videoId) => {
-    hideQueue.push(videoId);
-    processQueue();
-};
-
-const processQueue = () => {
-    if (isProcessing || hideQueue.length === 0) {
-        return;
-    }
-
-    isProcessing = true;
-    const videoId = hideQueue.shift(); // Get the next media to hide
+    
     const mode = $('#range').data('mode');
     let $container = $(`.card[data-id=${videoId}]`);
     $container.addClass('blurred');
@@ -1314,7 +1301,7 @@ const processQueue = () => {
         method: 'POST',
         data: { element_id: videoId, category: null, mode },
         success: function(response) {
-            //$container.remove();
+            $container.remove();
             //updateMasonryLayout();
             handleFormResult(true, 'Media hidden successfully.');
         },
@@ -1325,12 +1312,15 @@ const processQueue = () => {
 
 
 
-const handleHidingHistory = (query) => {
-    console.log(`Hide this query : ${query}`)
+const handleHidingHistory = (searchterm) => {
+    if(!searchterm){
+        console.log('Query must be defined')
+        return
+    }
     $.ajax({
         url: '/api/hideHistory',
         method: 'POST',
-        data: { query: query },
+        data: { searchterm },
         success: function(response) {
             updateMasonryLayout()
             handleFormResult(true,response.message)
@@ -1359,7 +1349,7 @@ function updategridlayout(value = false,callback) {
     setTimeout(() => {
         reinitializeMasonry();
         if(typeof callback == 'function'){callback()}
-    }, 500);
+    }, 1000);
   }
   
   
@@ -1448,6 +1438,8 @@ function updategridlayout(value = false,callback) {
               updategridlayout(null, function () {
                   $(document).find('.invisible').fadeIn().removeClass('invisible');
               });
+              initializeExtractor()
+
               paginationNumber ++
               $('#page').val(paginationNumber);
               $('.load-more').attr('data-page', paginationNumber);
@@ -2666,7 +2658,9 @@ function initializeExtractor() {
 
 function attachExtractorSortEvent() {
     $(document).on('click', '#extractors .extractor', function() {
-        const baseExtractor = $(this).data('extractor');
+        if($(this).hasClass('done')){return}
+        $(this).addClass('done')
+        const baseExtractor = $(this).attr('data-extractor');
         filterByExtractor(baseExtractor);
     });
 }
@@ -2701,14 +2695,15 @@ function showExtractors(extractors) {
 
 function listExtractors() {
     const extractors = [];
-    const carouselItems = $('.custom-carousel-container .grid-item');
+    const carouselItems = $(document).find('.custom-carousel-container .grid-item');
     
     carouselItems.each(function() {
-        const extractor = $(this).data('extractor');
+        const extractor = $(this).attr('data-extractor');
         if (extractor && !extractors.includes(extractor)) {
             extractors.push(extractor);
         }
     });
+    console.log({extractors})
     return extractors;
 }
 function displaySrc(el) {

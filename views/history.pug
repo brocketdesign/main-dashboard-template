@@ -6,7 +6,8 @@ block dynamicContent
       #display-history.row.row-cols-2.row-cols-md-3.row-cols-lg-4(data-mode=mode)
     .col.order-1.pb-3
       hr.mb-4
-      #osusume-history.row.row-cols-1.row-cols-md-2.row-cols-lg-4(data-mode=mode)
+      .masonry-wrapper
+        #osusume-history.row.row-cols-1.row-cols-md-2.row-cols-lg-4(data-mode=mode)
   style.
     #display-history .card{
       position:relative;
@@ -53,45 +54,58 @@ block dynamicContent
         }
     }
 
-    function displayHistory(data,$container) {
+    function displayHistory(data, $container) {
         // Clear the current content
-        
         $container.empty();
-        const mode = $(`#display-history`).data('mode')
+        const mode = $(`#display-history`).data('mode');
+
         // Loop through each category in the data
         $.each(data, function(category, items) {
-          
             // Check if there are items in the category
-            if (items.length >= 0 ) {
-
-                let myID = "itemSlider_"+stringToID(category);
-                let itemLink = `/dashboard/app/${mode}?searchterm=${category}&nsfw=true&page=${items[0].page}`;
+            if (items.length >= 0) {
+                let myID = "itemSlider_" + stringToID(category);
+                let itemLink = `/dashboard/app/${mode}?searchterm=${encodeURIComponent(category)}&nsfw=true&page=${items[0].page}`;
+                
+                // Create the card elements
                 let cardLink = $('<a>').attr('href', itemLink).addClass('text-decoration-none item small py-0 px-1');
-                let card = $('<div>').addClass('card mx-0 my-1');
+                let card = $('<div>').addClass('card mx-0 my-1').attr('data-query', category.trim());
                 let cardBody = $('<div>').addClass('card-body');
-                let imageContainer = $('<div>').attr('id',myID).addClass('slider-container rounded')
 
+                // Create the image container
+                let imageContainer = $('<div>').attr('id', myID).addClass('slider-container rounded');
+                items.forEach((item) => {
+                    let imageUrl = item.thumb || item.imageUrl || item.filePath;
+                    let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', category);
+                    imageContainer.append(imgTag);
+                });
+
+                // Create the trash button
+                let trashButton = $('<button>')
+                    .addClass('btn btn-sm btn-danger delete-button-history')
+                    .html('<i class="bi bi-trash"></i>');
+
+                // Create card header with title and trash button
+                let cardHeader = $('<div>').addClass('d-flex justify-content-between align-items-center');
+
+                let cardTitle = $('<h5>')
+                    .addClass('card-title btn bg-white fw-bold text-secondary m-0')
+                    .text(category);
+
+                cardHeader.append(cardTitle);
+                cardHeader.append(trashButton);
+
+                // Assemble the card
+                cardBody.append(cardHeader);
                 card.append(imageContainer);
-                cardBody.append($('<h5>').addClass('card-title btn bg-white fw-bold text-secondary').text(category));
                 card.append(cardBody);
                 cardLink.append(card);
 
-                items.forEach((item) => {
-                    let imageUrl = item.thumb || item.imageUrl || item.filePath ;
-                    let imgTag = $('<img>').addClass('img-fluid lazy').attr('data-src', imageUrl).attr('alt', category);
-
-                    imageContainer.append(imgTag);
-
-                });
-
-                $(`#display-history`).append(cardLink);
-
+                // Append the card to the container
+                $container.append(cardLink);
             }
         });
 
         // Initialize lazy loading
-        //reorderElementByTime($container)
-        
         $container.on('scroll', function() {
             $('.lazy').lazy('update');
         });
@@ -99,9 +113,9 @@ block dynamicContent
         for (var i = 0; i < lazyItems.length; i++) {
             $(lazyItems[i]).find('.lazy').lazy('update');
         }
-
-        
     }
+
+
     function displayHistoryTop(data){
 
         $('#osusume-history').empty();

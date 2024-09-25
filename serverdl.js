@@ -185,16 +185,20 @@ MongoClient.connect(url, { useUnifiedTopology: true })
       });  
 
       router.post('/getVideoFromSB', async (req, res) => {
-        const {query, mode, nsfw, url, pageNum, userId}=req.body
-        const result1 =  getVideoFromSB(query, mode, nsfw, url, pageNum, userId)
-        const result2 =  getVideoFromPD(query, mode, nsfw, url, pageNum, userId)
-        const result3 =  getVideoFromHQP(query, mode, nsfw, url, pageNum, userId)
+        const {query, mode, nsfw, url, pageNum, userId} = req.body;
+        const result1 = getVideoFromSB(query, mode, nsfw, url, pageNum, userId);
+        //const result2 = getVideoFromPD(query, mode, nsfw, url, pageNum, userId);
+        //const result3 = getVideoFromHQP(query, mode, nsfw, url, pageNum, userId);
         
-        const combinedresult = await Promise.all([result1,result2, result3])
-
-        const result = combinedresult.flat();
-        res.status(200).json({result})
-      })
+        const combinedResult = await Promise.allSettled([result1]);
+        
+        const successfulResults = combinedResult
+          .filter(promise => promise.status === 'fulfilled')
+          .map(promise => promise.value);
+        
+        const result = successfulResults.flat();
+        res.status(200).json({ result });
+      });
       
       router.post('/scrapeWebsiteTopPage',async (req,res) => { 
         const {mode, nsfw, userId, extractor}=req.body

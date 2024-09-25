@@ -1711,6 +1711,7 @@ router.post('/intemInfo', async (req, res) => {
     res.json({status:false});
   }
 });
+
 router.post('/history', async (req, res) => {
   const {mode} = req.body
   const userId = new ObjectId(req.user._id);
@@ -1783,37 +1784,37 @@ function findPageByUrl(scrapInfo,searchterm) {
 }
 
 router.post('/hideHistory', async (req, res) => {
-  const { query, category } = req.body;
-  console.log('クエリを非表示にする:', query); // Hide the query: query
-  if (!query) {
-    return res.status(400).json({ message: 'クエリが提供されていません' }); // Query not provided
+  const { searchterm } = req.body;
+  console.log('Hiding searchterm:', searchterm);
+  if (!searchterm) {
+    return res.status(400).json({ message: 'Search term not provided' });
   }
 
-  const userId = req.user._id; // Assuming you are getting userId from a logged in user
-  
-  try {
-    // Getting all the medias that match the query
-    const medias = await global.db.collection('medias').find({ query }).toArray();
-    
-    // Looping through each media and removing the category from the categories array
-    for (const media of medias) {
-      await global.db.collection('medias').updateOne(
-        { _id: media._id }, // 条件 (Criteria)
-        { 
-          $pull: { categories: category } ,
-          $set:{hide_query:true}
-        }
-      );
-    }
-    
-    console.log('メディアが正常に更新されました'); // Media has been successfully updated
+  const userId = req.user._id;
 
-    res.status(200).json({ message: 'この要素はもう表示されません' }); // This element won't be displayed anymore
+  try {
+
+    // Optionally, update the medias collection to hide media associated with this searchterm
+    await global.db.collection('medias').updateMany(
+      { searchterm: searchterm.trim(), userId: new ObjectId(userId) },
+      { $set: { hide_query: true } }
+    );
+
+    // Update the user's scrapInfo to remove or mark this searchterm as hidden
+    await global.db.collection('users').updateOne(
+      { _id: new ObjectId(userId) },
+      { $pull: { scrapInfo: { searchterm: searchterm.trim() } } }
+    );
+
+    console.log('Search term hidden successfully');
+
+    res.status(200).json({ message: 'This search term will no longer be displayed' });
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: 'エラーが発生しました' }); // An error occurred
+    console.error('Error hiding search term:', err);
+    res.status(500).json({ message: 'An error occurred' });
   }
 });
+
 
 router.post('/category/add', async (req, res) => {
   const { categoryName, mode } = req.body;

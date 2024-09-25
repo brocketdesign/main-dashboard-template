@@ -343,7 +343,7 @@ async function scrapeSearchPage(query, mode, nsfw, url, pageNum, userId){
       }
 
       const scrapedData = await page.evaluate((url, query, mode, nsfw) => {
-        const items = Array.from(document.querySelectorAll('#container .video-list.video-rotate  .video-item'));
+        const items = Array.from(document.querySelectorAll('.video-list.video-rotate  .video-item'));
         const data = items.map(item => {
           try {
             const thumb = item.querySelector('.thumb');
