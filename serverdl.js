@@ -52,7 +52,6 @@ MongoClient.connect(url, { useUnifiedTopology: true })
             res.status(404).json({ error: 'Video URL not found.' });
             return;
           }
-          console.log(`Download : ${url}`)
           //res.status(200).json({ url, message: 'Start Download' }); 
       
           if(!url.includes('http')){
@@ -69,7 +68,6 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           }
       
           const {fileName,filePath} = generateFilePathFromUrl(download_directory,url,title)
-          console.log('Start Download:', fileName);
 
           // Create download folder if it doesn't exist
           await fs.promises.mkdir(download_directory, { recursive: true });
@@ -88,12 +86,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
           if(!done){
             await downloadFileFromURL(filePath,url)
           }
-      
-          
           // After the file is downloaded, do the same things for both YouTube videos and other types of files
-      
-          console.log('File downloaded:', fileName);
-      
           updateSameElements(foundElement,myCollection,{filePath:filePath.replace('public',''), isdl:true,isdl_end:new Date()})
           // Send a success status response after the file is downloaded
           res.status(200).send({ fileName, message: 'アイテムが成功的に保存されました。' });

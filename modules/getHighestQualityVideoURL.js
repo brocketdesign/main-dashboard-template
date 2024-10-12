@@ -18,7 +18,6 @@ async function getHighestQualityVideoURL(myCollection,video_id, user, stream = t
     }
 
     if(foundElement.filePath){
-      console.log(`Return filePath ${foundElement.filePath}`)
       await updateSameElements(foundElement, myCollection, {isdl:true,isdl_data:new Date(),filePath:foundElement.filePath})
       return foundElement.filePath.replace('public','')
     }

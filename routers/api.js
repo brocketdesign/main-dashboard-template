@@ -668,11 +668,11 @@ async function addUserToFavList(user, video_id,mode) {
 
     // Check if the update operation was acknowledged and a document was modified
     if (updateResult.matchedCount === 1 && updateResult.modifiedCount === 1) {
-      console.log(`Successfully added user ${user._id} to fav_user_list for video ${foundElement._id}`);
+      //console.log(`Successfully added user ${user._id} to fav_user_list for video ${foundElement._id}`);
     } else if (updateResult.matchedCount === 0) {
       console.log(`No media found with ID: ${foundElement._id}`);
     } else {
-      console.log(`User ${user._id} was already in the fav_user_list for video ${foundElement._id}`);
+      //console.log(`User ${user._id} was already in the fav_user_list for video ${foundElement._id}`);
     }
 
     // Return the update result
