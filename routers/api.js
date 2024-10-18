@@ -1127,10 +1127,15 @@ router.post('/img2img', async (req, res) => {
   const negative_prompt = `` // req.body.negativePrompt || default_negative_prompt;
   const aspectRatio = req.body.aspectRatio;
   const imagePath = req.body.imagePath;
-
   const isRoop = req.query.isRoop == 'true'
   const baseFacePath = req.body.baseFace
-  const roopScriptPath = `/home/maho/stable-diffusion-webui/models/roop/inswapper_128.onnx`
+  const roopScriptPath = path.join(__dirname, '../public/model/inswapper_128.onnx');
+  if (fs.existsSync(roopScriptPath)) {
+    console.log('File exists:', roopScriptPath);
+  } else {
+    console.log('File does not exist:', roopScriptPath);
+    return res.status(400).send('Roop script not founded');
+  }
   // Validate the imagePath
   if (!imagePath) {
     return res.status(400).send('An image path must be provided for img2img.');
@@ -1701,11 +1706,11 @@ router.post('/intemInfo', async (req, res) => {
   const {mode,itemId} = req.body
   const userId = new ObjectId(req.user._id);
   try {
-      const medias = await findDataInMedias(userId, false, {
-        mode: mode,
+    const mediasCollection = global.db.collection(`medias_${mode}`);
+    const media = await mediasCollection.findOne({
         _id : new ObjectId(itemId)
       });
-      res.json({status:true,medias}); 
+      res.json({status:true,media}); 
   } catch (error) {
     console.log(error)
     res.json({status:false});

@@ -228,7 +228,6 @@ function selectSingleTagPerCategory(el) {
 }
 
 function generateThis(itemId) {
-
   var url = "/api/sdimage/" + itemId;
   $.get(url, function(data) {
     const imagePath = `./public/output/${itemId}.png`;
@@ -309,7 +308,7 @@ function generateDiffusedImage(option = {}) {
 
   const modelName = $('#modelDropdown').text();
 
-  console.log({tags,negativePrompt,prompt,imagePath,aspectRatio});
+  console.log({tags,negativePrompt,prompt,imagePath,aspectRatio,baseFace});
 
   let query = imagePath ? API_ENDPOINT.img2img : API_ENDPOINT.txt2img;
   fetch(query, {

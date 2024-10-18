@@ -3159,7 +3159,7 @@ function downloadAndGenerate(itemId){
             itemId
         },function(response){
             if(response.status){
-                const imagePath =  './public'+response.medias[0].filePath
+                const imagePath =  './public'+response.media.filePath
                 const baseFace = `./public/downloads/downloaded_images/face_5.jpg`
                 generateDiffusedImage({imagePath,aspectRatio:"2:3",isRoop:true,baseFace,itemId})
             }
