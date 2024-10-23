@@ -106,7 +106,7 @@ block dynamicContent
         });
 
         // Initialize lazy loading
-        $container.on('scroll', function() {
+        $(window).on('scroll', function() {
             $('.lazy').lazy('update');
         });
         var lazyItems = $('#display-history .slider-container').slice(0, 4);
@@ -152,7 +152,8 @@ block dynamicContent
         
         // Initialize lazy loading
         $('.lazy').lazy();
-        $('#osusume-history').on('scroll', function() {
+        
+        $(window).on('scroll', function() {
             $('.lazy').lazy('update');
         });
         
@@ -201,7 +202,8 @@ block dynamicContent
         
         // Initialize lazy loading
         $('.lazy').lazy();
-        $('#osusume-history').on('scroll', function() {
+        
+        $(window).on('scroll', function() {
             $('.lazy').lazy('update');
         });
     }

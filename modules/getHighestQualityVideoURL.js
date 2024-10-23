@@ -284,6 +284,7 @@ async function searchVideoYoutube( videoDocument, myCollection, user, stream){
 async function searchVideoDirectLink(videoDocument, myCollection, user){
   const url = videoDocument.link;
 
+
   const { data } = await axios.get(url);
 
   const $ = cheerio.load(data);
