@@ -1416,36 +1416,57 @@ function updategridlayout(value = false,callback) {
       });
   
   
-      $('.load-more').off().on('click', function () {
-          const $buttonContainer = $(this);
-  
-          if ($buttonContainer.hasClass('process')) {
-              return;
-          }
-          
-          const data = $(this).data();
-          data.page = paginationNumber;  // Use the correct current page for the request
-    
-          const $spinner = showSpinner($buttonContainer, 'loadmore');
-  
-          $buttonContainer.addClass('process');
-  
-          sendSearchForm(data, function () {
-              $spinner.hide();
-              $buttonContainer.find('i').show();
-              $buttonContainer.removeClass('process');
-  
-              updategridlayout(null, function () {
-                  $(document).find('.invisible').fadeIn().removeClass('invisible');
-              });
-              initializeExtractor()
+// Intersection Observer to detect when the .load-more button is in the viewport
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            // Trigger the click when the button is visible in the viewport
+            $(entry.target).click();
+        }
+    });
+}, {
+    root: null, // Use the viewport as the root
+    rootMargin: '100px',
+    threshold: 0.1 // Trigger when 10% of the button is visible
+});
 
-              paginationNumber ++
-              $('#page').val(paginationNumber);
-              $('.load-more').attr('data-page', paginationNumber);
-          });
-      });
-      $('.load-more').click();  // Ensure the form gets triggered initially
+// Attach observer to the .load-more button
+const loadMoreButton = document.querySelector('.load-more');
+if (loadMoreButton) {
+    observer.observe(loadMoreButton);
+}
+
+// Existing load-more click functionality
+$('.load-more').off().on('click', function () {
+    const $buttonContainer = $(this);
+
+    if ($buttonContainer.hasClass('process')) {
+        return;
+    }
+
+    const data = $(this).data();
+    data.page = paginationNumber; // Use the correct current page for the request
+
+    const $spinner = showSpinner($buttonContainer, 'loadmore');
+
+    $buttonContainer.addClass('process');
+
+    sendSearchForm(data, function () {
+        $spinner.hide();
+        $buttonContainer.find('i').show();
+        $buttonContainer.removeClass('process');
+
+        updategridlayout(null, function () {
+            $(document).find('.invisible').fadeIn().removeClass('invisible');
+        });
+        initializeExtractor();
+
+        paginationNumber++;
+        $('#page').val(paginationNumber);
+        $('.load-more').attr('data-page', paginationNumber);
+    });
+});
+
   };
   
   function sendSearchForm(data,callback,isNew = false) {
@@ -2687,7 +2708,7 @@ function filterByExtractor(baseExtractor) {
 
 function showExtractors(extractors) {
     const extractorContainer = $('#extractors');
-    
+    extractorContainer.empty()
     extractors.forEach(extractor => {
         extractorContainer.append(`<button class="btn btn-primary extractor mx-2" data-extractor="${extractor}">${extractor}</button>`);
     });
