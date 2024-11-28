@@ -93,7 +93,10 @@ async function downloadMedia(myCollection,foundElement){
 
 async function searchVideo(videoDocument, myCollection, user, stream) {
   const videoLink = videoDocument.link; // Assuming 'link' field contains the video link
-
+  
+  if( videoLink.includes('pornvideos')){
+    return await searchVideoUrlPV(videoDocument, myCollection, user)
+  }
   if( videoLink.includes('monsnode')){
     return await searchVideoDirectLink(videoDocument, myCollection, user)
   }
@@ -231,6 +234,33 @@ const getJSON = async (url,user) => {
     throw error;
   }
 };
+async function searchVideoUrlPV( videoDocument, myCollection, user) {
+
+  videoURL = videoDocument.link
+console.log({videoURL})
+  const browser = await puppeteer.launch({ headless: false , args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']});
+  const page = await browser.newPage();
+  await page.setRequestInterception(true);
+
+  const mp4Urls = [];
+
+  page.on('request', (request) => {
+    if (request.url().includes('.mp4')) {
+      mp4Urls.push(request.url());
+    }
+    request.continue();
+  });
+
+  await page.goto(videoURL, { waitUntil: 'networkidle2' });
+
+  await browser.close();
+
+  const highestQualityURL = mp4Urls[0] || null;
+
+  await updateSameElements(videoDocument, myCollection, {highestQualityURL:highestQualityURL,last_scraped:new Date()})
+  console.log('Highest Quality URL:', highestQualityURL);
+  return highestQualityURL;
+}
 async function searchVideoUrl( videoDocument, myCollection, user) {
 
   videoURL = videoDocument.link

@@ -6,6 +6,40 @@ const fs = require('fs');
 const path = require('path');
 const urlLib = require('url');
 
+const getVideoFromPV = (query, mode, nsfw, url, pageNum, userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (url) {
+        if( url.includes('http') && !url.includes('pornvideos')){
+          resolve([])
+          return
+        }
+        url = url.includes('http') ? new URL(url).href : `https://www.pornvideos.tv/search/${query}/${pageNum}/`;
+      } else {
+        url = 'https://www.pornvideos.tv/';
+      }
+      const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) })
+
+      const { data } = await axios.get(url);
+      const $ = cheerio.load(data);
+
+      const results = [];
+      $('.video-small').each((i, element) => {
+        let item = {}
+        item.link = 'https://www.pornvideos.tv/' + $(element).find('a').attr('href')
+        item.imageUrl = $(element).find('img').attr('data-src');
+        item.alt = $(element).find('.video_item_title .video_item_section_txt').text();
+        item.currentPage = url;
+        item.extractor = 'pornvideos'
+        results.push(item);
+      });
+      resolve(results)
+    } catch (error) {
+      console.log(`Error with PD`)
+      reject(error);
+    }
+  });
+}
 const getVideoFromPD = (query, mode, nsfw, url, pageNum, userId) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -429,4 +463,4 @@ const scrapeWebsiteTopPage = (mode, nsfw, userId) => {
     }
   });
 }
-module.exports = { getVideoFromSB, scrapeWebsiteTopPage, getVideoFromPD, getVideoFromHQP }
+module.exports = { getVideoFromSB, getVideoFromPV, scrapeWebsiteTopPage, getVideoFromPD, getVideoFromHQP }

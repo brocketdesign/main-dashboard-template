@@ -74,7 +74,7 @@ function activateCarousel(currentItemId) {
   }).addClass('fullScreen');
   removeGridDesign(cards);
   cards.css({ flex: '0 0 auto', marginRight: '20px' })
-    .find('.video-container').css({ "max-height": "80vh", width: "100vw" })
+    .find('.video-container').css({ "height": "100vh", width: "100vw" })
     .find('img').css("max-height", "80vh");
   prependCurrentCard(currentItemId);
 }

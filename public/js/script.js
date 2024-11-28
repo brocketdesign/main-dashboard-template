@@ -1,6 +1,8 @@
 // Utility functions
 const logout = () => window.location.href = '/user/logout';
 const YOUR_LARGE_SCREEN_BREAKPOINT = 992
+sessionStorage.removeItem('isexpand');
+
 // Use showdown library to convert markdown to HTML
 const converter = new showdown.Converter();
 const checkFormChange = (initialData, form) => {
