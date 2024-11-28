@@ -1332,6 +1332,11 @@ const handleHidingHistory = (searchterm) => {
 }
 function updategridlayout(value = false,callback) {
     if(!value){value=$('#grid-range').val()}
+
+    //Do not update the design if in full page
+    if (sessionStorage.getItem('isexpand') === 'true') {
+        return
+    } 
     // Function implementation goes here
     // This function will be called when the range input is changed
     // You can update the grid layout or perform any other actions based on the 'value'
@@ -1438,6 +1443,7 @@ if (loadMoreButton) {
 
 // Existing load-more click functionality
 $('.load-more').off().on('click', function () {
+
     const $buttonContainer = $(this);
 
     if ($buttonContainer.hasClass('process')) {
@@ -2724,7 +2730,7 @@ function listExtractors() {
             extractors.push(extractor);
         }
     });
-    console.log({extractors})
+
     return extractors;
 }
 function displaySrc(el) {

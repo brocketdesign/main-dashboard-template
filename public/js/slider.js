@@ -6,6 +6,7 @@ function generateNavigation() {
 $(document).ready(function() {
   $(document).on('click','#activeSlider,.expand-card', function() {
     const currentItemId = $(this).closest('.info-container').data('id');
+    sessionStorage.setItem('isexpand', 'true'); // or any value you want
     pauseAllVideoExept(currentSlideId);
     muteAllVideo();
     activeFirstVideo();
@@ -19,6 +20,7 @@ $(document).ready(function() {
 
   $('#closeSlickModal').on('click', function() {
     $('.carousel-toolbar').hide().removeClass('d-flex');
+    sessionStorage.removeItem('isexpand');
     muteAllVideo();
     deactivateCarousel();
     scrollToCurrentSlide();
