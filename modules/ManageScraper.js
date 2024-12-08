@@ -7,45 +7,69 @@ const {
   initCategories,
   sanitizeData,
   cleanupDatabase,
-  removeDuplicates
+  removeDuplicates,
+  updateUserScrapInfo,
+  findAndUpdateUser
 } = require('../services/tools')
 const scrapeMode1 = require(`./scraper/scrapeMode1`);
-
 async function ManageScraper(searchterm, nsfw, mode, user, page) {
-  const myCollection = `medias_${mode}`;
-  const { scrapeMode } = require(`./scraper/scrapeMode${mode}`);
-  const userId = user._id;
+  try {
+    const myCollection = `medias_${mode}`;
+    const { scrapeMode } = require(`./scraper/scrapeMode${mode}`);
+    const userId = user._id;
 
-  const userInfo = await findAndUpdateUser(userId);
-  searchterm = searchterm.trim()
-  const query = { searchterm, mode, nsfw, hidden_item: { $exists: false } };
-  if (true || await checkUserScrapTimeAndMode(user, searchterm, mode)) {
-    const scrapedData = await findDataInMedias(userId, parseInt(page), query);
-    if (scrapedData?.length) return scrapedData;
+    const userInfo = await findAndUpdateUser(userId);
+    if (!userInfo) {
+      throw new Error(`User not found or could not be updated: ${userId}`);
+    }
+
+    searchterm = searchterm.trim();
+    const query = { searchterm, mode, nsfw, hidden_item: { $exists: false } };
+
+    if (true || await checkUserScrapTimeAndMode(user, searchterm, mode)) {
+      const scrapedData = await findDataInMedias(userId, parseInt(page), query);
+      if (scrapedData?.length) return scrapedData;
+    }
+
+    let scrapedData = await scrapeMode(searchterm, mode, nsfw, page, user);
+    if (!scrapedData?.length) {
+      console.warn(`No data scraped for searchterm: ${searchterm}, mode: ${mode}, nsfw: ${nsfw}`);
+      return [];
+    }
+
+    await cleanupDatabase(myCollection);
+    const categories = await initCategories(userId);
+    if (!categories) {
+      throw new Error(`Failed to initialize categories for user: ${userId}`);
+    }
+
+    scrapedData = scrapedData.map(data => ({
+      ...data,
+      searchterm,
+      mode,
+      nsfw,
+      page: parseInt(page),
+      userId,
+      categories,
+      favoriteCountry: userInfo.favoriteCountry,
+      time: new Date(),
+    }));
+
+    await updateUserScrapInfo(user, searchterm, page, mode);
+    const result = await insertInDB(myCollection, scrapedData);
+    if (!result?.length) {
+      console.warn(`Failed to insert data into DB for collection: ${myCollection}`);
+      return [];
+    }
+
+    return result.reverse();
+  } catch (error) {
+    console.log(error)
+    console.error(`Error in ManageScraper: ${error.message}`);
+    return [];
   }
-
-  let scrapedData = await scrapeMode(searchterm, mode, nsfw, page, user);
-  if (!scrapedData?.length) return [];
-
-  await cleanupDatabase(myCollection);
-  const categories = await initCategories(userId);
-
-  scrapedData = scrapedData.map(data => ({
-    ...data,
-    searchterm,
-    mode,
-    nsfw,
-    page: parseInt(page),
-    userId,
-    categories,
-    favoriteCountry: userInfo.favoriteCountry,
-    time: new Date(),
-  }));
-
-  await updateUserScrapInfo(user, searchterm, page, mode);
-  const result = await insertInDB(myCollection, scrapedData);
-  return result?.reverse() || [];
 }
+
 
 async function AsyncManageScraper(searchterm, nsfw, mode, user, page) {
 
@@ -135,61 +159,7 @@ async function insertInDB(myCollection, scrapedData) {
 }
 
 
-async function findAndUpdateUser(userId, newScrapedData = null) {
-  const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-  if (!user) console.log('User not found in the database.',userId);
-  return user;
-}
 
-async function checkUserScrapeInfo(user){
-  const scrapInfo = Array.isArray(user.scrapInfo) 
-  const userId = user._id
-  if(!scrapInfo){
-    try {
-      // If the URL doesn't exist, push the new scrapInfo
-      await global.db.collection('users').updateOne(
-        { _id: new ObjectId(userId) },
-        {
-          $set:{scrapInfo: []}
-          
-        },
-        { upsert: true }
-      );
-    } catch (error) {
-      console,log(error)
-    }
-  }
-}
-async function updateUserScrapInfo(user,searchterm,page,mode){
-  await checkUserScrapeInfo(user)
-  userInfo = await findAndUpdateUser(user._id);
-  const scrapInfo = userInfo.scrapInfo.find(info => info.searchterm === searchterm);
-  const currentTime = new Date().getTime();
-  if (scrapInfo) {
-    // If the URL already exists, update the time and page
-    await global.db.collection('users').updateOne(
-      { _id: new ObjectId(user._id), 'scrapInfo.searchterm': searchterm },
-      {
-        $set: {
-          'scrapInfo.$.mode': mode,
-          'scrapInfo.$.time': currentTime,
-          'scrapInfo.$.page': parseInt(page)
-        }
-      }
-    );
-  } else {
-    // If the searchterm doesn't exist, push the new scrapInfo
-    await global.db.collection('users').updateOne(
-      { _id: new ObjectId(user._id) },
-      {
-        $push: {
-          scrapInfo: { searchterm: searchterm, time: currentTime, page: parseInt(page) }
-        }
-      },
-      { upsert: true }
-    );
-  }
-}
 async function checkUserScrapTimeAndMode(user, searchterm, mode) {
   const userInfo = await findAndUpdateUser(user._id);
   const scrapInfo = userInfo.scrapInfo.find(info => info.searchterm === searchterm);

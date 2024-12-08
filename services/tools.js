@@ -681,29 +681,36 @@ async function cleanupDatabase(myCollection) {
     const tempCollectionName = myCollection + "_temp";
     const tempCollection = global.db.collection(tempCollectionName);
 
+    // Check if the collection exists before performing operations
+    const collections = await global.db.listCollections({ name: myCollection }).toArray();
+    if (!collections.length) {
+      console.warn(`Collection "${myCollection}" does not exist, skipping cleanup.`);
+      return;
+    }
+
     await dbCollection.aggregate([
       {
         $group: {
           _id: {
             source: {
               $cond: {
-                if: { $ne: ["$source", undefined] }, // Check if 'source' is not undefined
+                if: { $ne: ["$source", undefined] },
                 then: "$source",
-                else: "$noval" // Use a unique value to represent undefined
+                else: "$noval"
               }
             },
             url: {
               $cond: {
-                if: { $ne: ["$url", undefined] }, // Check if 'url' is not undefined
+                if: { $ne: ["$url", undefined] },
                 then: "$url",
-                else: "$noval" // Use a unique value to represent undefined
+                else: "$noval"
               }
             },
             link: {
               $cond: {
-                if: { $ne: ["$link", undefined] }, // Check if 'link' is not undefined
+                if: { $ne: ["$link", undefined] },
                 then: "$link",
-                else: "$noval" // Use a unique value to represent undefined
+                else: "$noval"
               }
             }
           },
@@ -714,9 +721,9 @@ async function cleanupDatabase(myCollection) {
       { $out: tempCollectionName }
     ]).toArray();
 
+    // Drop and rename collections only if aggregation succeeds
     await dbCollection.drop();
     await tempCollection.rename(myCollection);
-
   } catch (error) {
     console.error('Error during database cleanup:', error);
     throw error;
@@ -724,6 +731,69 @@ async function cleanupDatabase(myCollection) {
 }
 
 
+async function findAndUpdateUser(userId, newScrapedData = null) {
+  const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+  if (!user) console.log('User not found in the database.',userId);
+  return user;
+}
+
+async function checkUserScrapeInfo(user){
+  const scrapInfo = Array.isArray(user.scrapInfo) 
+  const userId = user._id
+  if(!scrapInfo){
+    try {
+      // If the URL doesn't exist, push the new scrapInfo
+      await global.db.collection('users').updateOne(
+        { _id: new ObjectId(userId) },
+        {
+          $set:{scrapInfo: []}
+          
+        },
+        { upsert: true }
+      );
+    } catch (error) {
+      console,log(error)
+    }
+  }
+}
+async function updateUserScrapInfo(user, searchterm, page, mode) {
+  await checkUserScrapeInfo(user);
+  const userId = user && user._id ? user._id : (ObjectId.isValid(user) ? new ObjectId(user) : null);
+  const userInfo = await findAndUpdateUser(userId);
+
+  const scrapInfo = userInfo.scrapInfo?.find(info => info.searchterm === searchterm);
+  const currentTime = Date.now();
+
+  if (scrapInfo) {
+    console.log('Updating existing scrap info:', scrapInfo);
+    await global.db.collection('users').updateOne(
+      { _id: new ObjectId(user._id), 'scrapInfo.searchterm': searchterm },
+      {
+        $set: {
+          'scrapInfo.$.mode': mode,
+          'scrapInfo.$.time': currentTime,
+          'scrapInfo.$.page': parseInt(page, 10),
+        },
+      }
+    );
+  } else {
+    console.log('Adding new scrap info');
+    await global.db.collection('users').updateOne(
+      { _id: new ObjectId(user._id) },
+      {
+        $push: {
+          scrapInfo: {
+            searchterm,
+            time: currentTime,
+            page: parseInt(page, 10),
+            mode,
+          },
+        },
+      },
+      { upsert: true }
+    );
+  }
+}
 
 module.exports = { 
   takePageScreenshot,
@@ -750,5 +820,7 @@ module.exports = {
   calculatePayloadWidth,
   downloadVideoRedGIF,
   cleanupDatabase,
-  removeDuplicates
+  removeDuplicates,
+  updateUserScrapInfo,
+  findAndUpdateUser
 }

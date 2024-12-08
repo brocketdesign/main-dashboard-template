@@ -1391,8 +1391,8 @@ function updategridlayout(value = false,callback) {
       updategridlayout(value); // Call the function to update the grid layout with the new value
     });
   };
- 
-  let paginationNumber = 1
+
+  let paginationNumber = getCurrentPageQueries().page || 1
   const handleLoadMore = () => {
       if (paginationNumber === 1) {
           $('.load-more-previous').remove();
@@ -1454,6 +1454,7 @@ $('.load-more').off().on('click', function () {
 
     const data = $(this).data();
     data.page = paginationNumber; // Use the correct current page for the request
+    console.log(paginationNumber,data)
 
     const $spinner = showSpinner($buttonContainer, 'loadmore');
 

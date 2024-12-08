@@ -19,7 +19,8 @@ const {
   generateFilePathFromUrl,
   getOpenaiTypeForUser,
   calculatePayloadWidth,
-  findTotalPage
+  findTotalPage,
+  updateUserScrapInfo
 } = require('../services/tools')
 const fetch = require('node-fetch');
 const FormData = require('form-data');
@@ -562,39 +563,6 @@ router.post('/loadpage', async (req, res) => {
   }
 });
 
-
-async function updateUserScrapInfo(userId, page, searchterm, mode) {
-  try {
-    // Find the user by their ID
-    const user = await global.db.collection('users').findOne({_id: new ObjectId(userId)});
-
-    // If the user doesn't have scrapInfo, initialize it as an empty array
-    if (!user.scrapInfo) {
-      user.scrapInfo = [];
-    }
-
-    // Find the scrapInfo for the given search term
-    let scrap = user.scrapInfo.find(info => info.searchterm === searchterm);
-
-    if (scrap) {
-      // If found, update the page
-      scrap.page = page;
-    } else {
-      // If not found, add a new scrapInfo
-      user.scrapInfo.push({ searchterm: searchterm, page: page, mode:mode });
-    }
-
-    // Update the user document
-    await global.db.collection('users').updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { scrapInfo: user.scrapInfo } }
-    );
-
-    console.log('User scrapInfo updated successfully!');
-  } catch (error) {
-    console.error('Error updating user scrapInfo:', error);
-  }
-}
 
   router.post('/addtofav', async (req, res) => {
     const {video_id,mode}=req.body
