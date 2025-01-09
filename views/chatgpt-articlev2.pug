@@ -1,0 +1,58 @@
+extends dashboard-base
+
+block mainContent
+  h1.display-5.mb-4.fw-bold 記事生成
+  if !postId
+    .row.row-cols-1.row-cols-md-2.pe-0
+      .col.bg-white.p-3
+        h6 入力
+        hr.mb-4
+        form#blogPost.default
+          .row
+            .form-group.col-6.my-3
+              label.fw-bold.my-2(for='language') 言語
+              select#language.form-control(name='language',required)
+                option(value='japanese')
+                  i.faw.faw-flag-jp
+                  |  Japanese
+                option(value='english')
+                  i.faw.faw-flag-us
+                  |  English
+          .form-group.col.my-3
+            label.fw-bold.my-2(for='title') タイトル
+            input#title.form-control(type='text', name="title", placeholder='エンジニアリングの未来', required)
+          .form-group.col.my-3
+            label.fw-bold.my-2(for='subtitle') サブタイトル
+            input#subtitle.form-control(type='text', name="subtitle", placeholder='技術の進化と今後の展望', required)
+          .form-group.col.my-3
+            div.keywords-container
+                label.fw-bold.my-2.d-flex.justify-content-between(for='keyword-1') 
+                  | キーワード
+                  button.badge.bg-primary.add-item(type="button" data-name="keyword" data-label="キーワード")
+                    i.fas.fa-plus
+                div.input-group.mb-3
+                    div.keyword-inputs.row.row-cols-1.row-cols-md-3
+                      .col.p-1
+                        input.form-control(type='text', name="keyword[]", placeholder='プログラミング', id='keyword-1', required)
+          .my-3
+              button.btn.btn-primary.w-100(type='submit') 
+                i.fas.fa-paper-plane.me-3
+                | 生成する
+      .col.p-3
+        h6 生成結果
+        hr.mb-4
+        #result.d-none
+        #htmlOutput
+        if userOpenaiDocs || userOpenaiDocs.length  > 0
+          for doc of userOpenaiDocs
+            if doc.completion
+              for item of doc.completion
+                .card.mb-3(data-id=doc._id)
+                  .card-top.p-3.d-flex.align-items-center.justify-content-between
+                    .tools.d-flex.align-items-center
+                      badge.btn.tool-button.tool-button-copy.mx-2(data-toggle="tooltip" title="コピー")
+                        i.fas.fa-copy
+                    .text-end.text-sm.text-muted(style="font-size:12px")
+                      .custom-date(data-value=doc.prompt_time)
+                  .card-body 
+                    p.convertToHTML #{item}

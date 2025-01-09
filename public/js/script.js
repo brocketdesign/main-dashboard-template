@@ -814,7 +814,7 @@ function handleDownloadVideo(id){
     const isdl = $thisCard.data('isdl');
     const mode = $('#range').data('mode');
 
-    $.get(`http://192.168.10.115:3100/api/video?videoId=${id}&mode=${mode}`)
+    $.get(`http://192.168.10.119:3002/api/video?videoId=${id}&mode=${mode}`)
     .done(function(response) {
         console.log(response)
         try {
@@ -982,7 +982,7 @@ const handleDownloadButton = () => {
       
       // Make a request to download the video
       const mode = $('#range').data('mode')
-      $.post('http://192.168.10.115:3100/api/dl', { video_id: id ,title,mode}, function(response) {
+      $.post('http://192.168.10.119:3002/api/dl', { video_id: id ,title,mode}, function(response) {
         displayMedia(response.url,id)
         $spinner.remove();
 
@@ -2885,7 +2885,7 @@ function downloadVideo(itemID, actressName) {
     
     // Make the AJAX POST request
     $.ajax({
-        url: 'http://192.168.10.115:3100/api/downloadVideoSegments', // API endpoint
+        url: 'http://192.168.10.119:3002/api/downloadVideoSegments', // API endpoint
         type: 'POST', // HTTP Method
         contentType: 'application/json', // Content type being sent
         data: JSON.stringify(payload), // Convert payload object to JSON string
@@ -3053,7 +3053,7 @@ async function instantPlay(dataId){
 }
 function directDownloadFileFromURL(dataId,callback){
     const mode = $('#range').data('mode')
-    $.post('http://192.168.10.115:3100/api/dl', { video_id: dataId,mode }, function(response) {
+    $.post('http://192.168.10.119:3002/api/dl', { video_id: dataId,mode }, function(response) {
         //console.log('Download API Response:', response);
         if(typeof callback == 'function'){callback(response)}
       })

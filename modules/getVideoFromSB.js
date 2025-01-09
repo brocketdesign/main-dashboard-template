@@ -33,6 +33,7 @@ const getVideoFromPV = (query, mode, nsfw, url, pageNum, userId) => {
         item.extractor = 'pornvideos'
         results.push(item);
       });
+      console.log(results)
       resolve(results)
     } catch (error) {
       console.log(`Error with PD`)

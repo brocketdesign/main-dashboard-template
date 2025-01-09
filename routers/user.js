@@ -142,7 +142,7 @@ router.post('/login', passport.authenticate('local', {
 async function connectUserToTheDownloadServer(user) {
   try {
     // Make a POST request to the download server
-    const response = await axios.post('http://192.168.10.115:3100/api/connectUser', {
+    const response = await axios.post('http://192.168.10.119:3002/api/connectUser', {
       user: user
     });
 

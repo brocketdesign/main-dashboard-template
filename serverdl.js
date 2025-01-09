@@ -184,7 +184,7 @@ MongoClient.connect(url, { useUnifiedTopology: true })
         //const result2 = getVideoFromPD(query, mode, nsfw, url, pageNum, userId);
         //const result3 = getVideoFromHQP(query, mode, nsfw, url, pageNum, userId);
         const result4 = getVideoFromPV(query, mode, nsfw, url, pageNum, userId)
-        
+
         const combinedResult = await Promise.allSettled([result1,result4]);
         
         const successfulResults = combinedResult
